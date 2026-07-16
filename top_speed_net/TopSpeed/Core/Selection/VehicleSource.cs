@@ -34,6 +34,31 @@ namespace TopSpeed.Core
             if (issues != null && issues.Count > 0)
                 AppendIssues(file, issues);
 
+            // The .tsv parsed, but it may reference sound files that are not on disk (a common packaging
+            // mistake: the .tsv ships without its .wav). Catch that here, up front, instead of letting the
+            // race loader hard-crash later. A missing *required* sound makes the car unplayable, so we treat
+            // it like a failed load and drop it from the list; missing *optional* sounds are only a warning.
+            var builtinRoot = System.IO.Path.Combine(AssetPaths.SoundsRoot, "Vehicles");
+            var soundIssues = Vehicles.Loader.Sound.ValidateCustomSounds(parsed.Sounds, builtinRoot, parsed.SourceDirectory);
+            if (soundIssues.Count > 0)
+            {
+                var hasMissingRequired = false;
+                AddFileIssue(file);
+                for (var i = 0; i < soundIssues.Count; i++)
+                {
+                    var issue = soundIssues[i];
+                    if (issue.Required)
+                        hasMissingRequired = true;
+                    var label = issue.Required
+                        ? LocalizationService.Translate(LocalizationService.Mark("Error"))
+                        : LocalizationService.Translate(LocalizationService.Mark("Warning"));
+                    AddIssue(LocalizationService.Format(LocalizationService.Mark("{0}: {1}"), label, issue.Message));
+                }
+
+                if (hasMissingRequired)
+                    return (false, default);
+            }
+
             var info = new CustomVehicleInfo(
                 file,
                 string.IsNullOrWhiteSpace(parsed.Meta.Name) ? LocalizationService.Mark("Custom vehicle") : parsed.Meta.Name,

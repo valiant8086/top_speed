@@ -263,8 +263,11 @@ namespace TopSpeed.Core.Settings
         [DataMember(Name = "backend")]
         public ulong? Backend { get; set; }
 
-        [DataMember(Name = "voice")]
-        public int? Voice { get; set; }
+        // Renamed from the old integer "voice" (a voice-list index) to a voice
+        // name. Using a new key means an old numeric "voice" is ignored as an
+        // unknown member instead of throwing and wiping the whole settings file.
+        [DataMember(Name = "voiceName")]
+        public string? Voice { get; set; }
 
         [DataMember(Name = "rate")]
         public decimal? Rate { get; set; }

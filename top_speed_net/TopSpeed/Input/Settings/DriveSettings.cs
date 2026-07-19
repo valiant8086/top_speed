@@ -58,7 +58,7 @@ namespace TopSpeed.Input
         public float ScreenReaderRateMs { get; set; }
         public ulong? SpeechBackendId { get; set; }
         public SpeechOutputMode SpeechMode { get; set; }
-        public int? SpeechVoiceIndex { get; set; }
+        public string? SpeechVoiceName { get; set; }
         public float SpeechRate { get; set; }
         public bool ScreenReaderInterrupt { get; set; }
         public bool UsageHints { get; set; }
@@ -150,7 +150,7 @@ namespace TopSpeed.Input
             ScreenReaderRateMs = 0f;
             SpeechBackendId = null;
             SpeechMode = SpeechOutputMode.Speech;
-            SpeechVoiceIndex = null;
+            SpeechVoiceName = null;
             SpeechRate = 0.5f;
             ScreenReaderInterrupt = false;
             UsageHints = true;

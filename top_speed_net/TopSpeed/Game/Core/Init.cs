@@ -69,7 +69,7 @@ namespace TopSpeed.Game
             speech.SpeechRate = _settings.SpeechRate;
             speech.ScreenReaderInterrupt = _settings.ScreenReaderInterrupt;
             speech.PreferredBackendId = _settings.SpeechBackendId;
-            speech.PreferredVoiceIndex = _settings.SpeechVoiceIndex;
+            speech.PreferredVoiceName = _settings.SpeechVoiceName;
             _driveInput = new DriveInput(_settings);
             _setup = new DriveSetup();
             _driveSessionFactory = new DriveSessionFactory(audio, speech, _settings, _driveInput, _fileDialogs);

@@ -1,3 +1,5 @@
+using TopSpeed.Speech;
+
 namespace TopSpeed.Menu
 {
     internal sealed partial class MenuScreen
@@ -25,7 +27,7 @@ namespace TopSpeed.Menu
             var safeAnnouncement = announcement;
             if (!string.IsNullOrWhiteSpace(safeAnnouncement))
             {
-                _speech.Speak(safeAnnouncement!);
+                _speech.Speak(safeAnnouncement!, SpeechService.SpeakFlag.NoInterruptButStop);
                 CancelHint();
             }
 
@@ -109,7 +111,7 @@ namespace TopSpeed.Menu
             if (item.TryGetActionLabel(_activeActionIndex, out var label) && !string.IsNullOrWhiteSpace(label))
             {
                 PlayNavigateSound();
-                _speech.Speak(label);
+                _speech.Speak(label, SpeechService.SpeakFlag.NoInterruptButStop);
                 CancelHint();
             }
             else

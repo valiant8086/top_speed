@@ -51,7 +51,7 @@ namespace TopSpeed.Game
         void IMenuSettingsActions.SetSpeechBackend(ulong? backendId) => SetSpeechBackend(backendId);
         void IMenuSettingsActions.SetScreenReaderInterrupt(bool enabled) => SetScreenReaderInterrupt(enabled);
         void IMenuSettingsActions.SetSpeechMode(SpeechOutputMode mode) => SetSpeechMode(mode);
-        void IMenuSettingsActions.SetSpeechVoice(int? voiceIndex) => SetSpeechVoice(voiceIndex);
+        void IMenuSettingsActions.SetSpeechVoice(string? voiceName) => SetSpeechVoice(voiceName);
         void IMenuSettingsActions.SetSpeechRate(float rate) => SetSpeechRate(rate);
         void IMenuSettingsActions.SetUseUpdateProxy(bool enabled) => SetUseUpdateProxy(enabled);
         void IMenuSettingsActions.EditUpdateProxyUrl() => EditUpdateProxyUrl();

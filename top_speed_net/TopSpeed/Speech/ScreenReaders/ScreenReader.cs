@@ -9,7 +9,7 @@ namespace TopSpeed.Speech.ScreenReaders
         IReadOnlyList<SpeechVoiceInfo> AvailableVoices { get; }
         ulong? PreferredBackendId { get; set; }
         ulong? ActiveBackendId { get; }
-        int? PreferredVoiceIndex { get; set; }
+        string? PreferredVoiceName { get; set; }
         SpeechCapabilities Capabilities { get; }
         string? ActiveBackendName { get; }
         bool Initialize();

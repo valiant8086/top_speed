@@ -22,7 +22,7 @@ namespace TopSpeed.Game
             _speech.SpeechRate = _settings.SpeechRate;
             _speech.ScreenReaderInterrupt = _settings.ScreenReaderInterrupt;
             _speech.PreferredBackendId = _settings.SpeechBackendId;
-            _speech.PreferredVoiceIndex = _settings.SpeechVoiceIndex;
+            _speech.PreferredVoiceName = _settings.SpeechVoiceName;
             _needsCalibration = _settings.UsageHints && _settings.ScreenReaderRateMs <= 0f;
             _menu.SetWrapNavigation(_settings.MenuWrapNavigation);
             _menu.SetMenuSoundPreset(_settings.MenuSoundPreset);
@@ -73,10 +73,10 @@ namespace TopSpeed.Game
             SaveSettings();
         }
 
-        private void SetSpeechVoice(int? voiceIndex)
+        private void SetSpeechVoice(string? voiceName)
         {
-            _settings.SpeechVoiceIndex = voiceIndex;
-            _speech.PreferredVoiceIndex = voiceIndex;
+            _settings.SpeechVoiceName = voiceName;
+            _speech.PreferredVoiceName = voiceName;
             SaveSettings();
         }
 

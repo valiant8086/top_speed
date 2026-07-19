@@ -14,7 +14,7 @@ namespace TopSpeed.Speech
         IReadOnlyList<SpeechVoiceInfo> AvailableVoices { get; }
         ulong? PreferredBackendId { get; set; }
         ulong? ActiveBackendId { get; }
-        int? PreferredVoiceIndex { get; set; }
+        string? PreferredVoiceName { get; set; }
         SpeechCapabilities ScreenReaderCapabilities { get; }
         string? ScreenReaderBackendName { get; }
         void Speak(string text);

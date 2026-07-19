@@ -110,18 +110,11 @@ namespace TopSpeed.Menu
         private MenuItem BuildSpeechVoiceItem()
         {
             var voices = _settingsActions.GetSpeechVoices();
-            if (voices.Count <= 1)
-            {
-                var voiceName = voices.Count == 1 ? FormatVoiceLabel(voices[0]) : LocalizationService.Translate(LocalizationService.Mark("automatic"));
-                return new MenuItem(
-                    () => LocalizationService.Format(
-                        LocalizationService.Mark("Voice: {0}"),
-                        voiceName),
-                    MenuAction.None,
-                    hintProvider: HintAdjustProvider(LocalizationService.Mark("Select which voice the current speech backend should use.")));
-            }
 
-            var values = new List<string>(voices.Count);
+            var values = new List<string>(voices.Count + 1)
+            {
+                LocalizationService.Mark("default")
+            };
             for (var i = 0; i < voices.Count; i++)
                 values.Add(FormatVoiceLabel(voices[i]));
 
@@ -129,8 +122,8 @@ namespace TopSpeed.Menu
                 LocalizationService.Mark("Voice"),
                 values,
                 () => GetSpeechVoiceIndex(voices),
-                value => _settingsActions.SetSpeechVoice(voices[value].Index),
-                hintProvider: HintAdjustProvider(LocalizationService.Mark("Select which voice the current speech backend should use.")));
+                value => _settingsActions.SetSpeechVoice(value == 0 ? null : voices[value - 1].Name),
+                hintProvider: HintAdjustProvider(LocalizationService.Mark("Select which voice the current speech backend should use. Default uses the backend's own default voice.")));
         }
 
         private MenuItem BuildSpeechRateItem()
@@ -160,13 +153,13 @@ namespace TopSpeed.Menu
 
         private int GetSpeechVoiceIndex(IReadOnlyList<SpeechVoiceInfo> voices)
         {
-            if (!_settings.SpeechVoiceIndex.HasValue)
+            if (string.IsNullOrEmpty(_settings.SpeechVoiceName))
                 return 0;
 
             for (var i = 0; i < voices.Count; i++)
             {
-                if (voices[i].Index == _settings.SpeechVoiceIndex.Value)
-                    return i;
+                if (string.Equals(voices[i].Name, _settings.SpeechVoiceName, System.StringComparison.OrdinalIgnoreCase))
+                    return i + 1;
             }
 
             return 0;

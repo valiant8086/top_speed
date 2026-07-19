@@ -169,13 +169,13 @@ namespace TopSpeed.Speech
             }
         }
 
-        public int? PreferredVoiceIndex
+        public string? PreferredVoiceName
         {
             get
             {
                 try
                 {
-                    return _screenReaderWorker.Invoke(reader => reader.PreferredVoiceIndex);
+                    return _screenReaderWorker.Invoke(reader => reader.PreferredVoiceName);
                 }
                 catch
                 {
@@ -188,7 +188,15 @@ namespace TopSpeed.Speech
                 {
                     _screenReaderWorker.Invoke(reader =>
                     {
-                        reader.PreferredVoiceIndex = value;
+                        if (string.Equals(reader.PreferredVoiceName, value, StringComparison.OrdinalIgnoreCase))
+                            return 0;
+
+                        // Stop the current voice before switching. Otherwise the
+                        // in-flight utterance keeps playing on the now-previous
+                        // voice and the new announcement can't interrupt it, so
+                        // arrowing across voices forces you to hear each name in full.
+                        TrySilence(reader);
+                        reader.PreferredVoiceName = value;
                         return 0;
                     });
                 }
@@ -228,7 +236,10 @@ namespace TopSpeed.Speech
             var shouldInterruptCurrent = flag == SpeakFlag.NoInterruptButStop || flag == SpeakFlag.InterruptableButStop;
             var interruptSpeech = shouldInterruptCurrent || (allowConfiguredInterrupt && ScreenReaderInterrupt);
             if (interruptSpeech)
-                Purge();
+                // Skip the standalone backend stop: the Speak below passes interrupt=true,
+                // which flushes atomically. Issuing a separate stop first races SAPI's async
+                // stop against the new utterance and occasionally swallows it (no speech).
+                Purge(silenceBackend: false);
 
             text = text.Trim();
             text = LocalizationService.Translate(text);
@@ -289,11 +300,16 @@ namespace TopSpeed.Speech
 
         public void Purge()
         {
+            Purge(silenceBackend: true);
+        }
+
+        private void Purge(bool silenceBackend)
+        {
             _watch.Reset();
             _timeRequiredMs = 0;
             _speechSuppressedUntilNextSpeak = true;
 
-            if (!_screenReaderReady)
+            if (!silenceBackend || !_screenReaderReady)
                 return;
 
             try

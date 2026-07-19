@@ -97,7 +97,7 @@ namespace TopSpeed.Core.Settings
                     Mode = (int)settings.SpeechMode,
                     ScreenReaderRateMs = Round3Decimal(settings.ScreenReaderRateMs),
                     Backend = settings.SpeechBackendId,
-                    Voice = settings.SpeechVoiceIndex,
+                    Voice = settings.SpeechVoiceName,
                     Rate = Round3Decimal(settings.SpeechRate),
                     Interrupt = settings.ScreenReaderInterrupt
                 },

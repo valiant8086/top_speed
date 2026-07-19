@@ -26,7 +26,7 @@ namespace TopSpeed.Menu
         void SetSpeechBackend(ulong? backendId);
         void SetScreenReaderInterrupt(bool enabled);
         void SetSpeechMode(SpeechOutputMode mode);
-        void SetSpeechVoice(int? voiceIndex);
+        void SetSpeechVoice(string? voiceName);
         void SetSpeechRate(float rate);
         void SetUseUpdateProxy(bool enabled);
         void EditUpdateProxyUrl();

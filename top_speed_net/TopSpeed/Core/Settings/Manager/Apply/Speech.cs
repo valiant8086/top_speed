@@ -18,8 +18,8 @@ namespace TopSpeed.Core.Settings
                     : speech.Backend.Value;
             }
 
-            if (speech.Voice.HasValue)
-                settings.SpeechVoiceIndex = ClampInt(speech.Voice, settings.SpeechVoiceIndex ?? 0, 0, int.MaxValue, "speech.voice", issues);
+            if (speech.Voice != null)
+                settings.SpeechVoiceName = string.IsNullOrWhiteSpace(speech.Voice) ? null : speech.Voice.Trim();
 
             if (speech.Rate.HasValue)
             {

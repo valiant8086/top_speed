@@ -14,7 +14,7 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
         private Backend? _backend;
         private ulong? _preferredBackendId;
         private ulong? _activeBackendId;
-        private int? _preferredVoiceIndex;
+        private string? _preferredVoiceName;
         private bool _trySapi;
         private bool _preferSapi;
         private IPlayer? _player;
@@ -87,18 +87,18 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
             }
         }
 
-        public int? PreferredVoiceIndex
+        public string? PreferredVoiceName
         {
             get
             {
                 lock (_sync)
-                    return _preferredVoiceIndex;
+                    return _preferredVoiceName;
             }
             set
             {
                 lock (_sync)
                 {
-                    _preferredVoiceIndex = value;
+                    _preferredVoiceName = value;
                     ApplyVoicePreferenceLocked();
                 }
             }
@@ -141,6 +141,11 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
                 {
                     _context = new Context();
                     _backend = OpenBackend(_context);
+                    // OpenBackend's own ApplyVoicePreferenceLocked calls run before
+                    // _backend is assigned above, so they no-op on the null guard.
+                    // Apply the voice now that _backend is set, so switching backends
+                    // at runtime honors the saved voice instead of using the default.
+                    ApplyVoicePreferenceLocked();
                     return true;
                 }
                 catch
@@ -521,12 +526,25 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
 
         private void ApplyVoicePreferenceLocked()
         {
-            if (_backend == null || !_preferredVoiceIndex.HasValue)
+            if (_backend == null || string.IsNullOrEmpty(_preferredVoiceName))
                 return;
 
             try
             {
-                _backend.CurrentVoiceIndex = _preferredVoiceIndex.Value;
+                // Match by name against the backend's live voice list. Reading
+                // Voices enumerates/refreshes them first, so this also works when
+                // a backend was just switched (the index-based approach set the
+                // voice before the new backend's list existed, so it never stuck).
+                // If the saved voice isn't present, leave the backend's default.
+                var voices = _backend.Voices;
+                for (var i = 0; i < voices.Count; i++)
+                {
+                    if (string.Equals(voices[i].Name, _preferredVoiceName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _backend.CurrentVoiceIndex = voices[i].Index;
+                        return;
+                    }
+                }
             }
             catch
             {
@@ -547,9 +565,15 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
 
         private bool ShouldUseMemorySpeechLocked()
         {
+            // Route local TTS engines through the game's own player so speech
+            // queues and honors interrupt=false (e.g. hints must not cut off a
+            // menu item). SAPI and OneCore synthesize to a stream with no real
+            // utterance queue of their own, so direct speak always interrupts.
+            // Limited to these local engines: external screen readers (NVDA,
+            // JAWS, ...) must keep speaking through their own configured output.
             return _player != null
                 && _backend != null
-                && _activeBackendId == Ids.Sapi
+                && (_activeBackendId == Ids.Sapi || _activeBackendId == Ids.OneCore)
                 && _backend.Supports(Features.SpeakToMemory);
         }
 

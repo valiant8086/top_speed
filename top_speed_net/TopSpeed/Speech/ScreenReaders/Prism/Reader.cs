@@ -15,6 +15,7 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
         private ulong? _preferredBackendId;
         private ulong? _activeBackendId;
         private string? _preferredVoiceName;
+        private int? _defaultVoiceId;
         private bool _trySapi;
         private bool _preferSapi;
         private IPlayer? _player;
@@ -141,6 +142,9 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
                 {
                     _context = new Context();
                     _backend = OpenBackend(_context);
+                    // Capture the voice the backend came up with as its "default"
+                    // (Prism has no reset-to-default call), so we can revert to it.
+                    _defaultVoiceId = _backend.CurrentVoiceIndex;
                     // OpenBackend's own ApplyVoicePreferenceLocked calls run before
                     // _backend is assigned above, so they no-op on the null guard.
                     // Apply the voice now that _backend is set, so switching backends
@@ -526,7 +530,7 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
 
         private void ApplyVoicePreferenceLocked()
         {
-            if (_backend == null || string.IsNullOrEmpty(_preferredVoiceName))
+            if (_backend == null)
                 return;
 
             try
@@ -535,16 +539,24 @@ namespace TopSpeed.Speech.ScreenReaders.Prism
                 // Voices enumerates/refreshes them first, so this also works when
                 // a backend was just switched (the index-based approach set the
                 // voice before the new backend's list existed, so it never stuck).
-                // If the saved voice isn't present, leave the backend's default.
-                var voices = _backend.Voices;
-                for (var i = 0; i < voices.Count; i++)
+                if (!string.IsNullOrEmpty(_preferredVoiceName))
                 {
-                    if (string.Equals(voices[i].Name, _preferredVoiceName, StringComparison.OrdinalIgnoreCase))
+                    var voices = _backend.Voices;
+                    for (var i = 0; i < voices.Count; i++)
                     {
-                        _backend.CurrentVoiceIndex = voices[i].Index;
-                        return;
+                        if (string.Equals(voices[i].Name, _preferredVoiceName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _backend.CurrentVoiceIndex = voices[i].Index;
+                            return;
+                        }
                     }
                 }
+
+                // "default" preference, or a saved voice that isn't present on
+                // this backend: revert faithfully to the backend's own default
+                // voice rather than leaving whatever was last selected.
+                if (_defaultVoiceId.HasValue)
+                    _backend.CurrentVoiceIndex = _defaultVoiceId.Value;
             }
             catch
             {

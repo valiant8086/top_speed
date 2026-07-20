@@ -9,6 +9,8 @@ namespace TopSpeed.Menu
     {
         string GetLanguageName();
         IReadOnlyList<SpeechBackendInfo> GetSpeechBackends();
+        ulong? GetActiveSpeechBackendId();
+        string? GetActiveSpeechBackendName();
         IReadOnlyList<SpeechVoiceInfo> GetSpeechVoices();
         SpeechCapabilities GetSpeechCapabilities();
         void ChangeLanguage();

@@ -58,7 +58,7 @@ namespace TopSpeed.Input
         public float ScreenReaderRateMs { get; set; }
         public ulong? SpeechBackendId { get; set; }
         public SpeechOutputMode SpeechMode { get; set; }
-        public string? SpeechVoiceName { get; set; }
+        public Dictionary<ulong, string> SpeechVoicesByBackend { get; set; } = new Dictionary<ulong, string>();
         public float SpeechRate { get; set; }
         public bool ScreenReaderInterrupt { get; set; }
         public bool UsageHints { get; set; }
@@ -150,7 +150,7 @@ namespace TopSpeed.Input
             ScreenReaderRateMs = 0f;
             SpeechBackendId = null;
             SpeechMode = SpeechOutputMode.Speech;
-            SpeechVoiceName = null;
+            SpeechVoicesByBackend = new Dictionary<ulong, string>();
             SpeechRate = 0.5f;
             ScreenReaderInterrupt = false;
             UsageHints = true;

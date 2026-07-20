@@ -18,8 +18,19 @@ namespace TopSpeed.Core.Settings
                     : speech.Backend.Value;
             }
 
-            if (speech.Voice != null)
-                settings.SpeechVoiceName = string.IsNullOrWhiteSpace(speech.Voice) ? null : speech.Voice.Trim();
+            if (speech.Voices != null)
+            {
+                var voices = new Dictionary<ulong, string>();
+                foreach (var entry in speech.Voices)
+                {
+                    if (entry == null || entry.Backend == 0 || string.IsNullOrWhiteSpace(entry.Voice))
+                        continue;
+
+                    voices[entry.Backend] = entry.Voice!.Trim();
+                }
+
+                settings.SpeechVoicesByBackend = voices;
+            }
 
             if (speech.Rate.HasValue)
             {

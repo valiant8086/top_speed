@@ -118,8 +118,13 @@ namespace TopSpeed.Menu
             for (var i = 0; i < voices.Count; i++)
                 values.Add(FormatVoiceLabel(voices[i]));
 
+            var backendName = _settingsActions.GetActiveSpeechBackendName();
+            var title = string.IsNullOrWhiteSpace(backendName)
+                ? LocalizationService.Mark("Voice")
+                : LocalizationService.Format(LocalizationService.Mark("Voice for {0}"), backendName);
+
             return new RadioButton(
-                LocalizationService.Mark("Voice"),
+                title,
                 values,
                 () => GetSpeechVoiceIndex(voices),
                 value => _settingsActions.SetSpeechVoice(value == 0 ? null : voices[value - 1].Name),
@@ -153,12 +158,15 @@ namespace TopSpeed.Menu
 
         private int GetSpeechVoiceIndex(IReadOnlyList<SpeechVoiceInfo> voices)
         {
-            if (string.IsNullOrEmpty(_settings.SpeechVoiceName))
+            var activeId = _settingsActions.GetActiveSpeechBackendId();
+            if (!activeId.HasValue
+                || !_settings.SpeechVoicesByBackend.TryGetValue(activeId.Value, out var name)
+                || string.IsNullOrEmpty(name))
                 return 0;
 
             for (var i = 0; i < voices.Count; i++)
             {
-                if (string.Equals(voices[i].Name, _settings.SpeechVoiceName, System.StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(voices[i].Name, name, System.StringComparison.OrdinalIgnoreCase))
                     return i + 1;
             }
 

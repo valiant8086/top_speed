@@ -34,6 +34,8 @@ namespace TopSpeed.Game
 
         string IMenuSettingsActions.GetLanguageName() => CurrentLanguageName();
         IReadOnlyList<SpeechBackendInfo> IMenuSettingsActions.GetSpeechBackends() => _speech.AvailableBackends;
+        ulong? IMenuSettingsActions.GetActiveSpeechBackendId() => _speech.ActiveBackendId;
+        string? IMenuSettingsActions.GetActiveSpeechBackendName() => _speech.ScreenReaderBackendName;
         IReadOnlyList<SpeechVoiceInfo> IMenuSettingsActions.GetSpeechVoices() => _speech.AvailableVoices;
         SpeechCapabilities IMenuSettingsActions.GetSpeechCapabilities() => _speech.ScreenReaderCapabilities;
         void IMenuSettingsActions.ChangeLanguage() => ChangeLanguage();

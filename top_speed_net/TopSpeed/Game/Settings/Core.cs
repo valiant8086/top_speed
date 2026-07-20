@@ -22,7 +22,7 @@ namespace TopSpeed.Game
             _speech.SpeechRate = _settings.SpeechRate;
             _speech.ScreenReaderInterrupt = _settings.ScreenReaderInterrupt;
             _speech.PreferredBackendId = _settings.SpeechBackendId;
-            _speech.PreferredVoiceName = _settings.SpeechVoiceName;
+            _speech.PreferredVoiceName = ResolveVoiceForActiveBackend();
             _needsCalibration = _settings.UsageHints && _settings.ScreenReaderRateMs <= 0f;
             _menu.SetWrapNavigation(_settings.MenuWrapNavigation);
             _menu.SetMenuSoundPreset(_settings.MenuSoundPreset);
@@ -55,6 +55,9 @@ namespace TopSpeed.Game
         {
             _settings.SpeechBackendId = backendId;
             _speech.PreferredBackendId = backendId;
+            // The backend is now open and resolved (automatic picks a concrete
+            // one), so load and apply that backend's own remembered voice.
+            _speech.PreferredVoiceName = ResolveVoiceForActiveBackend();
             _menuRegistry.RefreshSpeechSettingsMenu();
             SaveSettings();
         }
@@ -75,9 +78,32 @@ namespace TopSpeed.Game
 
         private void SetSpeechVoice(string? voiceName)
         {
-            _settings.SpeechVoiceName = voiceName;
+            StoreVoiceForActiveBackend(voiceName);
             _speech.PreferredVoiceName = voiceName;
             SaveSettings();
+        }
+
+        // Voice preferences are per-backend, keyed by the resolved active backend
+        // (so "automatic" sticks the voice to whatever it actually resolved to).
+        private string? ResolveVoiceForActiveBackend()
+        {
+            var id = _speech.ActiveBackendId;
+            if (id.HasValue && _settings.SpeechVoicesByBackend.TryGetValue(id.Value, out var name))
+                return name;
+
+            return null;
+        }
+
+        private void StoreVoiceForActiveBackend(string? voiceName)
+        {
+            var id = _speech.ActiveBackendId;
+            if (!id.HasValue)
+                return;
+
+            if (string.IsNullOrEmpty(voiceName))
+                _settings.SpeechVoicesByBackend.Remove(id.Value);
+            else
+                _settings.SpeechVoicesByBackend[id.Value] = voiceName;
         }
 
         private void SetSpeechRate(float rate)

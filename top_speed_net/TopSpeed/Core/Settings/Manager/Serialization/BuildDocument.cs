@@ -97,7 +97,7 @@ namespace TopSpeed.Core.Settings
                     Mode = (int)settings.SpeechMode,
                     ScreenReaderRateMs = Round3Decimal(settings.ScreenReaderRateMs),
                     Backend = settings.SpeechBackendId,
-                    Voice = settings.SpeechVoiceName,
+                    Voices = BuildBackendVoices(settings.SpeechVoicesByBackend),
                     Rate = Round3Decimal(settings.SpeechRate),
                     Interrupt = settings.ScreenReaderInterrupt
                 },
@@ -195,6 +195,27 @@ namespace TopSpeed.Core.Settings
             {
                 Bindings = bindings
             };
+        }
+
+        private static List<SettingsBackendVoiceDocument> BuildBackendVoices(Dictionary<ulong, string>? voices)
+        {
+            var result = new List<SettingsBackendVoiceDocument>();
+            if (voices == null)
+                return result;
+
+            foreach (var entry in voices)
+            {
+                if (entry.Key == 0 || string.IsNullOrWhiteSpace(entry.Value))
+                    continue;
+
+                result.Add(new SettingsBackendVoiceDocument
+                {
+                    Backend = entry.Key,
+                    Voice = entry.Value
+                });
+            }
+
+            return result;
         }
 
         private static List<SettingsSavedServerDocument> BuildSavedServers(List<SavedServerEntry>? savedServers)

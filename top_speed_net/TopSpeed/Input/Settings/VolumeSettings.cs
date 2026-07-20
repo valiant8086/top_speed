@@ -14,7 +14,10 @@ namespace TopSpeed.Input
         AmbientsAndSources,
         Music,
         OnlineServerEvents,
-        Communicator
+        Communicator,
+        // Appended deliberately: the F6 category list and its index are ordinal,
+        // so inserting earlier would move every existing category under the user.
+        TextToSpeech
     }
 
     internal sealed class AudioVolumeSettings
@@ -30,6 +33,7 @@ namespace TopSpeed.Input
         public int MusicPercent { get; set; }
         public int OnlineServerEventsPercent { get; set; }
         public int CommunicatorPercent { get; set; }
+        public int TextToSpeechPercent { get; set; }
 
         public void RestoreDefaults(int defaultMusicPercent)
         {
@@ -44,6 +48,7 @@ namespace TopSpeed.Input
             MusicPercent = ClampPercent(defaultMusicPercent);
             OnlineServerEventsPercent = 100;
             CommunicatorPercent = 100;
+            TextToSpeechPercent = 100;
         }
 
         public void ClampAll()
@@ -59,6 +64,7 @@ namespace TopSpeed.Input
             MusicPercent = ClampPercent(MusicPercent);
             OnlineServerEventsPercent = ClampPercent(OnlineServerEventsPercent);
             CommunicatorPercent = ClampPercent(CommunicatorPercent);
+            TextToSpeechPercent = ClampPercent(TextToSpeechPercent);
         }
 
         public int GetPercent(AudioVolumeCategory category)
@@ -76,6 +82,7 @@ namespace TopSpeed.Input
                 AudioVolumeCategory.Music => MusicPercent,
                 AudioVolumeCategory.OnlineServerEvents => OnlineServerEventsPercent,
                 AudioVolumeCategory.Communicator => CommunicatorPercent,
+                AudioVolumeCategory.TextToSpeech => TextToSpeechPercent,
                 _ => 100
             };
         }

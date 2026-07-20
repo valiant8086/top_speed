@@ -31,6 +31,7 @@ namespace TopSpeed.Speech
         private Action? _prepareForInterruptableSpeech;
         private volatile bool _screenReaderReady;
         private float _speechRate = 0.5f;
+        private float _backendVolume = 1f;
         private bool _speechSuppressedUntilNextSpeak;
 
         public SpeechService(AudioManager audio, Func<bool>? isInputHeld = null, Action? prepareForInterruptableSpeech = null)
@@ -106,6 +107,30 @@ namespace TopSpeed.Speech
                 {
                     return SpeechCapabilities.None;
                 }
+            }
+        }
+
+        // Backends that voice directly (Android TTS, AVSpeech, Speech Dispatcher)
+        // never reach the game's speech output, so the volume has to be handed to
+        // the backend itself. Prism normalizes volume to 0.0-1.0 across backends,
+        // matching the scalar used for the game's own audio. No-ops on backends
+        // without volume support, notably screen readers.
+        public void SetBackendVolume(float volume)
+        {
+            // Remembered so it can be re-applied after a reinitialize: switching
+            // backends builds a new backend that starts at Prism's default volume,
+            // and speech can also silently reinitialize when it recovers.
+            _backendVolume = Math.Max(0f, Math.Min(1f, volume));
+            try
+            {
+                _screenReaderWorker.Invoke(reader =>
+                {
+                    ApplyBackendVolumeOnWorker(reader);
+                    return 0;
+                });
+            }
+            catch
+            {
             }
         }
 
@@ -371,7 +396,10 @@ namespace TopSpeed.Speech
             }
 
             if (initialized)
+            {
                 ApplySpeechRateOnWorker(reader);
+                ApplyBackendVolumeOnWorker(reader);
+            }
 
             return initialized;
         }
@@ -502,6 +530,17 @@ namespace TopSpeed.Speech
             try
             {
                 reader.SetRate(_speechRate);
+            }
+            catch
+            {
+            }
+        }
+
+        private void ApplyBackendVolumeOnWorker(IScreenReader reader)
+        {
+            try
+            {
+                reader.SetVolume(_backendVolume);
             }
             catch
             {

@@ -22,7 +22,23 @@ namespace TopSpeed.Game
             _settings.AudioVolumes ??= new AudioVolumeSettings();
             _settings.SyncMusicVolumeFromAudioCategories();
             _audio.SetMasterVolume(_settings.GetCategoryScalar(AudioVolumeCategory.Master));
+            ApplyTextToSpeechVolume();
             _menu.SetMenuMusicVolume(_settings.MusicVolume);
+        }
+
+        // Covers text to speech only, not the game's recorded speech. Deliberately
+        // not multiplied by Master: it renders to its own output that Master does
+        // not reach, and for a screen-reader-driven game silencing speech via Master
+        // would leave the player unable to hear their way back. Applied to both
+        // paths, since which one is in use depends on the active backend: the game's
+        // speech output for backends we render ourselves (SAPI, OneCore), and the
+        // backend itself for ones that voice directly. Each is harmless when it is
+        // not the active path.
+        private void ApplyTextToSpeechVolume()
+        {
+            var scalar = _settings.GetCategoryScalar(AudioVolumeCategory.TextToSpeech);
+            _audio.SetSpeechVolume(scalar);
+            _speech.SetBackendVolume(scalar);
         }
 
         private string GetVoiceInputDeviceLabel()

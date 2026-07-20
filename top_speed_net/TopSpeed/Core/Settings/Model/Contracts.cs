@@ -74,6 +74,9 @@ namespace TopSpeed.Core.Settings
         [DataMember(Name = "communicatorPercent")]
         public int? CommunicatorPercent { get; set; }
 
+        [DataMember(Name = "textToSpeechPercent")]
+        public int? TextToSpeechPercent { get; set; }
+
         [DataMember(Name = "hrtfAudio")]
         public bool? HrtfAudio { get; set; }
 

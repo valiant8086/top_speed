@@ -36,7 +36,8 @@ namespace TopSpeed.Game
             AudioVolumeCategory.AmbientsAndSources,
             AudioVolumeCategory.Music,
             AudioVolumeCategory.OnlineServerEvents,
-            AudioVolumeCategory.Communicator
+            AudioVolumeCategory.Communicator,
+            AudioVolumeCategory.TextToSpeech
         };
 
         private int _globalVolumeShortcutCategoryIndex;
@@ -225,6 +226,9 @@ namespace TopSpeed.Game
                 case AudioVolumeCategory.Communicator:
                     _settings.AudioVolumes.CommunicatorPercent = percent;
                     return;
+                case AudioVolumeCategory.TextToSpeech:
+                    _settings.AudioVolumes.TextToSpeechPercent = percent;
+                    return;
             }
         }
 
@@ -243,6 +247,7 @@ namespace TopSpeed.Game
                 AudioVolumeCategory.Music => LocalizationService.Mark("Music"),
                 AudioVolumeCategory.OnlineServerEvents => LocalizationService.Mark("Online server events"),
                 AudioVolumeCategory.Communicator => LocalizationService.Mark("Communicator"),
+                AudioVolumeCategory.TextToSpeech => LocalizationService.Mark("Text to speech"),
                 _ => LocalizationService.Mark("Volume")
             };
         }

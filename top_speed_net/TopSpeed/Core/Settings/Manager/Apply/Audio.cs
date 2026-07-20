@@ -77,6 +77,12 @@ namespace TopSpeed.Core.Settings
                 hasCategoryVolumes = true;
             }
 
+            if (audio.TextToSpeechPercent.HasValue)
+            {
+                settings.AudioVolumes.TextToSpeechPercent = ClampPercent(audio.TextToSpeechPercent.Value, "audio.textToSpeechPercent", issues);
+                hasCategoryVolumes = true;
+            }
+
             if (audio.HrtfAudio.HasValue)
                 settings.HrtfAudio = audio.HrtfAudio.Value;
 

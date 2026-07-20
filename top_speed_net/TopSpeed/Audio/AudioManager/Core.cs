@@ -170,6 +170,21 @@ namespace TopSpeed.Audio
             _engine.PrimaryOutput.SetMasterVolume(volume);
         }
 
+        // Speech renders to its own output (see AudioEngineOptions.UseDedicatedSpeechOutput),
+        // which the primary output's master volume above does not reach, so it needs
+        // its own control. Only affects speech the game renders itself.
+        public void SetSpeechVolume(float volume)
+        {
+            // Without a dedicated speech output (Android) the speech output IS the
+            // primary output, so setting its master volume would attenuate all game
+            // audio and fight SetMasterVolume. Those platforms voice directly rather
+            // than through our player anyway, so the backend volume path covers them.
+            if (ReferenceEquals(_engine.SpeechOutput, _engine.PrimaryOutput))
+                return;
+
+            _engine.SpeechOutput.SetMasterVolume(volume);
+        }
+
         public void UpdateListener(Vector3 position, Vector3 forward, Vector3 up, Vector3 velocity)
         {
             _engine.SetListener(position, forward, up, velocity);

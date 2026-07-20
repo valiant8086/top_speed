@@ -29,6 +29,7 @@ namespace TopSpeed.Core.Settings
                     MusicPercent = audio.MusicPercent,
                     OnlineServerEventsPercent = audio.OnlineServerEventsPercent,
                     CommunicatorPercent = audio.CommunicatorPercent,
+                    TextToSpeechPercent = audio.TextToSpeechPercent,
                     HrtfAudio = settings.HrtfAudio,
                     StereoWidening = settings.StereoWidening,
                     AutoDetectAudioDeviceFormat = settings.AutoDetectAudioDeviceFormat,

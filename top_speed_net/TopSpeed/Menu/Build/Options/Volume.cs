@@ -69,7 +69,12 @@ namespace TopSpeed.Menu
                     LocalizationService.Mark("Communicator volume"),
                     () => _settings.AudioVolumes.CommunicatorPercent,
                     value => _settings.AudioVolumes.CommunicatorPercent = value,
-                    LocalizationService.Mark("Controls communicator activation cues and remote voice chat playback. Affects how loud other players sound when they speak through the communicator."))
+                    LocalizationService.Mark("Controls communicator activation cues and remote voice chat playback. Affects how loud other players sound when they speak through the communicator.")),
+                BuildVolumeSlider(
+                    LocalizationService.Mark("Text to speech volume"),
+                    () => _settings.AudioVolumes.TextToSpeechPercent,
+                    value => _settings.AudioVolumes.TextToSpeechPercent = value,
+                    LocalizationService.Mark("Controls how loud text to speech is. Does not affect the game's recorded speech, or screen readers such as NVDA and JAWS, which speak at their own volume. Not reduced by master audio volume."))
             };
 
             return BackMenu("options_volume", items);

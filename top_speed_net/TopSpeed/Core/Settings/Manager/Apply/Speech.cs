@@ -32,10 +32,18 @@ namespace TopSpeed.Core.Settings
                 settings.SpeechVoicesByBackend = voices;
             }
 
-            if (speech.Rate.HasValue)
+            if (speech.Rates != null)
             {
-                var rate = (float)speech.Rate.Value;
-                settings.SpeechRate = ClampFloat(rate, 0f, 1f, "speech.rate", issues);
+                var rates = new Dictionary<ulong, float>();
+                foreach (var entry in speech.Rates)
+                {
+                    if (entry == null || entry.Backend == 0 || !entry.Rate.HasValue)
+                        continue;
+
+                    rates[entry.Backend] = ClampFloat((float)entry.Rate.Value, 0f, 1f, "speech.rates", issues);
+                }
+
+                settings.SpeechRatesByBackend = rates;
             }
 
             if (speech.Interrupt.HasValue)

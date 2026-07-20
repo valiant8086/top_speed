@@ -19,10 +19,12 @@ namespace TopSpeed.Game
             _input.SetDeviceMode(_settings.DeviceMode);
             _speech.ScreenReaderRateMs = _settings.ScreenReaderRateMs;
             _speech.OutputMode = _settings.SpeechMode;
-            _speech.SpeechRate = _settings.SpeechRate;
             _speech.ScreenReaderInterrupt = _settings.ScreenReaderInterrupt;
             _speech.PreferredBackendId = _settings.SpeechBackendId;
+            // Voice and rate are per-backend, so they must be resolved after the
+            // backend is open and its active id is known.
             _speech.PreferredVoiceName = ResolveVoiceForActiveBackend();
+            _speech.SpeechRate = ResolveRateForActiveBackend();
             _needsCalibration = _settings.UsageHints && _settings.ScreenReaderRateMs <= 0f;
             _menu.SetWrapNavigation(_settings.MenuWrapNavigation);
             _menu.SetMenuSoundPreset(_settings.MenuSoundPreset);
@@ -56,8 +58,9 @@ namespace TopSpeed.Game
             _settings.SpeechBackendId = backendId;
             _speech.PreferredBackendId = backendId;
             // The backend is now open and resolved (automatic picks a concrete
-            // one), so load and apply that backend's own remembered voice.
+            // one), so load and apply that backend's own remembered voice/rate.
             _speech.PreferredVoiceName = ResolveVoiceForActiveBackend();
+            _speech.SpeechRate = ResolveRateForActiveBackend();
             _menuRegistry.RefreshSpeechSettingsMenu();
             SaveSettings();
         }
@@ -108,9 +111,27 @@ namespace TopSpeed.Game
 
         private void SetSpeechRate(float rate)
         {
-            _settings.SpeechRate = rate;
+            StoreRateForActiveBackend(rate);
             _speech.SpeechRate = rate;
             SaveSettings();
+        }
+
+        private float ResolveRateForActiveBackend()
+        {
+            var id = _speech.ActiveBackendId;
+            if (id.HasValue && _settings.SpeechRatesByBackend.TryGetValue(id.Value, out var rate))
+                return rate;
+
+            return DriveSettings.DefaultSpeechRate;
+        }
+
+        private void StoreRateForActiveBackend(float rate)
+        {
+            var id = _speech.ActiveBackendId;
+            if (!id.HasValue)
+                return;
+
+            _settings.SpeechRatesByBackend[id.Value] = rate;
         }
     }
 }

@@ -259,6 +259,13 @@ namespace TopSpeed.Core.Settings
     }
 
     [DataContract]
+    internal sealed class SettingsBackendRateDocument
+    {
+        [DataMember(Name = "backend")] public ulong Backend { get; set; }
+        [DataMember(Name = "rate")] public decimal? Rate { get; set; }
+    }
+
+    [DataContract]
     internal sealed class SettingsSpeechDocument
     {
         [DataMember(Name = "mode")]
@@ -278,8 +285,11 @@ namespace TopSpeed.Core.Settings
         [DataMember(Name = "voices")]
         public List<SettingsBackendVoiceDocument>? Voices { get; set; }
 
-        [DataMember(Name = "rate")]
-        public decimal? Rate { get; set; }
+        // Per-backend speech rate, same shape as Voices. Backends differ enough
+        // in their natural speaking speed that one shared rate does not carry
+        // across them. The old single "rate" key is ignored as an unknown member.
+        [DataMember(Name = "rates")]
+        public List<SettingsBackendRateDocument>? Rates { get; set; }
 
         [DataMember(Name = "interrupt")]
         public bool? Interrupt { get; set; }

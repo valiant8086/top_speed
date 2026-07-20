@@ -133,12 +133,26 @@ namespace TopSpeed.Menu
 
         private MenuItem BuildSpeechRateItem()
         {
+            var backendName = _settingsActions.GetActiveSpeechBackendName();
+            var title = string.IsNullOrWhiteSpace(backendName)
+                ? LocalizationService.Mark("Speech rate")
+                : LocalizationService.Format(LocalizationService.Mark("Speech rate for {0}"), backendName);
+
             return new Slider(
-                LocalizationService.Mark("Speech rate"),
+                title,
                 "0-100",
-                () => (int)System.Math.Round(_settings.SpeechRate * 100f),
+                () => (int)System.Math.Round(GetSpeechRateForActiveBackend() * 100f),
                 value => _settingsActions.SetSpeechRate(value / 100f),
                 hintProvider: HintSliderProvider(LocalizationService.Mark("Adjust the speech rate for the current backend.")));
+        }
+
+        private float GetSpeechRateForActiveBackend()
+        {
+            var activeId = _settingsActions.GetActiveSpeechBackendId();
+            if (activeId.HasValue && _settings.SpeechRatesByBackend.TryGetValue(activeId.Value, out var rate))
+                return rate;
+
+            return DriveSettings.DefaultSpeechRate;
         }
 
         private bool SupportsVoiceSelection()

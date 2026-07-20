@@ -66,10 +66,11 @@ namespace TopSpeed.Game
             _speech = speech;
             speech.ScreenReaderRateMs = _settings.ScreenReaderRateMs;
             speech.OutputMode = _settings.SpeechMode;
-            speech.SpeechRate = _settings.SpeechRate;
             speech.ScreenReaderInterrupt = _settings.ScreenReaderInterrupt;
             speech.PreferredBackendId = _settings.SpeechBackendId;
+            // Per-backend, so resolve after the backend is open and identified.
             speech.PreferredVoiceName = ResolveVoiceForActiveBackend();
+            speech.SpeechRate = ResolveRateForActiveBackend();
             _driveInput = new DriveInput(_settings);
             _setup = new DriveSetup();
             _driveSessionFactory = new DriveSessionFactory(audio, speech, _settings, _driveInput, _fileDialogs);

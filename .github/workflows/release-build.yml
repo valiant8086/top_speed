@@ -543,12 +543,27 @@ jobs:
         env:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEYSTORE_B64)) {
-            throw "Missing required secret ANDROID_KEYSTORE_B64."
-          }
-
           $keystorePath = Join-Path $PWD "TopSpeed.Android/top_speed.p12"
-          [System.IO.File]::WriteAllBytes($keystorePath, [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_B64))
+
+          if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEYSTORE_B64)) {
+            # No signing secret (e.g. a fork): generate a throwaway keystore on
+            # the runner so Android try-builds work without any secret setup. The
+            # random password is written to signpass.txt, which the csproj reads
+            # as its signing password fallback. The resulting APK is test-signed
+            # and intentionally not a valid update to the real app. On the real
+            # repo the secret is set, so this branch never runs there.
+            Write-Host "No ANDROID_KEYSTORE_B64 secret; generating a throwaway keystore for CI."
+            $pass = [System.Guid]::NewGuid().ToString("N")
+            $keytool = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME "bin/keytool" } else { "keytool" }
+            & $keytool -genkeypair -storetype PKCS12 -keystore $keystorePath `
+              -alias top_speed -keyalg RSA -keysize 2048 -validity 3650 `
+              -dname "CN=Fork CI, O=Fork CI, C=US" -storepass $pass -keypass $pass
+            if ($LASTEXITCODE -ne 0) { throw "keytool failed to generate a throwaway keystore." }
+            Set-Content -NoNewline -Path (Join-Path $PWD "TopSpeed.Android/signpass.txt") -Value $pass
+          }
+          else {
+            [System.IO.File]::WriteAllBytes($keystorePath, [System.Convert]::FromBase64String($env:ANDROID_KEYSTORE_B64))
+          }
 
       - name: Build and package Android target
         id: package_android
@@ -560,8 +575,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ -z "${ANDROID_KEY_PASS:-}" ]]; then
-            echo "Missing Android signing password secret ANDROID_KEY_PASS." >&2
+          if [[ -z "${ANDROID_KEY_PASS:-}" && ! -f "TopSpeed.Android/signpass.txt" ]]; then
+            echo "No Android signing password: neither ANDROID_KEY_PASS nor a generated signpass.txt is present." >&2
             exit 1
           fi
 

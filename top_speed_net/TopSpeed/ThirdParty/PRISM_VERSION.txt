@@ -1,3 +1,13 @@
 prism v0.17.3
 Source: https://github.com/ethindp/prism/releases/tag/v0.17.3
 Binary: dynamic/release/bin/prism.dll (game uses prism directly; tolk shim not needed)
+
+Android exception: android/arm-64/prism-release.aar is pinned to v0.17.2.
+v0.17.3's Android AAR was built without djinni's JNI_OnLoad entrypoint
+(third_party/djinni/support/jni/djinni_main.cpp), so djinni never caches
+the JavaVM and the Android TextToSpeech backend crashes at startup with a
+null-JavaVM SIGSEGV in prism_backend_initialize. v0.17.2 is the last
+release whose AAR includes JNI_OnLoad; its C ABI is identical to v0.17.3
+(PRISM_CONFIG_VERSION 3, same PrismConfig and function signatures), so it
+is a drop-in for the shared bindings. Revert to v0.17.3 once upstream
+restores JNI_OnLoad in the Android build.

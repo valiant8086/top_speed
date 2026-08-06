@@ -130,6 +130,13 @@ namespace TopSpeed.Server
                 cts.Cancel();
             };
 
+            // Ctrl+C is only reachable when somebody has the console in front of them. Every
+            // other way of stopping the server, from a service manager, a container runtime or
+            // an updater, sends a termination signal instead. Without these it is killed
+            // outright: players are told nothing and Stop never runs.
+            using var sigTerm = CreateShutdownSignalHandler(PosixSignal.SIGTERM, cts, logger);
+            using var sigInt = CreateShutdownSignalHandler(PosixSignal.SIGINT, cts, logger);
+
             server.Start();
             discovery.Start();
             commandHost.Start();

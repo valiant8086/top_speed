@@ -168,13 +168,17 @@ namespace TopSpeed.Server.Commands
 
                 lock (Gate)
                 {
-                    if (!ReferenceEquals(_attached, target))
-                        return false;
-
-                    // The client went away. The server keeps running and waits for the next one.
-                    _attached = null;
-                    SessionAvailable.Reset();
+                    if (ReferenceEquals(_attached, target))
+                    {
+                        // The client went away. The server keeps running and waits for the next.
+                        _attached = null;
+                        SessionAvailable.Reset();
+                        continue;
+                    }
                 }
+
+                // The console ran out of input. It now reports itself unreadable, so the loop
+                // falls through to waiting for somebody to attach rather than giving up.
             }
 
             return false;

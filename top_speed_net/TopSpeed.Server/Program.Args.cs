@@ -2,7 +2,9 @@ using System;
 using System.Globalization;
 using System.IO;
 using TopSpeed.Server.Config;
+using TopSpeed.Server.Control;
 using TopSpeed.Server.Logging;
+using TopSpeed.Server.Updates;
 
 using TopSpeed.Localization;
 namespace TopSpeed.Server
@@ -125,6 +127,83 @@ namespace TopSpeed.Server
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Attaching is the default when the executable is simply run and a server is already
+        /// here, since that is what double clicking it in a file manager should do. Anything
+        /// that configures a server is taken as meaning to start one.
+        /// </summary>
+        private static bool IsExplicitStart(string[] args)
+        {
+            if (args.Length == 0)
+                return false;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (IsAttachArgument(args[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsAttachRequested(string[] args)
+        {
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (IsAttachArgument(args[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsTakeoverRequested(string[] args)
+        {
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], "--takeover", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsAttachArgument(string arg)
+        {
+            return string.Equals(arg, "--attach", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(arg, "--takeover", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void PauseIfConsoleWillVanish(ControlClientOutcome outcome)
+        {
+            // Only when this process created the window, so a prompt launched from an existing
+            // terminal is not made to wait for a keypress nobody asked for.
+            if (outcome == ControlClientOutcome.SessionEnded || !ControlClient.OwnsConsoleWindow())
+                return;
+
+            ConsoleSink.WriteLine(LocalizationService.Mark("Press Enter to close this window."));
+            try
+            {
+                Console.ReadLine();
+            }
+            catch (IOException)
+            {
+            }
+        }
+
+        /// <summary>
+        /// The first thing an attaching client is shown, so it answers the question somebody
+        /// attaching to a server left running unattended actually has.
+        /// </summary>
+        private static string DescribeServerStatus(ServerSettings settings)
+        {
+            return LocalizationService.Format(
+                LocalizationService.Mark("Connected to TopSpeed Server {0}, port {1}, update checking {2}."),
+                ServerUpdateConfig.CurrentVersion.ToMachineString(),
+                settings.Port,
+                StartupUpdateModes.Normalize(settings.StartupUpdateMode));
         }
 
         private static string BuildLogFilePath(string configuredPath)

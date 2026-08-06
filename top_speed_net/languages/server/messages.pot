@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-05 21:37-0400\n"
+"POT-Creation-Date: 2026-08-05 22:51-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -59,6 +59,10 @@ msgstr ""
 msgid "(off)"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "A control session attached."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "A multiplayer race is not currently active."
 msgstr ""
@@ -85,6 +89,12 @@ msgstr ""
 msgid "A race is already in progress."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid ""
+"A server is already running from this folder, but this account is not "
+"allowed to control it. Run as an administrator to attach to it."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
 #, csharp-format
 msgid "All loadouts ready: room={0} \"{1}\", starting race."
@@ -100,6 +110,14 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "An update check is already running. Try again in a moment."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid "Another server is already running from this folder."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "Another session is already attached to this server."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -233,6 +251,11 @@ msgstr ""
 msgid "Command failed. Check server logs for details."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+#, csharp-format
+msgid "Connected to TopSpeed Server {0}, port {1}, update checking {2}."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 #, csharp-format
 msgid "Connection closed by server. Reason: {0}."
@@ -296,6 +319,11 @@ msgid ""
 "reason={3}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+#, csharp-format
+msgid "Control connection failed: {0}"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
 #, csharp-format
 msgid "Could not launch updater: {0}"
@@ -309,6 +337,10 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Program.cs
 #, csharp-format
 msgid "Could not open the log file {0}: {1}. The server will run without one."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "Could not reach the server running from this folder."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Packages/CatalogState.cs
@@ -343,6 +375,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Custom vehicles"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "Disconnected. The server is still running."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -987,7 +1023,17 @@ msgid "No changes were listed for this update."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"No console is attached. Server commands are available by attaching to this "
+"server."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "No languages are available."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid "No server is running from this folder."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Host/GameStart.cs
@@ -1056,6 +1102,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs
 msgid "Porsche 911 GT3 RS"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "Press Enter to close this window."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
@@ -1520,10 +1570,6 @@ msgid "Standard input is no longer available. Server commands are disabled."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Standard input is not available. Server commands are disabled."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Standard input is not available. Update download was skipped."
 msgstr ""
 
@@ -1538,6 +1584,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Moderation/TextChat.cs
 msgid "Text chat is disabled on this server."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "The control session detached."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
@@ -1557,6 +1607,10 @@ msgstr ""
 msgid "The pending update is no longer offered and has been dropped."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "The program answering on this folder is not a TopSpeed server."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Protocol/TrackPackages/Build/Errors.cs
 msgid "The selected custom track is invalid."
 msgstr ""
@@ -1567,6 +1621,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "The server is shutting down to install an update."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "The server refused the connection."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1608,6 +1666,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Protocol/RoomTexts.cs
 msgid "This game room is unavailable because it is full."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "This server is already running in its own console window."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs

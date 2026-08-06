@@ -111,7 +111,14 @@ namespace TopSpeed.Server.Control
                     if (stream == null)
                         continue;
 
-                    Serve(stream);
+                    try
+                    {
+                        Serve(stream);
+                    }
+                    finally
+                    {
+                        Release(stream);
+                    }
                 }
                 catch (Exception ex) when (!_stop)
                 {
@@ -132,11 +139,6 @@ namespace TopSpeed.Server.Control
                     return null;
 
                 listening.WaitForConnection();
-
-                // Put the next instance in place immediately, so the name is never absent while
-                // this one is busy. A gap there would let a second copy conclude that nothing is
-                // running here and start a duplicate server.
-                _pipe = ControlTransport.CreatePipe(ControlEndpoint.PipeNameFor(_directory), firstInstance: false);
                 return listening;
             }
 
@@ -146,6 +148,33 @@ namespace TopSpeed.Server.Control
 
             var accepted = socket.Accept();
             return new NetworkStream(accepted, ownsSocket: true);
+        }
+
+        /// <summary>
+        /// Frees the endpoint for the next client. The pipe instance is disconnected rather
+        /// than thrown away and rebuilt, which both keeps the name continuously present and
+        /// avoids waiting again on an instance that has already served somebody.
+        /// </summary>
+        private static void Release(Stream stream)
+        {
+            try
+            {
+                if (stream is NamedPipeServerStream pipe)
+                {
+                    if (pipe.IsConnected)
+                        pipe.Disconnect();
+
+                    return;
+                }
+
+                stream.Dispose();
+            }
+            catch (IOException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
         private void Serve(Stream stream)

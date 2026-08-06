@@ -90,9 +90,10 @@ namespace TopSpeed.Server.Control
             _closed = true;
             try
             {
+                // The stream itself belongs to the listener, which reuses it for the next
+                // client, so only the readers and writers built on top of it are torn down.
                 _writer.Dispose();
                 _reader.Dispose();
-                _stream.Dispose();
             }
             catch
             {

@@ -6,6 +6,7 @@ using TopSpeed.Localization;
 using TopSpeed.Protocol;
 using TopSpeed.Server.Commands;
 using TopSpeed.Server.Config;
+using TopSpeed.Server.Control;
 using TopSpeed.Server.Logging;
 using TopSpeed.Server.Network;
 using TopSpeed.Server.Updates;
@@ -23,6 +24,27 @@ namespace TopSpeed.Server
             // session reports itself unreadable when there is no stdin, which is how a server
             // started by a service manager ends up offering its session to whoever attaches.
             CommandSessions.UseConsoleSession(new ConsoleCommandSession());
+
+            // Before anything is bound, find out whether this folder already has a server. If
+            // it does, this copy becomes a console onto that one rather than a second server
+            // quietly claiming the same ports.
+            var baseDirectory = AppContext.BaseDirectory;
+            if (!IsExplicitStart(args))
+            {
+                var attached = ControlClient.Run(baseDirectory, takeOver: IsTakeoverRequested(args));
+                if (attached != ControlClientOutcome.NoServerRunning)
+                {
+                    PauseIfConsoleWillVanish(attached);
+                    return attached == ControlClientOutcome.SessionEnded ? 0 : 1;
+                }
+
+                if (IsAttachRequested(args))
+                {
+                    ConsoleSink.WriteLine(LocalizationService.Mark("No server is running from this folder."));
+                    PauseIfConsoleWillVanish(ControlClientOutcome.Failed);
+                    return 1;
+                }
+            }
 
             if (IsHelpRequested(args))
             {
@@ -121,6 +143,15 @@ namespace TopSpeed.Server
                     config.Moderation.MaxNameLength,
                     config.Moderation.BlockRepeatedLettersInName,
                     config.Moderation.AllowDuplicateNames));
+
+            // Claimed before the network ports are, so that losing the race to another copy
+            // means backing out rather than ending up as a second server on the same ports.
+            using var control = new ControlListener(baseDirectory, logger, () => DescribeServerStatus(settings));
+            if (!control.TryStart())
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark("Another server is already running from this folder."));
+                return 1;
+            }
 
             using var server = new RaceServer(config, logger);
             using var discovery = new ServerDiscoveryService(server, config, logger);

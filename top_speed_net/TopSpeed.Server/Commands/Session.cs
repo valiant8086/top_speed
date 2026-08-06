@@ -23,7 +23,15 @@ namespace TopSpeed.Server.Commands
     /// <summary>The server's own console window, when it has one.</summary>
     internal sealed class ConsoleCommandSession : ICommandSession
     {
-        public bool CanRead => IsInputAvailable();
+        private volatile bool _exhausted;
+
+        /// <summary>
+        /// Redirected input looks available right up until it turns out to be empty, which is
+        /// what stdin attached to nothing looks like under a service manager. So availability
+        /// is settled by actually trying to read: once input ends, this session stops claiming
+        /// the command session and somebody attaching can have it instead.
+        /// </summary>
+        public bool CanRead => !_exhausted && IsInputAvailable();
 
         public bool WriteLine(string text)
         {
@@ -53,17 +61,22 @@ namespace TopSpeed.Server.Commands
             {
                 var line = Console.ReadLine();
                 if (line == null)
+                {
+                    _exhausted = true;
                     return false;
+                }
 
                 value = line;
                 return true;
             }
             catch (InvalidOperationException)
             {
+                _exhausted = true;
                 return false;
             }
             catch (IOException)
             {
+                _exhausted = true;
                 return false;
             }
         }

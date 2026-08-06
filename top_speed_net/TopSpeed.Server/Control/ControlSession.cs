@@ -15,6 +15,7 @@ namespace TopSpeed.Server.Control
         private readonly Stream _stream;
         private readonly StreamReader _reader;
         private readonly StreamWriter _writer;
+        private readonly object _writeGate = new object();
         private volatile bool _closed;
 
         public ControlCommandSession(Stream stream)
@@ -37,7 +38,12 @@ namespace TopSpeed.Server.Control
 
             try
             {
-                _writer.WriteLine(text ?? string.Empty);
+                // Output reaches this from several threads at once: the command being run, the
+                // update scheduler, and the logger. A StreamWriter is not safe to share, and
+                // interleaved writes corrupt the stream and break the connection.
+                lock (_writeGate)
+                    _writer.WriteLine(text ?? string.Empty);
+
                 return true;
             }
             catch (IOException)

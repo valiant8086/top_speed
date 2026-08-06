@@ -152,23 +152,36 @@ namespace TopSpeed.Server.Control
         }
 
         /// <summary>
-        /// Frees the endpoint for the next client. The pipe instance is disconnected rather
-        /// than thrown away and rebuilt, which both keeps the name continuously present and
-        /// avoids waiting again on an instance that has already served somebody.
+        /// Frees the endpoint for the next client.
+        ///
+        /// A served pipe instance is replaced rather than disconnected and waited on again. An
+        /// instance whose client vanished is left broken, and waiting on it again fails
+        /// immediately and forever, which turned the accept loop into a spin. The replacement
+        /// is created before the old one is dropped so the name is never briefly absent, since
+        /// a gap there would let a second copy conclude nothing is running here.
         /// </summary>
-        private static void Release(Stream stream)
+        private void Release(Stream stream)
         {
             try
             {
-                if (stream is NamedPipeServerStream pipe)
+                if (!OperatingSystem.IsWindows() || stream is not NamedPipeServerStream pipe)
                 {
-                    if (pipe.IsConnected)
-                        pipe.Disconnect();
-
+                    stream.Dispose();
                     return;
                 }
 
-                stream.Dispose();
+                var replacement = ControlTransport.CreatePipe(
+                    ControlEndpoint.PipeNameFor(_directory),
+                    firstInstance: false);
+                _pipe = replacement;
+
+                try
+                {
+                    pipe.Dispose();
+                }
+                catch (IOException)
+                {
+                }
             }
             catch (IOException)
             {

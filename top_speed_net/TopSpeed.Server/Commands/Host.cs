@@ -70,6 +70,7 @@ namespace TopSpeed.Server.Commands
                 ConsoleSink.WriteLine(LocalizationService.Mark("Server command interface ready. Type \"help\" to get the list of commands."));
             else
                 _logger.Info(LocalizationService.Mark("No console is attached. Server commands are available by attaching to this server."));
+            _logger.Info(LocalizationService.Mark("Command loop starting."));
             _thread = new Thread(RunLoop)
             {
                 IsBackground = true,
@@ -97,6 +98,12 @@ namespace TopSpeed.Server.Commands
                 var input = raw.Trim();
                 if (input.Length == 0)
                     continue;
+
+                // Recorded so a log can settle whether a command reached the server at all,
+                // rather than leaving that to be inferred from whether a reply came back.
+                _logger.Info(LocalizationService.Format(
+                    LocalizationService.Mark("Command received: {0}"),
+                    input));
 
                 var commandName = ParseCommandName(input);
                 if (!_registry.TryGet(commandName, out var command))

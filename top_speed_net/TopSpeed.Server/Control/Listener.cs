@@ -170,11 +170,11 @@ namespace TopSpeed.Server.Control
                     return;
                 }
 
-                var replacement = ControlTransport.CreatePipe(
-                    ControlEndpoint.PipeNameFor(_directory),
-                    firstInstance: false);
-                _pipe = replacement;
-
+                // The old instance goes first. Windows refuses an additional instance that
+                // carries its own security descriptor while the name is still held, so
+                // creating the replacement first failed with access denied and left the accept
+                // loop with nothing to wait on. The name is absent for a moment now, which is
+                // far better than an endpoint that never recovers.
                 try
                 {
                     pipe.Dispose();
@@ -182,6 +182,10 @@ namespace TopSpeed.Server.Control
                 catch (IOException)
                 {
                 }
+
+                _pipe = ControlTransport.CreatePipe(
+                    ControlEndpoint.PipeNameFor(_directory),
+                    firstInstance: false);
             }
             catch (IOException)
             {

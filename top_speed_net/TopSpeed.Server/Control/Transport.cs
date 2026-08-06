@@ -136,10 +136,8 @@ namespace TopSpeed.Server.Control
         {
             var security = new PipeSecurity();
 
-            // The account the server runs under, so it can talk to itself, plus whoever is
-            // running this process, so the owner can attach without elevating. Everyone is
-            // deliberately absent: reaching this pipe means being able to run any server
-            // command, including one that downloads and executes an updater.
+            // The account the server runs under, so it can always reach its own endpoint
+            // whatever that account turns out to be.
             var current = WindowsIdentity.GetCurrent();
             if (current.User != null)
                 security.AddAccessRule(new PipeAccessRule(current.User, PipeAccessRights.ReadWrite, AccessControlType.Allow));
@@ -147,6 +145,27 @@ namespace TopSpeed.Server.Control
             security.AddAccessRule(new PipeAccessRule(
                 new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
                 PipeAccessRights.FullControl,
+                AccessControlType.Allow));
+
+            // Whoever is logged on at this machine, so running the server again from its own
+            // folder attaches to it without being elevated first.
+            //
+            // A service runs as its own account, so granting only the account we run under
+            // locked out the very person who installed it and made attaching an administrator
+            // job. Windows checks accounts and never which program is asking, so there is no
+            // way to say "the same executable may connect" instead; some account has to be
+            // named. Interactive is the one that needs nothing written down and nothing
+            // configured: every logon at the keyboard carries it, elevated or not.
+            //
+            // It is narrower than it looks. Network logons do not carry it, so this is not
+            // reachable from another machine, and neither do service accounts. What it does
+            // concede is that on a machine several people log in to, any of them could drive
+            // this server. That is the deliberate trade for a server that simply works when
+            // its owner runs it, and it is bounded by the same folder they would need write
+            // access to in order to replace this program outright.
+            security.AddAccessRule(new PipeAccessRule(
+                new SecurityIdentifier(WellKnownSidType.InteractiveSid, null),
+                PipeAccessRights.ReadWrite,
                 AccessControlType.Allow));
 
             // FirstPipeInstance makes the very first creation fail if the name is already taken

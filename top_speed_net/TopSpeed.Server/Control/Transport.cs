@@ -148,9 +148,13 @@ namespace TopSpeed.Server.Control
             // rather than quietly joining it, so another process cannot squat the name and pose
             // as the server. Later instances are the replacements kept ready while one is busy,
             // which is what stops the name from ever disappearing between clients.
+            // Not Asynchronous. Every read and write on this pipe is a blocking ReadLine or
+            // WriteLine, and synchronous calls on an overlapped handle are a mismatch: the
+            // first few writes get through and a later one fails, taking the connection with
+            // it partway through rendering a menu.
             var options = firstInstance
-                ? PipeOptions.FirstPipeInstance | PipeOptions.Asynchronous
-                : PipeOptions.Asynchronous;
+                ? PipeOptions.FirstPipeInstance
+                : PipeOptions.None;
 
             return NamedPipeServerStreamAcl.Create(
                 pipeName,

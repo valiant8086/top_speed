@@ -129,7 +129,7 @@ namespace TopSpeed.Server.Control
                     // very likely the service itself, which cannot ask for anything.
                     if (string.Equals(input.Trim(), "service", StringComparison.OrdinalIgnoreCase))
                     {
-                        Service.ServiceMenu.Show(directory, Service.ServiceIdentity.ReadConfiguredPort(directory));
+                        Service.ServiceMenu.Show(directory);
                         continue;
                     }
 

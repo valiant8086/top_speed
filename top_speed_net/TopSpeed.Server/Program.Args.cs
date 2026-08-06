@@ -112,10 +112,6 @@ namespace TopSpeed.Server
             return false;
         }
 
-        private static int ReadConfiguredPort(string baseDirectory)
-        {
-            return Service.ServiceIdentity.ReadConfiguredPort(baseDirectory);
-        }
 
         private static string FormatLogLevels(LogLevel levels)
         {

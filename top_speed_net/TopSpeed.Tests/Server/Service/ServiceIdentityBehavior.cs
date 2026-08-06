@@ -44,10 +44,16 @@ namespace TopSpeed.Tests.Server.Service
         public void The_display_name_says_which_server_this_is()
         {
             // What tells two installations apart in a list of services.
-            var label = ServiceIdentity.DisplayNameFor(@"C:\games\tsServer", 39750);
+            ServiceIdentity.DisplayNameFor(@"C:\games\tsServer").Should().Contain("tsServer");
+        }
 
-            label.Should().Contain("tsServer");
-            label.Should().Contain("39750");
+        [Fact]
+        public void The_display_name_leaves_out_anything_that_can_change_later()
+        {
+            // A registration is written once. The port is a setting somebody can change from
+            // the options menu or by editing the file, and nothing revisits the label when they
+            // do, so a service list carrying it would eventually be confidently wrong.
+            ServiceIdentity.DisplayNameFor(@"C:\games\tsServer").Should().NotContain("port");
         }
 
         [Fact]
@@ -55,7 +61,7 @@ namespace TopSpeed.Tests.Server.Service
         {
             // The name used for identity folds case so one folder maps to one service. Reusing
             // that for the label would show somebody a lowercased version of their own folder.
-            ServiceIdentity.DisplayNameFor(@"C:\games\tsServer", 39750).Should().Contain("tsServer");
+            ServiceIdentity.DisplayNameFor(@"C:\games\tsServer").Should().Contain("tsServer");
         }
 
         [Fact]

@@ -25,7 +25,7 @@ namespace TopSpeed.Server.Service
             return new ServiceStatus(ServiceInstallState.Unsupported, UnitNameFor(directory), false);
         }
 
-        public ServiceActionResult Install(string directory, int port, bool startAutomatically)
+        public ServiceActionResult Install(string directory, bool startAutomatically)
         {
             if (ServiceIdentity.IsProtectedLocation(directory, out var location))
             {
@@ -37,8 +37,8 @@ namespace TopSpeed.Server.Service
             try
             {
                 return OperatingSystem.IsMacOS()
-                    ? WriteLaunchd(directory, port)
-                    : WriteSystemd(directory, port);
+                    ? WriteLaunchd(directory)
+                    : WriteSystemd(directory);
             }
             catch (IOException ex)
             {
@@ -80,7 +80,7 @@ namespace TopSpeed.Server.Service
                 : LocalizationService.Format(LocalizationService.Mark("To stop it, run:\n  sudo systemctl stop {0}"), name));
         }
 
-        private static ServiceActionResult WriteSystemd(string directory, int port)
+        private static ServiceActionResult WriteSystemd(string directory)
         {
             var folder = ServiceIdentity.DisplayPath(directory);
             var name = UnitNameFor(directory);
@@ -88,7 +88,7 @@ namespace TopSpeed.Server.Service
 
             var unit = new StringBuilder();
             unit.Append("[Unit]\n");
-            unit.Append("Description=").Append(ServiceIdentity.DisplayNameFor(directory, port)).Append('\n');
+            unit.Append("Description=").Append(ServiceIdentity.DisplayNameFor(directory)).Append('\n');
             // Not merely "network", which is satisfied before an address exists.
             unit.Append("Wants=network-online.target\n");
             unit.Append("After=network-online.target\n\n");
@@ -113,7 +113,7 @@ namespace TopSpeed.Server.Service
                 name));
         }
 
-        private static ServiceActionResult WriteLaunchd(string directory, int port)
+        private static ServiceActionResult WriteLaunchd(string directory)
         {
             var folder = ServiceIdentity.DisplayPath(directory);
             var label = UnitNameFor(directory);

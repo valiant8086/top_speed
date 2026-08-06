@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 05:13-0400\n"
+"POT-Creation-Date: 2026-08-06 12:34-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -134,6 +134,19 @@ msgstr ""
 msgid ""
 "A server is already running from this folder, but this account is not "
 "allowed to control it. Run as an administrator to attach to it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"A server is already running from this folder, so the service cannot start as "
+"well. Stop that server first, using its shutdown command if it is the one "
+"you are reading this in, and then start the service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"A server is already running from this folder, so the service cannot start "
+"until it stops. Shut that one down first, then start the service."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -319,6 +332,11 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Command failed. Check server logs for details."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+#, csharp-format
+msgid "Configured port: {0}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -1929,7 +1947,7 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Identity.cs
 #, csharp-format
-msgid "TopSpeed Server ({0}, port {1})"
+msgid "TopSpeed Server ({0})"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs

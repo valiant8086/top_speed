@@ -24,7 +24,7 @@ namespace TopSpeed.Server.Service
     /// </summary>
     internal static class ServiceMenu
     {
-        public static void Show(string directory, int port)
+        public static void Show(string directory)
         {
             var manager = ServiceManagers.ForCurrentPlatform();
 
@@ -32,6 +32,13 @@ namespace TopSpeed.Server.Service
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("Service:"));
                 ConsoleSink.WriteLine(ServiceCommands.Describe(manager.Query(directory), directory));
+
+                // Read every time round rather than registered once, so it is right after
+                // somebody changes it. The service list deliberately does not carry the port
+                // for exactly this reason: a registration is written once and never revisited.
+                var port = ServiceIdentity.ReadConfiguredPort(directory);
+                if (port > 0)
+                    ConsoleSink.WriteLineFormat(LocalizationService.Mark("Configured port: {0}."), port);
                 ConsoleSink.WriteLine(LocalizationService.Mark("1. Install"));
                 ConsoleSink.WriteLine(LocalizationService.Mark("2. Remove"));
                 ConsoleSink.WriteLine(LocalizationService.Mark("3. Start"));
@@ -77,7 +84,7 @@ namespace TopSpeed.Server.Service
                     continue;
                 }
 
-                ServiceCommands.Execute(action, directory, port, startAutomatically: true);
+                ServiceCommands.Execute(action, directory, startAutomatically: true);
             }
         }
     }

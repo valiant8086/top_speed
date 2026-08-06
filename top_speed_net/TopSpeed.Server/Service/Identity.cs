@@ -29,16 +29,21 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// What appears in the service manager's list. The folder and port are what tell two
-        /// installations apart at a glance, which is the whole question somebody scrolling that
-        /// list is trying to answer.
+        /// What appears in the service manager's list.
+        ///
+        /// Only the folder, which is the one thing about an installation that cannot change
+        /// while it is installed. The port was here too at first and had to go: a registration
+        /// is written once, the port is a setting somebody can change at any time from the
+        /// options menu or by editing the settings file, and nothing then updates the label. A
+        /// service list confidently reporting a port the server stopped using months ago is
+        /// worse than one that never claimed to know. The live port is shown in the service
+        /// menu instead, where it is read fresh every time.
         /// </summary>
-        public static string DisplayNameFor(string directory, int port)
+        public static string DisplayNameFor(string directory)
         {
             return LocalizationService.Format(
-                LocalizationService.Mark("TopSpeed Server ({0}, port {1})"),
-                LeafName(directory),
-                port.ToString(CultureInfo.InvariantCulture));
+                LocalizationService.Mark("TopSpeed Server ({0})"),
+                LeafName(directory));
         }
 
         public static string DescriptionFor(string directory)

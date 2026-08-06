@@ -27,7 +27,7 @@ namespace TopSpeed.Server.Service
     {
         private const int ErrorCancelled = 1223;
 
-        public static int Execute(ServiceAction action, string directory, int port, bool startAutomatically)
+        public static int Execute(ServiceAction action, string directory, bool startAutomatically)
         {
             var manager = ServiceManagers.ForCurrentPlatform();
 
@@ -39,7 +39,7 @@ namespace TopSpeed.Server.Service
 
             var result = action switch
             {
-                ServiceAction.Install => manager.Install(directory, port, startAutomatically),
+                ServiceAction.Install => manager.Install(directory, startAutomatically),
                 ServiceAction.Uninstall => manager.Uninstall(directory),
                 ServiceAction.Start => manager.Start(directory),
                 ServiceAction.Stop => manager.Stop(directory),

@@ -78,7 +78,7 @@ namespace TopSpeed.Server.Service
     {
         ServiceStatus Query(string directory);
 
-        ServiceActionResult Install(string directory, int port, bool startAutomatically);
+        ServiceActionResult Install(string directory, bool startAutomatically);
 
         ServiceActionResult Uninstall(string directory);
 

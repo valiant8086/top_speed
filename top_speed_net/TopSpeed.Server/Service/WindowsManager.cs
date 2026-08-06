@@ -52,7 +52,7 @@ namespace TopSpeed.Server.Service
             }
         }
 
-        public ServiceActionResult Install(string directory, int port, bool startAutomatically)
+        public ServiceActionResult Install(string directory, bool startAutomatically)
         {
             if (ServiceIdentity.IsProtectedLocation(directory, out var location))
             {
@@ -84,7 +84,7 @@ namespace TopSpeed.Server.Service
                 service = CreateServiceW(
                     manager,
                     name,
-                    ServiceIdentity.DisplayNameFor(directory, port),
+                    ServiceIdentity.DisplayNameFor(directory),
                     SERVICE_ALL_ACCESS,
                     SERVICE_WIN32_OWN_PROCESS,
                     startAutomatically ? SERVICE_AUTO_START : SERVICE_DEMAND_START,
@@ -125,10 +125,20 @@ namespace TopSpeed.Server.Service
                 if (granted != null)
                     return ServiceActionResult.Failed(granted);
 
-                return ServiceActionResult.Ok(LocalizationService.Format(
+                var installed = LocalizationService.Format(
                     LocalizationService.Mark("Installed as service \"{0}\", running as {1}."),
                     name,
-                    RunAsAccount));
+                    RunAsAccount);
+
+                // Said now rather than left to be discovered as a failed start, since installing
+                // from the server you are already running is the obvious way to go about it.
+                if (Control.ControlTransport.EndpointExists(directory))
+                {
+                    installed += "\n" + LocalizationService.Translate(LocalizationService.Mark(
+                        "A server is already running from this folder, so the service cannot start until it stops. Shut that one down first, then start the service."));
+                }
+
+                return ServiceActionResult.Ok(installed);
             }
             finally
             {
@@ -204,6 +214,17 @@ namespace TopSpeed.Server.Service
                 {
                     return ServiceActionResult.Ok(LocalizationService.Translate(LocalizationService.Mark(
                         "The service is already running.")));
+                }
+
+                // Checked here rather than left to fail. Only one server may run from a folder,
+                // and the service enforces that by finding the endpoint taken and exiting at
+                // once. The manager can only report that as a start that did not complete,
+                // which says nothing about the reason, and the reason is nearly always that the
+                // person installing it is sitting in front of the very server in the way.
+                if (Control.ControlTransport.EndpointExists(directory))
+                {
+                    return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                        "A server is already running from this folder, so the service cannot start as well. Stop that server first, using its shutdown command if it is the one you are reading this in, and then start the service.")));
                 }
 
                 controller.Start();

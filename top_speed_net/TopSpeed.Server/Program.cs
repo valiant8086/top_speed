@@ -40,11 +40,7 @@ namespace TopSpeed.Server
             // stopping or removing it is asked for.
             if (TryGetServiceAction(args, out var serviceAction))
             {
-                var code = ServiceCommands.Execute(
-                    serviceAction,
-                    baseDirectory,
-                    ReadConfiguredPort(baseDirectory),
-                    startAutomatically: true);
+                var code = ServiceCommands.Execute(serviceAction, baseDirectory, startAutomatically: true);
                 PauseBeforeClosing();
                 return code;
             }

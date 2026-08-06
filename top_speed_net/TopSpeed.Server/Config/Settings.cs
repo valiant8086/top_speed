@@ -14,6 +14,25 @@ namespace TopSpeed.Server.Config
         [JsonPropertyName("moderation")]
         public ServerModerationSettings Moderation { get; set; } = new ServerModerationSettings();
         public string UpdateRuntimeAssetTag { get; set; } = "auto";
-        public bool CheckForUpdatesOnStartup { get; set; }
+
+        /// <summary>
+        /// One of "off", "notify" or "auto". See <see cref="StartupUpdateModes"/>.
+        /// Null means the settings file predates this option, which is what lets
+        /// <see cref="CheckForUpdatesOnStartup"/> be migrated exactly once.
+        /// </summary>
+        public string? StartupUpdateMode { get; set; }
+
+        /// <summary>
+        /// Blank disables file logging. A bare file name or relative path is resolved
+        /// next to the server executable; an absolute path is used as written.
+        /// </summary>
+        public string LogFile { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Superseded by <see cref="StartupUpdateMode"/>. Only read, so that existing
+        /// settings files keep their choice; cleared once migrated so it stops being written.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? CheckForUpdatesOnStartup { get; set; }
     }
 }

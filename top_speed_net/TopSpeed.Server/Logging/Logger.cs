@@ -12,14 +12,18 @@ namespace TopSpeed.Server.Logging
         private readonly StreamWriter? _writer;
         private bool _writeToConsole;
 
-        public Logger(LogLevel enabledLevels, string? logFilePath, bool writeToConsole = true)
+        /// <summary>
+        /// A log configured in settings.json appends, because its whole point is to still be
+        /// readable later; one asked for with --log-file starts clean for that run.
+        /// </summary>
+        public Logger(LogLevel enabledLevels, string? logFilePath, bool writeToConsole = true, bool append = false)
         {
             _enabledLevels = enabledLevels;
             _writeToConsole = writeToConsole;
             if (!string.IsNullOrWhiteSpace(logFilePath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath) ?? ".");
-                _writer = new StreamWriter(logFilePath, append: false, Encoding.UTF8)
+                _writer = new StreamWriter(logFilePath, append, Encoding.UTF8)
                 {
                     AutoFlush = true
                 };

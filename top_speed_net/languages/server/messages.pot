@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 00:35-0400\n"
+"POT-Creation-Date: 2026-08-05 20:33-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,8 +55,18 @@ msgstr ""
 msgid "(empty)"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "(off)"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "A multiplayer race is not currently active."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"A name or relative path is written next to the server program; an absolute "
+"path is used as written."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
@@ -86,6 +96,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Allow duplicate call signs"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "An update check is already running. Try again in a moment."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -187,10 +201,14 @@ msgid "Changes:"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Check for updates on startup"
+msgid "Check for server updates. Add --force to stop waiting and act now."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Checking for the update download now."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Checking for update..."
 msgstr ""
 
@@ -200,6 +218,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Choose server language:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Choose when the server checks for updates:"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -438,6 +460,10 @@ msgid "English (Original)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Enter a log file name or path, or leave blank to turn logging off:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Enter discovery port (1-65535):"
 msgstr ""
 
@@ -558,6 +584,15 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Packets.cs
 #, csharp-format
 msgid "Ignoring unknown packet command {0} from {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Installing server update {0}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Installing the update now. Connected players will be disconnected."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -847,6 +882,10 @@ msgstr ""
 msgid "LiteNetLib transport stopped."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Log file"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.cs
 #, csharp-format
 msgid "Logging enabled. Levels: {0}. File: {1}."
@@ -854,10 +893,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
 msgid "Malformed line. Expected '[section]' or 'key = value'."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Manually check for server updates."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1169,6 +1204,16 @@ msgstr ""
 msgid "Removed bot {0}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Restart required for this change."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Restart required for this change. The --log-file and log level command line "
+"options override this setting. See the server documentation for details."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
 #, csharp-format
 msgid ""
@@ -1337,7 +1382,7 @@ msgid ""
 "moderation.allowDuplicateNames={9}."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Server is up-to-date."
 msgstr ""
 
@@ -1382,7 +1427,7 @@ msgstr ""
 msgid "Server stopped."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid "Server update check failed: {0}"
 msgstr ""
@@ -1463,7 +1508,7 @@ msgstr ""
 msgid "Standard input is not available. Server commands are disabled."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Standard input is not available. Update download was skipped."
 msgstr ""
 
@@ -1488,12 +1533,21 @@ msgstr ""
 msgid "The current game is not paused."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Updates/Service.cs
+#, csharp-format
+msgid "The download is incomplete. Expected {0} bytes but received {1}."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Protocol/TrackPackages/Build/Errors.cs
 msgid "The selected custom track is invalid."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 msgid "The server closed the connection."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid "The server is shutting down to install an update."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1682,6 +1736,11 @@ msgstr ""
 msgid "Unknown key '{0}' in section [{1}]."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid "Unknown option \"{0}\". The only option is --force."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "Unknown race control request."
 msgstr ""
@@ -1743,7 +1802,7 @@ msgid ""
 "Unsupported transmission type '{0}'. Valid values: atc, cvt, dct, manual."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Update check failed."
 msgstr ""
 
@@ -1756,9 +1815,47 @@ msgstr ""
 msgid "Update check timed out."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Service.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Update checking"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
-msgid "Update package '{0}' was not found in the latest release."
+msgid ""
+"Update failed. The download for version {0} is still not available after {1} "
+"attempts. This can happen if that build did not finish. Type update to try "
+"again."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid ""
+"Update install requested, but {0} players are connected. The update will "
+"install automatically once everyone disconnects. Type \"update --force\" to "
+"install it now."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Update scheduler failed: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Update {0} is not published yet. Attempt {1} of {2}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Update {0} is ready to install. The server is shutting down to apply it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid ""
+"Update {0} is scheduled and will install once the {1} connected players "
+"disconnect. Type \"update --force\" to install it now."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
@@ -1791,6 +1888,39 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Load/File.cs
 msgid "Vehicle file path is empty."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} is available and will be installed once no players are connected."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} is available, but its download has not been published yet. This "
+"is normal for a short time after a release. The server will check again in "
+"{1} minutes."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Version {0} is available. Type update to install it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} is still not published. The server will keep checking hourly and "
+"will say so if it gives up."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid ""
+"Version {0} is waiting for its download to be published. The next check is "
+"in about {1} minutes. Type \"update --force\" to check now."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1949,6 +2079,10 @@ msgid ""
 "transport_latency_max_ms={12}, transport_peer_address_changes={13}"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "auto: install updates when no players are connected"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Policy/PolicyValidation.cs
 msgid "auto_downshift_rpm must be 0 or between idle_rpm and rev_limiter."
 msgstr ""
@@ -2072,8 +2206,16 @@ msgstr ""
 msgid "normal"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "notify: say when an update is available"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
 msgid "off"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "off: never check"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs

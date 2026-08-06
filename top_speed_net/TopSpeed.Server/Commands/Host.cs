@@ -21,6 +21,7 @@ namespace TopSpeed.Server.Commands
         private readonly Logger _logger;
         private readonly CancellationTokenSource _shutdownSource;
         private ServerUpdateRunner _updater;
+        private readonly ServerUpdateScheduler _scheduler;
         private readonly CommandRegistry _registry;
         private readonly OptionMenu _serverOptionsMenu;
         private readonly OptionMenu _featureOptionsMenu;
@@ -34,8 +35,10 @@ namespace TopSpeed.Server.Commands
             ServerSettingsStore settingsStore,
             Logger logger,
             CancellationTokenSource shutdownSource,
-            ServerUpdateRunner updater)
+            ServerUpdateRunner updater,
+            ServerUpdateScheduler scheduler)
         {
+            _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
             _server = server ?? throw new ArgumentNullException(nameof(server));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _settingsStore = settingsStore ?? throw new ArgumentNullException(nameof(settingsStore));
@@ -50,7 +53,7 @@ namespace TopSpeed.Server.Commands
                 new CommandDefinition("options", LocalizationService.Mark("Open server options menu."), ExecuteOptions),
                 new CommandDefinition("players", LocalizationService.Mark("List connected players and protocol versions."), ExecutePlayers),
                 new CommandDefinition("version", LocalizationService.Mark("Display server and protocol versions."), ExecuteVersion),
-                new CommandDefinition("update", LocalizationService.Mark("Manually check for server updates."), ExecuteUpdate),
+                new CommandDefinition("update", LocalizationService.Mark("Check for server updates. Add --force to stop waiting and act now."), ExecuteUpdate),
                 new CommandDefinition("shutdown", LocalizationService.Mark("Shutdown the server."), ExecuteShutdown)
             });
             _featureOptionsMenu = CreateFeatureOptionsMenu();
@@ -106,7 +109,7 @@ namespace TopSpeed.Server.Commands
 
                 try
                 {
-                    command.Execute();
+                    command.Execute(ParseCommandArguments(input));
                 }
                 catch (Exception ex)
                 {
@@ -159,10 +162,138 @@ namespace TopSpeed.Server.Commands
                 ProtocolProfile.ServerSupported.MaxSupported.ToMachineString());
         }
 
-        private void ExecuteUpdate()
+        private void ExecuteUpdate(string arguments)
         {
-            if (_updater.RunInteractiveCheck())
-                ExecuteShutdown();
+            var force = false;
+            if (!string.IsNullOrWhiteSpace(arguments))
+            {
+                if (!string.Equals(arguments.Trim(), "--force", StringComparison.OrdinalIgnoreCase))
+                {
+                    ConsoleSink.WriteLineFormat(
+                        LocalizationService.Mark("Unknown option \"{0}\". The only option is --force."),
+                        arguments.Trim());
+                    return;
+                }
+
+                force = true;
+            }
+
+            if (force)
+            {
+                ExecuteForcedUpdate();
+                return;
+            }
+
+            // Reporting what is already scheduled rather than starting over is what makes it
+            // safe to type update again hours later just to see where things stand.
+            var status = _scheduler.GetStatus();
+            if (status.State == UpdateSchedulerState.PendingInstall)
+            {
+                var players = _server.GetPlayersSnapshot().Length;
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Update {0} is scheduled and will install once the {1} connected players disconnect. Type \"update --force\" to install it now."),
+                    status.VersionText,
+                    players);
+                return;
+            }
+
+            if (status.State == UpdateSchedulerState.AwaitingPublication)
+            {
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Version {0} is waiting for its download to be published. The next check is in about {1} minutes. Type \"update --force\" to check now."),
+                    status.VersionText,
+                    (int)Math.Ceiling(status.TimeUntilNextAttempt.TotalMinutes));
+                return;
+            }
+
+            RunInteractiveCheck();
+        }
+
+        private void ExecuteForcedUpdate()
+        {
+            if (_scheduler.TryForceNow(out var installNow))
+            {
+                if (installNow == null)
+                {
+                    // A re-check was pending and has been brought forward.
+                    ConsoleSink.WriteLine(LocalizationService.Mark("Checking for the update download now."));
+                    return;
+                }
+
+                ConsoleSink.WriteLine(LocalizationService.Mark("Installing the update now. Connected players will be disconnected."));
+                _scheduler.InstallNow(installNow);
+                return;
+            }
+
+            RunInteractiveCheck();
+        }
+
+        private void RunInteractiveCheck()
+        {
+            if (!_scheduler.TryBeginCheck())
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark("An update check is already running. Try again in a moment."));
+                return;
+            }
+
+            ServerUpdateCheckResult result;
+            try
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark("Checking for update..."));
+                result = _updater.Check();
+            }
+            finally
+            {
+                _scheduler.EndCheck();
+            }
+
+            switch (result.Outcome)
+            {
+                case ServerUpdateCheckOutcome.UpToDate:
+                    _scheduler.ApplyCheckResult(result, interactive: true);
+                    ConsoleSink.WriteLine(LocalizationService.Mark("Server is up-to-date."));
+                    return;
+
+                case ServerUpdateCheckOutcome.Failed:
+                    _scheduler.ApplyCheckResult(result, interactive: true);
+                    ConsoleSink.WriteLine(string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? LocalizationService.Translate(LocalizationService.Mark("Update check failed."))
+                        : result.ErrorMessage);
+                    return;
+
+                case ServerUpdateCheckOutcome.NotPublished:
+                    // The scheduler prints its own line here, including when the next try is.
+                    _scheduler.ApplyCheckResult(result, interactive: true);
+                    return;
+            }
+
+            if (_scheduler.ApplyCheckResult(result, interactive: true) != CheckFollowUp.PromptToInstall ||
+                result.Update == null)
+                return;
+
+            _updater.WriteChangelog(result.Update);
+            if (!_updater.TryConfirmDownload(out var shouldDownload))
+            {
+                DisableCommands(LocalizationService.Mark("Standard input is not available. Update download was skipped."));
+                return;
+            }
+
+            if (!shouldDownload)
+                return;
+
+            var connected = _server.GetPlayersSnapshot().Length;
+            if (connected > 0)
+            {
+                _scheduler.ArmInstall(result.Update);
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Update install requested, but {0} players are connected. The update will install automatically once everyone disconnects. Type \"update --force\" to install it now."),
+                    connected);
+                return;
+            }
+
+            _scheduler.ArmInstall(result.Update);
+            if (_scheduler.TryForceNow(out var readyNow) && readyNow != null)
+                _scheduler.InstallNow(readyNow);
         }
 
         private void ExecuteOptions()
@@ -183,7 +314,8 @@ namespace TopSpeed.Server.Commands
                     new OptionItem("max_players", LocalizationService.Mark("Max players"), OptionValueType.Numeric, EditMaxPlayers, () => _settings.MaxPlayers.ToString()),
                     new OptionItem("features", LocalizationService.Mark("Features"), OptionValueType.Menu, () => ShowOptionsMenu(_featureOptionsMenu)),
                     new OptionItem("server_architecture", LocalizationService.Mark("Server architecture"), OptionValueType.Choice, EditRuntimeArchitecture, CurrentRuntimeAssetLabel),
-                    new OptionItem("check_updates_on_startup", LocalizationService.Mark("Check for updates on startup"), OptionValueType.Bool, ToggleCheckForUpdatesOnStartup, () => CommandInput.FormatOnOff(_settings.CheckForUpdatesOnStartup)),
+                    new OptionItem("startup_update_mode", LocalizationService.Mark("Update checking"), OptionValueType.Choice, EditStartupUpdateMode, CurrentStartupUpdateModeLabel),
+                    new OptionItem("log_file", LocalizationService.Mark("Log file"), OptionValueType.Text, EditLogFile, () => FormatLogFile(_settings.LogFile)),
                     new OptionItem("moderation", LocalizationService.Mark("Moderation"), OptionValueType.Menu, () => ShowOptionsMenu(_moderationOptionsMenu))
                 });
         }
@@ -412,11 +544,73 @@ namespace TopSpeed.Server.Commands
             ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Custom vehicles"), CommandInput.FormatOnOff(_settings.Features.CustomVehicles)));
         }
 
-        private void ToggleCheckForUpdatesOnStartup()
+        private string CurrentStartupUpdateModeLabel()
         {
-            _settings.CheckForUpdatesOnStartup = !_settings.CheckForUpdatesOnStartup;
+            return LocalizationService.Translate(DescribeStartupUpdateMode(_settings.StartupUpdateMode));
+        }
+
+        private static string DescribeStartupUpdateMode(string? mode)
+        {
+            return StartupUpdateModes.Parse(mode) switch
+            {
+                StartupUpdateMode.Notify => LocalizationService.Mark("notify: say when an update is available"),
+                StartupUpdateMode.Auto => LocalizationService.Mark("auto: install updates when no players are connected"),
+                _ => LocalizationService.Mark("off: never check")
+            };
+        }
+
+        private void EditStartupUpdateMode()
+        {
+            var modes = StartupUpdateModes.All;
+            var options = new List<string>(modes.Length + 1);
+            for (var i = 0; i < modes.Length; i++)
+                options.Add(LocalizationService.Translate(DescribeStartupUpdateMode(modes[i])));
+            options.Add(LocalizationService.Translate(LocalizationService.Mark("Back")));
+
+            if (!CommandInput.TryPromptMenuChoice(
+                    LocalizationService.Mark("Choose when the server checks for updates:"),
+                    options,
+                    out var choiceIndex,
+                    backOptionIndex: options.Count - 1))
+            {
+                DisableCommands(LocalizationService.Mark("Standard input is no longer available. Server commands are disabled."));
+                return;
+            }
+
+            if (choiceIndex < 0 || choiceIndex >= modes.Length)
+                return;
+
+            _settings.StartupUpdateMode = modes[choiceIndex];
             SaveSettings();
-            ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Check for updates on startup"), CommandInput.FormatOnOff(_settings.CheckForUpdatesOnStartup)));
+            ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Update checking"), CurrentStartupUpdateModeLabel()));
+            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change."));
+        }
+
+        private static string FormatLogFile(string? logFile)
+        {
+            return string.IsNullOrWhiteSpace(logFile)
+                ? LocalizationService.Translate(LocalizationService.Mark("(off)"))
+                : logFile;
+        }
+
+        private void EditLogFile()
+        {
+            if (!CommandInput.TryPromptText(
+                    LocalizationService.Mark("Enter a log file name or path, or leave blank to turn logging off:"),
+                    260,
+                    allowEmpty: true,
+                    out var logFile))
+            {
+                DisableCommands(LocalizationService.Mark("Standard input is no longer available. Server commands are disabled."));
+                return;
+            }
+
+            _settings.LogFile = logFile;
+            SaveSettings();
+            ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Log file"), FormatLogFile(_settings.LogFile)));
+            if (!string.IsNullOrWhiteSpace(logFile))
+                ConsoleSink.WriteLine(LocalizationService.Mark("A name or relative path is written next to the server program; an absolute path is used as written."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change. The --log-file and log level command line options override this setting. See the server documentation for details."));
         }
 
         private void ToggleBlockRepeatedLettersInName()
@@ -494,6 +688,14 @@ namespace TopSpeed.Server.Commands
             if (index < 0)
                 return input.Trim();
             return input.Substring(0, index).Trim();
+        }
+
+        private static string ParseCommandArguments(string input)
+        {
+            var index = input.IndexOf(' ');
+            if (index < 0)
+                return string.Empty;
+            return input.Substring(index + 1).Trim();
         }
 
         private static string FormatMotd(string motd)

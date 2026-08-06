@@ -21,7 +21,7 @@ namespace TopSpeed.Server.Config
         {
             if (!File.Exists(_path))
             {
-                var settings = new ServerSettings();
+                var settings = NormalizeSettings(new ServerSettings());
                 Save(settings, logger);
                 return settings;
             }
@@ -72,7 +72,23 @@ namespace TopSpeed.Server.Config
             settings.Features ??= new ServerFeaturesSettings();
             settings.Moderation.MaxNameLength = NormalizeMaxNameLength(settings.Moderation.MaxNameLength);
             settings.UpdateRuntimeAssetTag = ServerUpdateConfig.NormalizeConfiguredRuntimeAssetTag(settings.UpdateRuntimeAssetTag);
+            settings.StartupUpdateMode = ResolveStartupUpdateMode(settings);
+            settings.CheckForUpdatesOnStartup = null;
+            settings.LogFile = (settings.LogFile ?? string.Empty).Trim();
             return settings;
+        }
+
+        private static string ResolveStartupUpdateMode(ServerSettings settings)
+        {
+            if (!string.IsNullOrWhiteSpace(settings.StartupUpdateMode))
+                return StartupUpdateModes.Normalize(settings.StartupUpdateMode);
+
+            // Settings file predates the three-way mode. The old switch only chose
+            // between checking and not checking, so checking maps to notify.
+            if (settings.CheckForUpdatesOnStartup == true)
+                return StartupUpdateModes.Notify;
+
+            return StartupUpdateModes.Off;
         }
 
         private static int NormalizeMaxNameLength(int value)

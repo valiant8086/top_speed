@@ -28,13 +28,38 @@ namespace TopSpeed.Server
                 ? new WindowsTimerResolution(1)
                 : null;
 
-            var loggingEnabled = args.Length > 0;
-            var levels = loggingEnabled ? ParseLogLevels(args) : LogLevel.None;
-            var configuredLogFile = GetArgumentValue(args, "--log-file");
-            var logFile = loggingEnabled && !string.IsNullOrWhiteSpace(configuredLogFile)
-                ? BuildLogFilePath(configuredLogFile!)
-                : null;
-            using var logger = new Logger(levels, logFile, writeToConsole: loggingEnabled);
+            // Settings are read first so a log file configured there can be honoured, using a
+            // throwaway logger that only ever writes to the console.
+            var settingsPath = Path.Combine(AppContext.BaseDirectory, "settings.json");
+            var store = new ServerSettingsStore(settingsPath);
+            ServerSettings settings;
+            using (var bootstrapLogger = new Logger(LogLevel.All, logFilePath: null, writeToConsole: args.Length > 0))
+            {
+                settings = store.LoadOrCreate(bootstrapLogger);
+            }
+
+            var consoleLoggingEnabled = args.Length > 0;
+            var commandLineLogFile = GetArgumentValue(args, "--log-file");
+            var useCommandLineLogFile = consoleLoggingEnabled && !string.IsNullOrWhiteSpace(commandLineLogFile);
+            var logFile = useCommandLineLogFile
+                ? BuildLogFilePath(commandLineLogFile!)
+                : string.IsNullOrWhiteSpace(settings.LogFile)
+                    ? null
+                    : BuildLogFilePath(settings.LogFile);
+
+            // Levels come from the command line when it says anything at all. A log file turned
+            // on in settings.json has no levels to go with it, so it records everything.
+            var levels = consoleLoggingEnabled
+                ? ParseLogLevels(args)
+                : logFile != null
+                    ? LogLevel.All
+                    : LogLevel.None;
+            var loggingEnabled = levels != LogLevel.None;
+            using var logger = new Logger(
+                levels,
+                logFile,
+                writeToConsole: consoleLoggingEnabled,
+                append: !useCommandLineLogFile);
             var serverRelease = $"{ReleaseVersionInfo.ServerYear}.{ReleaseVersionInfo.ServerMonth}.{ReleaseVersionInfo.ServerDay} (r{ReleaseVersionInfo.ServerRevision})";
             if (loggingEnabled)
             {
@@ -48,22 +73,19 @@ namespace TopSpeed.Server
                 logger.Raw(LocalizationService.Format(LocalizationService.Mark("Protocol current: {0}. Supported: {1}."), ProtocolProfile.Current, ProtocolProfile.ServerSupported));
                 logger.Info(LocalizationService.Mark("TopSpeed Server starting."));
             }
-            else
+
+            // The banner still belongs on screen when the log is only going to a file.
+            if (!consoleLoggingEnabled)
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("TopSpeed Server starting..."));
                 ConsoleSink.WriteLineFormat(LocalizationService.Mark("Server release: {0}"), serverRelease);
                 ConsoleSink.WriteLineFormat(LocalizationService.Mark("Protocol version: {0}"), ProtocolProfile.Current);
             }
 
-            var settingsPath = Path.Combine(AppContext.BaseDirectory, "settings.json");
-            var store = new ServerSettingsStore(settingsPath);
-            var settings = store.LoadOrCreate(logger);
             LocalizationBootstrap.Configure(settings.Language, LocalizationBootstrap.ServerCatalogGroup);
             ApplyArgumentOverrides(settings, args, logger);
             store.Save(settings, logger);
             var updater = new ServerUpdateRunner(ServerUpdateConfig.Create(settings.UpdateRuntimeAssetTag), logger);
-            if (settings.CheckForUpdatesOnStartup && updater.RunInteractiveCheck())
-                return 0;
 
             var config = new RaceServerConfig
             {
@@ -91,7 +113,17 @@ namespace TopSpeed.Server
             using var server = new RaceServer(config, logger);
             using var discovery = new ServerDiscoveryService(server, config, logger);
             using var cts = new CancellationTokenSource();
-            using var commandHost = new CommandHost(server, settings, store, logger, cts, updater);
+            using var scheduler = new ServerUpdateScheduler(
+                server,
+                updater,
+                logger,
+                StartupUpdateModes.Parse(settings.StartupUpdateMode),
+                () =>
+                {
+                    server.ShutdownByHost(LocalizationService.Mark("The server is shutting down to install an update."));
+                    cts.Cancel();
+                });
+            using var commandHost = new CommandHost(server, settings, store, logger, cts, updater, scheduler);
             Console.CancelKeyPress += (_, e) =>
             {
                 e.Cancel = true;
@@ -101,14 +133,19 @@ namespace TopSpeed.Server
             server.Start();
             discovery.Start();
             commandHost.Start();
-            if (!loggingEnabled)
+
+            // The update check only runs once the server is accepting players, so a pending
+            // update can never keep it from starting.
+            scheduler.Start();
+
+            if (!consoleLoggingEnabled)
                 ConsoleSink.WriteLine(LocalizationService.Mark("Server started. Press Ctrl+C to stop."));
             RunLoop(server, cts.Token);
             discovery.Stop();
             server.Stop();
             if (loggingEnabled)
                 logger.Info(LocalizationService.Mark("TopSpeed Server stopped."));
-            else
+            if (!consoleLoggingEnabled)
                 ConsoleSink.WriteLine(LocalizationService.Mark("Server stopped."));
             return 0;
         }

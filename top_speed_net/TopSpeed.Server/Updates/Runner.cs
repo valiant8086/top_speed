@@ -25,33 +25,25 @@ namespace TopSpeed.Server.Updates
             _service = new ServerUpdateService(_config);
         }
 
-        public bool RunInteractiveCheck()
+        /// <summary>
+        /// Performs the check and reports what it found without printing anything. The caller
+        /// decides what to say, because the same check runs both from the command prompt with
+        /// somebody watching and from the scheduler with nobody watching.
+        /// </summary>
+        public ServerUpdateCheckResult Check()
         {
-            ConsoleSink.WriteLine(LocalizationService.Mark("Checking for update..."));
-            var result = _service
+            return _service
                 .CheckAsync(ServerUpdateConfig.CurrentVersion, CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
+        }
 
-            if (!result.IsSuccess)
-            {
-                var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
-                    ? LocalizationService.Mark("Update check failed.")
-                    : result.ErrorMessage;
-                _logger.Warning(LocalizationService.Format(
-                    LocalizationService.Mark("Server update check failed: {0}"),
-                    message));
-                ConsoleSink.WriteLine(message);
-                return false;
-            }
+        /// <summary>Prints the version banner and the list of changes for an available update.</summary>
+        public void WriteChangelog(ServerUpdateInfo update)
+        {
+            if (update == null)
+                return;
 
-            if (result.Update == null)
-            {
-                ConsoleSink.WriteLine(LocalizationService.Mark("Server is up-to-date."));
-                return false;
-            }
-
-            var update = result.Update;
             var currentVersion = ServerUpdateConfig.CurrentVersion.ToMachineString();
             ConsoleSink.WriteLineFormat(LocalizationService.Mark("A new update is available for the server. Your current server version is {0}. Available version: {1}."),
                 currentVersion,
@@ -60,36 +52,53 @@ namespace TopSpeed.Server.Updates
             if (update.Changes.Count == 0)
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("No changes were listed for this update."));
+                return;
             }
-            else
+
+            for (var i = 0; i < update.Changes.Count; i++)
             {
-                for (var i = 0; i < update.Changes.Count; i++)
-                {
-                    var change = update.Changes[i];
-                    if (string.IsNullOrWhiteSpace(change))
-                        continue;
-                    ConsoleSink.WriteLine(change.Trim());
-                }
+                var change = update.Changes[i];
+                if (string.IsNullOrWhiteSpace(change))
+                    continue;
+                ConsoleSink.WriteLine(change.Trim());
             }
+        }
 
-            if (!TryPromptYesNo(LocalizationService.Mark("Would you like to download the update? (y/n)"), out var shouldDownload))
+        /// <summary>Asks whether to download. False means standard input went away.</summary>
+        public bool TryConfirmDownload(out bool shouldDownload)
+        {
+            return TryPromptYesNo(
+                LocalizationService.Mark("Would you like to download the update? (y/n)"),
+                out shouldDownload);
+        }
+
+        /// <summary>
+        /// Downloads the update and hands off to the updater, which waits for this process to
+        /// exit before swapping any files. Progress is only drawn when somebody asked for the
+        /// update by hand; an unattended install stays quiet.
+        /// </summary>
+        public bool Install(ServerUpdateInfo update, bool showProgress)
+        {
+            if (update == null)
+                return false;
+
+            if (showProgress)
             {
-                var message = LocalizationService.Mark("Standard input is not available. Update download was skipped.");
-                _logger.Warning(message);
-                ConsoleSink.WriteLine(message);
-                return false;
+                ConsoleSink.WriteLine(LocalizationService.Mark("Downloading..."));
+                ResetProgress();
             }
 
-            if (!shouldDownload)
-                return false;
-
-            ConsoleSink.WriteLine(LocalizationService.Mark("Downloading..."));
-            ResetProgress();
             var download = _service
-                .DownloadAsync(update, AppContext.BaseDirectory, RenderProgress, CancellationToken.None)
+                .DownloadAsync(
+                    update,
+                    AppContext.BaseDirectory,
+                    showProgress ? RenderProgress : null,
+                    CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
-            CompleteProgressLine();
+
+            if (showProgress)
+                CompleteProgressLine();
 
             if (!download.IsSuccess)
             {
@@ -103,10 +112,7 @@ namespace TopSpeed.Server.Updates
                 return false;
             }
 
-            if (!StartUpdater(download.ZipPath))
-                return false;
-
-            return true;
+            return StartUpdater(download.ZipPath);
         }
 
         private bool StartUpdater(string zipPath)

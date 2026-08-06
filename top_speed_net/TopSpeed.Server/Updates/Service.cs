@@ -45,7 +45,7 @@ namespace TopSpeed.Server.Updates
                 {
                     return new ServerUpdateCheckResult
                     {
-                        IsSuccess = true
+                        Outcome = ServerUpdateCheckOutcome.UpToDate
                     };
                 }
 
@@ -53,11 +53,21 @@ namespace TopSpeed.Server.Updates
                 var expectedAsset = _config.BuildExpectedAssetName(versionText);
                 var asset = FindAsset(release, expectedAsset);
                 if (asset == null || string.IsNullOrWhiteSpace(asset.DownloadUrl))
-                    return Fail(LocalizationService.Format("Update package '{0}' was not found in the latest release.", expectedAsset));
+                {
+                    // The manifest is published from the repository the moment a version is
+                    // bumped, but the release assets only appear once the build finishes.
+                    // That gap is expected, so it is a retryable state rather than a failure.
+                    return new ServerUpdateCheckResult
+                    {
+                        Outcome = ServerUpdateCheckOutcome.NotPublished,
+                        VersionText = versionText
+                    };
+                }
 
                 return new ServerUpdateCheckResult
                 {
-                    IsSuccess = true,
+                    Outcome = ServerUpdateCheckOutcome.UpdateAvailable,
+                    VersionText = versionText,
                     Update = new ServerUpdateInfo
                     {
                         VersionText = versionText,
@@ -109,40 +119,60 @@ namespace TopSpeed.Server.Updates
                 var lastPercent = -1;
                 var buffer = new byte[81920];
 
-                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                await using var file = new FileStream(
-                    zipPath,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.None,
-                    bufferSize: buffer.Length,
-                    useAsync: true);
-
-                while (true)
+                // Scoped so both handles are closed before the size check, which may
+                // need to delete the file it just wrote.
                 {
-                    var bytesRead = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-                    if (bytesRead <= 0)
-                        break;
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    await using var file = new FileStream(
+                        zipPath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        bufferSize: buffer.Length,
+                        useAsync: true);
 
-                    await file.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
-                    downloadedBytes += bytesRead;
-
-                    var percent = 0;
-                    if (totalBytes > 0)
-                        percent = (int)Math.Floor((downloadedBytes * 100d) / totalBytes);
-                    if (percent > 100)
-                        percent = 100;
-
-                    if (percent != lastPercent || downloadedBytes == totalBytes)
+                    while (true)
                     {
-                        lastPercent = percent;
-                        onProgress?.Invoke(new ServerDownloadProgress
+                        var bytesRead = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                        if (bytesRead <= 0)
+                            break;
+
+                        await file.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        downloadedBytes += bytesRead;
+
+                        var percent = 0;
+                        if (totalBytes > 0)
+                            percent = (int)Math.Floor((downloadedBytes * 100d) / totalBytes);
+                        if (percent > 100)
+                            percent = 100;
+
+                        if (percent != lastPercent || downloadedBytes == totalBytes)
                         {
-                            DownloadedBytes = downloadedBytes,
-                            TotalBytes = totalBytes,
-                            Percent = percent
-                        });
+                            lastPercent = percent;
+                            onProgress?.Invoke(new ServerDownloadProgress
+                            {
+                                DownloadedBytes = downloadedBytes,
+                                TotalBytes = totalBytes,
+                                Percent = percent
+                            });
+                        }
                     }
+                }
+
+                // A connection that drops mid-transfer ends the read loop without an
+                // exception, so a short file is the signature of a truncated download.
+                if (totalBytes > 0 && downloadedBytes != totalBytes)
+                {
+                    TryDeleteIncompleteDownload(zipPath);
+                    return new ServerDownloadResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = LocalizationService.Format(
+                            "The download is incomplete. Expected {0} bytes but received {1}.",
+                            totalBytes,
+                            downloadedBytes),
+                        ZipPath = zipPath
+                    };
                 }
 
                 onProgress?.Invoke(new ServerDownloadProgress
@@ -161,6 +191,7 @@ namespace TopSpeed.Server.Updates
             }
             catch (TaskCanceledException)
             {
+                TryDeleteIncompleteDownload(zipPath);
                 return new ServerDownloadResult
                 {
                     IsSuccess = false,
@@ -170,12 +201,26 @@ namespace TopSpeed.Server.Updates
             }
             catch (Exception ex)
             {
+                TryDeleteIncompleteDownload(zipPath);
                 return new ServerDownloadResult
                 {
                     IsSuccess = false,
                     ErrorMessage = LocalizationService.Format("Download failed: {0}", ex.Message),
                     ZipPath = zipPath
                 };
+            }
+        }
+
+        private static void TryDeleteIncompleteDownload(string zipPath)
+        {
+            try
+            {
+                if (File.Exists(zipPath))
+                    File.Delete(zipPath);
+            }
+            catch
+            {
+                // Leaving a stray zip behind is harmless; the next attempt overwrites it.
             }
         }
 
@@ -242,7 +287,7 @@ namespace TopSpeed.Server.Updates
         {
             return new ServerUpdateCheckResult
             {
-                IsSuccess = false,
+                Outcome = ServerUpdateCheckOutcome.Failed,
                 ErrorMessage = string.IsNullOrWhiteSpace(message)
                     ? LocalizationService.Translate("Unknown update error.")
                     : message

@@ -5,6 +5,20 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## Unreleased
+### Game Changes
+- When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
+- Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.
+
+### Server Changes
+- The server no longer waits for an answer about an update before it starts. Previously, when a new version was available at startup, the server printed the changes and waited for you to type yes or no, which meant a server launched with its window hidden looked like it was running while nobody could actually connect. The server now starts first and the update check happens afterwards.
+- Replaced the "Check for updates on startup" switch with an "Update checking" setting offering three choices. "off" never checks, "notify" says when a new version is available and leaves the decision to you, and "auto" installs new versions by itself. Servers that had the old switch turned on become "notify", and those that had it off become "off".
+- Updates now wait for the server to empty before installing rather than interrupting a race. When you approve an update while players are connected, the server tells you how many are on and installs as soon as the last one leaves. "auto" waits the same way. Typing "update" again while an install is waiting reports what is scheduled instead of starting another one, and "update --force" installs immediately, disconnecting anyone still connected.
+- A new version whose download has not been published yet is now treated as something to retry rather than an error. The server checks again after twenty minutes, then forty, then hourly, and reports this when it first notices, once more after the second attempt, and when it gives up after twenty-three hours. It stays quiet in between so an unattended server does not fill its console with the same message.
+- Added a "Log file" setting. Logging is still off by default; setting a file name or path turns it on. A name or relative path is written next to the server program and an absolute path is used as written. A log configured this way records everything and appends, so it is still readable after a restart. The --log-file and log level command line options continue to override it.
+- Update messages on the console are now timestamped, so it is possible to tell how long ago one appeared on a server that has been left running.
+- Downloads are now checked against their expected size, and an incomplete one is reported and removed instead of being handed to the updater.
+
 ## 2026.8.3.1
 ### Game Changes
 - Custom vehicles now work in multiplayer races. A room host turns them on with the new "Custom vehicles" game rule, and when another driver picks a vehicle you do not have, your game fetches it from the server by itself. Vehicles are matched by what is inside them rather than by their name, so one you already have is never downloaded, renaming or moving a vehicle does not cause it to download again, and a vehicle you do download arrives only once however many races you use it in. If a vehicle cannot be downloaded or cannot be loaded, the race still starts and you are told which vehicle was unavailable and who was using it.

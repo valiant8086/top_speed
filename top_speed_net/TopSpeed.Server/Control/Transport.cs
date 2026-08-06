@@ -43,11 +43,16 @@ namespace TopSpeed.Server.Control
             {
                 if (OperatingSystem.IsWindows())
                 {
+                    // Asynchronous, because both ends read and write this handle at the same
+                    // time: a thread sits in a blocking read for the next line while another
+                    // writes. Windows serialises overlapping calls on a handle that was not
+                    // opened overlapped, so a pending read blocks a write indefinitely, which
+                    // let the first command through and then wedged the connection for good.
                     var client = new NamedPipeClientStream(
                         ".",
                         ControlEndpoint.PipeNameFor(directory),
                         PipeDirection.InOut,
-                        PipeOptions.None);
+                        PipeOptions.Asynchronous);
                     client.Connect((int)timeout.TotalMilliseconds);
                     stream = client;
                     return ControlConnectResult.Connected;
@@ -148,13 +153,13 @@ namespace TopSpeed.Server.Control
             // rather than quietly joining it, so another process cannot squat the name and pose
             // as the server. Later instances are the replacements kept ready while one is busy,
             // which is what stops the name from ever disappearing between clients.
-            // Not Asynchronous. Every read and write on this pipe is a blocking ReadLine or
-            // WriteLine, and synchronous calls on an overlapped handle are a mismatch: the
-            // first few writes get through and a later one fails, taking the connection with
-            // it partway through rendering a menu.
+            // Asynchronous for the same reason as the client: the command loop blocks in a
+            // read waiting for the next command while the logger and the update scheduler
+            // write from their own threads, and a handle that was not opened overlapped makes
+            // those wait for each other.
             var options = firstInstance
-                ? PipeOptions.FirstPipeInstance
-                : PipeOptions.None;
+                ? PipeOptions.FirstPipeInstance | PipeOptions.Asynchronous
+                : PipeOptions.Asynchronous;
 
             return NamedPipeServerStreamAcl.Create(
                 pipeName,

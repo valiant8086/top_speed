@@ -164,6 +164,25 @@ namespace TopSpeed.Server
             return string.Equals(arg, "--attach", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// The installer writes this into the service registration, so its presence is exact.
+        /// Guessing from whether the process looks interactive is unreliable on .NET and would
+        /// misjudge a server started from a scheduled task or a wrapper.
+        /// </summary>
+        private static bool IsServiceMode(string[] args)
+        {
+            if (!OperatingSystem.IsWindows())
+                return false;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], "--service", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
         private static void PauseIfConsoleWillVanish(ControlClientOutcome outcome)
         {
             // Only when this process created the window, so a prompt launched from an existing

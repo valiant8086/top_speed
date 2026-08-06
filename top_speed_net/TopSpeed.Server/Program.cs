@@ -9,6 +9,7 @@ using TopSpeed.Server.Config;
 using TopSpeed.Server.Control;
 using TopSpeed.Server.Logging;
 using TopSpeed.Server.Network;
+using TopSpeed.Server.Service;
 using TopSpeed.Server.Updates;
 
 namespace TopSpeed.Server
@@ -52,6 +53,22 @@ namespace TopSpeed.Server
                 return 0;
             }
 
+            // A service is always launched by the manager with this argument, which the
+            // installer writes into the registration. That is exact, unlike guessing from
+            // whether the process happens to look interactive.
+            if (OperatingSystem.IsWindows() && IsServiceMode(args))
+                return WindowsServiceHost.Run(args, baseDirectory);
+
+            using var shutdown = new CancellationTokenSource();
+            return RunServer(args, baseDirectory, shutdown);
+        }
+
+        /// <summary>
+        /// Everything from configuration through to the race loop, split out so a service
+        /// manager can run the same body on a thread it is able to ask to stop.
+        /// </summary>
+        internal static int RunServer(string[] args, string baseDirectory, CancellationTokenSource cts)
+        {
             using var timerResolution = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? new WindowsTimerResolution(1)
                 : null;
@@ -155,7 +172,6 @@ namespace TopSpeed.Server
 
             using var server = new RaceServer(config, logger);
             using var discovery = new ServerDiscoveryService(server, config, logger);
-            using var cts = new CancellationTokenSource();
             using var scheduler = new ServerUpdateScheduler(
                 server,
                 updater,

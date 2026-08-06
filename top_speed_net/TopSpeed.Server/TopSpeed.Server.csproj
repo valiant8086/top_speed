@@ -100,6 +100,7 @@
   <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.1" />
     <PackageReference Include="LiteNetLib" Version="1.3.1" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.10" />
     <ProjectReference Include="..\TopSpeed.Shared\TopSpeed.Shared.csproj" />
   </ItemGroup>
 
@@ -113,16 +114,9 @@
     </Content>
   </ItemGroup>
 
-  <Target
-    Name="CompileServerTranslations"
-    BeforeTargets="Build;Publish"
-    Condition="'@(ServerTranslationPo)' != '' and '$(SkipTranslationCompilation)' != 'true'"
-    Inputs="@(ServerTranslationPo)"
-    Outputs="@(ServerTranslationPo->'%(RootDir)%(Directory)messages.mo')">
-    <Message Importance="high" Text="Compiling server translations (.po -> .mo)." />
-    <Exec
-      Command="msgfmt --output-file &quot;%(ServerTranslationPo.RootDir)%(ServerTranslationPo.Directory)messages.mo&quot; &quot;%(ServerTranslationPo.FullPath)&quot;"
-      ContinueOnError="WarnAndContinue" />
+  <Target Name="CompileServerTranslations" BeforeTargets="Build;Publish" Condition="'@(ServerTranslationPo)' != '' and '$(SkipTranslationCompilation)' != 'true'" Inputs="@(ServerTranslationPo)" Outputs="@(ServerTranslationPo->'%(RootDir)%(Directory)messages.mo')">
+    <Message Importance="high" Text="Compiling server translations (.po -&gt; .mo)." />
+    <Exec Command="msgfmt --output-file &quot;%(ServerTranslationPo.RootDir)%(ServerTranslationPo.Directory)messages.mo&quot; &quot;%(ServerTranslationPo.FullPath)&quot;" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <Target Name="CopyServerCompiledTranslationsToOutput" BeforeTargets="Build" DependsOnTargets="CompileServerTranslations" Condition="'$(SkipTranslationCompilation)' != 'true'">
@@ -130,11 +124,7 @@
       <_CompiledServerMo Include="$(MSBuildThisFileDirectory)..\languages\server\**\messages.mo" />
     </ItemGroup>
     <MakeDir Directories="$(TargetDir)languages\server" Condition="'@(_CompiledServerMo)' != ''" />
-    <Copy
-      SourceFiles="@(_CompiledServerMo)"
-      DestinationFiles="@(_CompiledServerMo->'$(TargetDir)languages\server\%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true"
-      Condition="'@(_CompiledServerMo)' != ''" />
+    <Copy SourceFiles="@(_CompiledServerMo)" DestinationFiles="@(_CompiledServerMo->'$(TargetDir)languages\server\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_CompiledServerMo)' != ''" />
   </Target>
 
   <Target Name="CopyServerCompiledTranslationsToPublish" AfterTargets="Publish" Condition="'$(SkipTranslationCompilation)' != 'true' and '$(PublishDir)' != ''">
@@ -142,11 +132,7 @@
       <_CompiledPublishServerMo Include="$(MSBuildThisFileDirectory)..\languages\server\**\messages.mo" />
     </ItemGroup>
     <MakeDir Directories="$(PublishDir)languages\server" Condition="'@(_CompiledPublishServerMo)' != ''" />
-    <Copy
-      SourceFiles="@(_CompiledPublishServerMo)"
-      DestinationFiles="@(_CompiledPublishServerMo->'$(PublishDir)languages\server\%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true"
-      Condition="'@(_CompiledPublishServerMo)' != ''" />
+    <Copy SourceFiles="@(_CompiledPublishServerMo)" DestinationFiles="@(_CompiledPublishServerMo->'$(PublishDir)languages\server\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(_CompiledPublishServerMo)' != ''" />
   </Target>
 
   <Target Name="CopyUpdaterToServerOutput" AfterTargets="Build" Condition="'$(RuntimeIdentifier)' != '' and '$(RuntimeIdentifier)' != 'linux-x86'">

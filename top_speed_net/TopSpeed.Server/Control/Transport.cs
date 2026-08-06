@@ -157,12 +157,22 @@ namespace TopSpeed.Server.Control
             // named. Interactive is the one that needs nothing written down and nothing
             // configured: every logon at the keyboard carries it, elevated or not.
             //
-            // It is narrower than it looks. Network logons do not carry it, so this is not
-            // reachable from another machine, and neither do service accounts. What it does
-            // concede is that on a machine several people log in to, any of them could drive
-            // this server. That is the deliberate trade for a server that simply works when
-            // its owner runs it, and it is bounded by the same folder they would need write
-            // access to in order to replace this program outright.
+            // It is narrower than it looks in one direction: network logons do not carry
+            // Interactive, so this is not reachable from another machine, and neither do
+            // service accounts.
+            //
+            // It is not narrowed at all by the install folder, which is worth being exact
+            // about. Only the honest path needs that folder, because a second copy finds the
+            // first by hashing the directory it was launched from. Nothing else does. Pipe
+            // names are enumerable by any account, so the name is not a secret, and any
+            // process that can open it can drive the server without ever reading the folder
+            // or running this program. This rule is therefore the whole of the access
+            // control, and the concession is the plain one: on a machine several people log
+            // in to, any of them could control this server.
+            //
+            // That is deliberate, for a server that simply works when its owner runs it. If
+            // the install folder is ever wanted as a real boundary, it has to be proved
+            // separately, by asking a caller to write there, not assumed from this rule.
             security.AddAccessRule(new PipeAccessRule(
                 new SecurityIdentifier(WellKnownSidType.InteractiveSid, null),
                 PipeAccessRights.ReadWrite,

@@ -191,6 +191,7 @@ namespace TopSpeed.Server.Updates
                         {
                             _state = UpdateSchedulerState.PendingInstall;
                             _pending = result.Update;
+                            _nextDueUtc = DateTime.UtcNow;
                             announcement = LocalizationService.Format(
                                 LocalizationService.Mark("Version {0} is available and will be installed once no players are connected."),
                                 result.Update.VersionText);
@@ -223,6 +224,7 @@ namespace TopSpeed.Server.Updates
             {
                 _state = UpdateSchedulerState.PendingInstall;
                 _pending = update;
+                _nextDueUtc = DateTime.UtcNow;
             }
 
             _wake.Set();
@@ -304,10 +306,14 @@ namespace TopSpeed.Server.Updates
         {
             lock (_gate)
             {
-                if (_state == UpdateSchedulerState.PendingInstall)
-                    return PlayerPollInterval;
-
                 var remaining = _nextDueUtc - DateTime.UtcNow;
+                if (_state == UpdateSchedulerState.PendingInstall)
+                {
+                    // Normally this just polls for the server emptying, but a failed install
+                    // pushes the due time out and that backoff has to be honoured.
+                    return remaining > PlayerPollInterval ? remaining : PlayerPollInterval;
+                }
+
                 return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
             }
         }
@@ -329,6 +335,11 @@ namespace TopSpeed.Server.Updates
 
             if (state == UpdateSchedulerState.PendingInstall)
             {
+                // A previous install attempt that failed sets a due time in the future, so
+                // without this a bad download would be fetched again every poll interval.
+                if (!due)
+                    return;
+
                 if (pending != null && _server.GetPlayersSnapshot().Length == 0)
                     PerformInstall(pending, showProgress: false);
 

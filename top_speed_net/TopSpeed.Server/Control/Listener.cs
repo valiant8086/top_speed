@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Net.Sockets;
@@ -182,7 +183,7 @@ namespace TopSpeed.Server.Control
             using var session = new ControlCommandSession(stream);
             session.WriteLine(Protocol + " " + ServerRelease() + " " + ControlEndpoint.NormalizeDirectory(_directory));
 
-            if (!CommandSessions.TryAttach(session, takeOver: false, out var refusal))
+            if (!CommandSessions.TryAttach(session, out var refusal))
             {
                 session.WriteLine("REFUSED " + refusal);
                 session.WriteLine(DescribeRefusal(refusal));
@@ -219,16 +220,33 @@ namespace TopSpeed.Server.Control
             return Updates.ServerUpdateConfig.CurrentVersion.ToMachineString();
         }
 
+        /// <summary>
+        /// Says which window already has the session, because finding it and using it is the
+        /// whole remedy. There is no way to force one away from somebody else.
+        /// </summary>
         private static string DescribeRefusal(AttachRefusal refusal)
         {
-            return refusal switch
+            if (refusal == AttachRefusal.ConsoleHoldsSession)
             {
-                AttachRefusal.ConsoleHoldsSession => LocalizationService.Translate(
-                    LocalizationService.Mark("This server is already running in its own console window.")),
-                AttachRefusal.AlreadyAttached => LocalizationService.Translate(
-                    LocalizationService.Mark("Another session is already attached to this server.")),
-                _ => LocalizationService.Translate(LocalizationService.Mark("The server refused the connection."))
-            };
+                return LocalizationService.Translate(LocalizationService.Mark(
+                    "This server is running in its own console window on this machine. Use that window to control it."));
+            }
+
+            if (refusal == AttachRefusal.AlreadyAttached)
+            {
+                var since = CommandSessions.AttachedSinceUtc;
+                if (since.HasValue)
+                {
+                    return LocalizationService.Format(
+                        LocalizationService.Mark("Another window on this machine has been attached to this server since {0}. Use that window, or close it to free the connection."),
+                        since.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                }
+
+                return LocalizationService.Translate(LocalizationService.Mark(
+                    "Another window on this machine is attached to this server. Use that window, or close it to free the connection."));
+            }
+
+            return LocalizationService.Translate(LocalizationService.Mark("The server refused the connection."));
         }
     }
 }

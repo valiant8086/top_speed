@@ -33,6 +33,7 @@ namespace TopSpeed.Server.Commands
 
         private static ICommandSession _console = new HeadlessCommandSession();
         private static ICommandSession? _attached;
+        private static DateTime _attachedSinceUtc;
         private static volatile bool _stopping;
 
         /// <summary>Whether the server's own console is able to take commands.</summary>
@@ -60,7 +61,15 @@ namespace TopSpeed.Server.Commands
                 _console = session ?? new HeadlessCommandSession();
         }
 
-        public static bool TryAttach(ICommandSession session, bool takeOver, out AttachRefusal refusal)
+        /// <summary>
+        /// There is deliberately no way to seize a session somebody else holds. Every ordinary
+        /// way of losing a client, being killed or having its window closed, tears the
+        /// connection down at the operating system level and releases the session by itself.
+        /// The only thing that would not is a process suspended mid-session, which the person
+        /// at the machine can end themselves. Saying plainly that another window already has it
+        /// is more useful than a flag for forcing an admin session away from whoever holds it.
+        /// </summary>
+        public static bool TryAttach(ICommandSession session, out AttachRefusal refusal)
         {
             refusal = AttachRefusal.None;
             if (session == null)
@@ -68,23 +77,32 @@ namespace TopSpeed.Server.Commands
 
             lock (Gate)
             {
-                // A console window cannot be taken over, because the person at it is not
-                // reachable to be told that it happened.
                 if (_console.CanRead)
                 {
                     refusal = AttachRefusal.ConsoleHoldsSession;
                     return false;
                 }
 
-                if (_attached != null && !takeOver)
+                if (_attached != null)
                 {
                     refusal = AttachRefusal.AlreadyAttached;
                     return false;
                 }
 
                 _attached = session;
+                _attachedSinceUtc = DateTime.UtcNow;
                 SessionAvailable.Set();
                 return true;
+            }
+        }
+
+        /// <summary>When the current session attached, so a refusal can say how long ago.</summary>
+        public static DateTime? AttachedSinceUtc
+        {
+            get
+            {
+                lock (Gate)
+                    return _attached == null ? null : _attachedSinceUtc;
             }
         }
 

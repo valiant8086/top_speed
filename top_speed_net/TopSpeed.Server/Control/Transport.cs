@@ -18,6 +18,12 @@ namespace TopSpeed.Server.Control
         /// <summary>An instance is running but will not let this caller talk to it.</summary>
         AccessDenied,
 
+        /// <summary>
+        /// An instance is running here but its endpoint is occupied, which means somebody
+        /// already holds the one interactive session.
+        /// </summary>
+        Busy,
+
         Failed
     }
 
@@ -68,7 +74,13 @@ namespace TopSpeed.Server.Control
             }
             catch (TimeoutException)
             {
-                return ControlConnectResult.NotRunning;
+                // A connect that times out is ambiguous on its own: nothing may be listening,
+                // or the one session may already be taken. The endpoint still exists in the
+                // second case, which is what tells the two apart and lets the caller be told
+                // that another window has it rather than that no server is here.
+                return EndpointExists(directory)
+                    ? ControlConnectResult.Busy
+                    : ControlConnectResult.NotRunning;
             }
             catch (FileNotFoundException)
             {
@@ -82,6 +94,31 @@ namespace TopSpeed.Server.Control
             catch (IOException)
             {
                 return ControlConnectResult.Failed;
+            }
+        }
+
+        /// <summary>
+        /// Whether an endpoint exists for this folder, regardless of whether it can be
+        /// connected to right now. Named pipes are enumerable, so this needs no permission
+        /// beyond listing them, and it never has to elevate to find out.
+        /// </summary>
+        public static bool EndpointExists(string directory)
+        {
+            try
+            {
+                if (!OperatingSystem.IsWindows())
+                    return File.Exists(ControlEndpoint.SocketPathFor(directory));
+
+                return File.Exists(@"\\.\pipe\" + ControlEndpoint.PipeNameFor(directory));
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Being refused a look still means something is there.
+                return true;
             }
         }
 

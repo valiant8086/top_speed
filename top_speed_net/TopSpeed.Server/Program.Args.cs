@@ -159,21 +159,9 @@ namespace TopSpeed.Server
             return false;
         }
 
-        private static bool IsTakeoverRequested(string[] args)
-        {
-            for (var i = 0; i < args.Length; i++)
-            {
-                if (string.Equals(args[i], "--takeover", StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
-        }
-
         private static bool IsAttachArgument(string arg)
         {
-            return string.Equals(arg, "--attach", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(arg, "--takeover", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(arg, "--attach", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void PauseIfConsoleWillVanish(ControlClientOutcome outcome)

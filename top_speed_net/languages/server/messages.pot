@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-05 22:51-0400\n"
+"POT-Creation-Date: 2026-08-05 23:02-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -117,7 +117,22 @@ msgid "Another server is already running from this folder."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
-msgid "Another session is already attached to this server."
+#, csharp-format
+msgid ""
+"Another window on this machine has been attached to this server since {0}. "
+"Use that window, or close it to free the connection."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid ""
+"Another window on this machine is already attached to this server. Use that "
+"window, or close it to free the connection."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid ""
+"Another window on this machine is attached to this server. Use that window, "
+"or close it to free the connection."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1668,14 +1683,16 @@ msgstr ""
 msgid "This game room is unavailable because it is full."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Control/Listener.cs
-msgid "This server is already running in its own console window."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Packets/Core.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
 msgid "This server is full."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid ""
+"This server is running in its own console window on this machine. Use that "
+"window to control it."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Load/Sections.cs

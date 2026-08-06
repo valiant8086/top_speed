@@ -27,7 +27,7 @@ namespace TopSpeed.Server.Control
     /// </summary>
     internal static class ControlClient
     {
-        public static ControlClientOutcome Run(string directory, bool takeOver)
+        public static ControlClientOutcome Run(string directory)
         {
             var result = ControlTransport.TryConnect(directory, TimeSpan.FromSeconds(3), out var stream);
             switch (result)
@@ -42,6 +42,11 @@ namespace TopSpeed.Server.Control
                         "A server is already running from this folder, but this account is not allowed to control it. Run as an administrator to attach to it.")));
                     return ControlClientOutcome.Refused;
 
+                case ControlConnectResult.Busy:
+                    WriteLine(LocalizationService.Translate(LocalizationService.Mark(
+                        "Another window on this machine is already attached to this server. Use that window, or close it to free the connection.")));
+                    return ControlClientOutcome.Refused;
+
                 case ControlConnectResult.Failed:
                     WriteLine(LocalizationService.Translate(LocalizationService.Mark(
                         "Could not reach the server running from this folder.")));
@@ -52,10 +57,10 @@ namespace TopSpeed.Server.Control
                 return ControlClientOutcome.Failed;
 
             using (stream)
-                return Pump(stream, takeOver);
+                return Pump(stream);
         }
 
-        private static ControlClientOutcome Pump(Stream stream, bool takeOver)
+        private static ControlClientOutcome Pump(Stream stream)
         {
             var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             using var reader = new StreamReader(stream, encoding, false, 4096, leaveOpen: true);

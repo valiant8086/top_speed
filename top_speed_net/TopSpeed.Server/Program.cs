@@ -31,7 +31,7 @@ namespace TopSpeed.Server
             var baseDirectory = AppContext.BaseDirectory;
             if (!IsExplicitStart(args))
             {
-                var attached = ControlClient.Run(baseDirectory, takeOver: IsTakeoverRequested(args));
+                var attached = ControlClient.Run(baseDirectory);
                 if (attached != ControlClientOutcome.NoServerRunning)
                 {
                     PauseIfConsoleWillVanish(attached);

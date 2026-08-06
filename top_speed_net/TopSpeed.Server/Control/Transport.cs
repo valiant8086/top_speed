@@ -158,8 +158,11 @@ namespace TopSpeed.Server.Control
                 maxNumberOfServerInstances: 4,
                 PipeTransmissionMode.Byte,
                 options,
-                inBufferSize: 0,
-                outBufferSize: 0,
+                // Real buffers rather than zero. With no buffer every write waits for the other
+                // side to read, so either end could block the moment it spoke first, and a
+                // client that blocked writing a command stopped reading replies as well.
+                inBufferSize: 8192,
+                outBufferSize: 8192,
                 security);
         }
 

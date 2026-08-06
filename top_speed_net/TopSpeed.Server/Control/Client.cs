@@ -128,6 +128,13 @@ namespace TopSpeed.Server.Control
                     {
                         WriteLine(LocalizationService.Translate(LocalizationService.Mark(
                             "Disconnected. The server is still running.")));
+
+                        // A window this process created closes the instant it exits, taking the
+                        // message with it before it can be read or spoken. Long enough to catch,
+                        // short enough not to feel stuck.
+                        if (OwnsConsoleWindow())
+                            Thread.Sleep(TimeSpan.FromSeconds(3));
+
                         break;
                     }
 

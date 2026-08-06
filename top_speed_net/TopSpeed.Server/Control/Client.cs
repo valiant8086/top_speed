@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using TopSpeed.Localization;
@@ -128,13 +127,6 @@ namespace TopSpeed.Server.Control
                     {
                         WriteLine(LocalizationService.Translate(LocalizationService.Mark(
                             "Disconnected. The server is still running.")));
-
-                        // A window this process created closes the instant it exits, taking the
-                        // message with it before it can be read or spoken. Long enough to catch,
-                        // short enough not to feel stuck.
-                        if (OwnsConsoleWindow())
-                            Thread.Sleep(TimeSpan.FromSeconds(3));
-
                         break;
                     }
 
@@ -162,34 +154,5 @@ namespace TopSpeed.Server.Control
             {
             }
         }
-
-        /// <summary>
-        /// True when this process created the console window it is using, meaning the window
-        /// will vanish the moment it exits. Something launched from Explorer needs to be given
-        /// a chance to be read before that happens; something launched from an existing prompt
-        /// does not, and pausing there is just an irritation.
-        /// </summary>
-        public static bool OwnsConsoleWindow()
-        {
-            if (!OperatingSystem.IsWindows())
-                return false;
-
-            try
-            {
-                var buffer = new uint[4];
-                return GetConsoleProcessList(buffer, (uint)buffer.Length) <= 1;
-            }
-            catch (DllNotFoundException)
-            {
-                return false;
-            }
-            catch (EntryPointNotFoundException)
-            {
-                return false;
-            }
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern uint GetConsoleProcessList(uint[] processList, uint processCount);
     }
 }

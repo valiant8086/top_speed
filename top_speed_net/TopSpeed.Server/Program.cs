@@ -42,14 +42,17 @@ namespace TopSpeed.Server
                 var attached = ControlClient.Run(baseDirectory);
                 if (attached != ControlClientOutcome.NoServerRunning)
                 {
-                    PauseIfConsoleWillVanish(attached);
+                    // After the client has returned, so the connection is already dropped and a
+                    // window left sitting on its closing message never keeps the session from
+                    // the next person who wants it.
+                    PauseBeforeClosing();
                     return attached == ControlClientOutcome.SessionEnded ? 0 : 1;
                 }
 
                 if (IsAttachRequested(args))
                 {
                     ConsoleSink.WriteLine(LocalizationService.Mark("No server is running from this folder."));
-                    PauseIfConsoleWillVanish(ControlClientOutcome.Failed);
+                    PauseBeforeClosing();
                     return 1;
                 }
             }

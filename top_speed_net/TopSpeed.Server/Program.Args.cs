@@ -183,13 +183,22 @@ namespace TopSpeed.Server
             return false;
         }
 
-        private static void PauseIfConsoleWillVanish(ControlClientOutcome outcome)
+        /// <summary>
+        /// Holds the window open until somebody has read what is on it. A window launched from
+        /// a file manager closes the instant this process exits, taking the last message with
+        /// it before it can be read or spoken.
+        ///
+        /// This waits rather than pausing for a set time, and waits every time rather than only
+        /// when it believes it owns the window. Both of those were tried and neither survived
+        /// contact with a real machine: how long a message takes to read is not ours to guess,
+        /// and asking Windows how many processes share this console answers wrongly under an
+        /// elevated launch, which is exactly when somebody is attaching to a service. An extra
+        /// keypress when running from an existing prompt is a far smaller cost than a message
+        /// nobody can read. Redirected input reaches end of stream at once, so this never
+        /// delays a script.
+        /// </summary>
+        private static void PauseBeforeClosing()
         {
-            // Only when this process created the window, so a prompt launched from an existing
-            // terminal is not made to wait for a keypress nobody asked for.
-            if (outcome == ControlClientOutcome.SessionEnded || !ControlClient.OwnsConsoleWindow())
-                return;
-
             ConsoleSink.WriteLine(LocalizationService.Mark("Press Enter to close this window."));
             try
             {

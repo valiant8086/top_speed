@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-05 21:02-0400\n"
+"POT-Creation-Date: 2026-08-05 21:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -304,6 +304,11 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Program.Runtime.cs
 #, csharp-format
 msgid "Could not listen for {0}: {1}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+#, csharp-format
+msgid "Could not open the log file {0}: {1}. The server will run without one."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Packages/CatalogState.cs

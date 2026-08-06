@@ -60,6 +60,12 @@ namespace TopSpeed.Server
                 logFile,
                 writeToConsole: consoleLoggingEnabled,
                 append: !useCommandLineLogFile);
+            if (logger.FileError != null)
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Could not open the log file {0}: {1}. The server will run without one."),
+                    logFile ?? string.Empty,
+                    logger.FileError);
+
             var serverRelease = $"{ReleaseVersionInfo.ServerYear}.{ReleaseVersionInfo.ServerMonth}.{ReleaseVersionInfo.ServerDay} (r{ReleaseVersionInfo.ServerRevision})";
             if (loggingEnabled)
             {

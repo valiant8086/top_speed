@@ -13,6 +13,13 @@ namespace TopSpeed.Server.Logging
         private bool _writeToConsole;
 
         /// <summary>
+        /// Set when a log file was asked for but could not be opened. The most common reason is
+        /// a second copy of the server started from the same folder, since both resolve the same
+        /// configured path and the file cannot be shared.
+        /// </summary>
+        public string? FileError { get; }
+
+        /// <summary>
         /// A log configured in settings.json appends, because its whole point is to still be
         /// readable later; one asked for with --log-file starts clean for that run.
         /// </summary>
@@ -20,13 +27,22 @@ namespace TopSpeed.Server.Logging
         {
             _enabledLevels = enabledLevels;
             _writeToConsole = writeToConsole;
-            if (!string.IsNullOrWhiteSpace(logFilePath))
+            if (string.IsNullOrWhiteSpace(logFilePath))
+                return;
+
+            try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath) ?? ".");
                 _writer = new StreamWriter(logFilePath, append, Encoding.UTF8)
                 {
                     AutoFlush = true
                 };
+            }
+            catch (Exception ex)
+            {
+                // Not being able to write a log is never a reason to refuse to run a server.
+                _writer = null;
+                FileError = ex.Message;
             }
         }
 

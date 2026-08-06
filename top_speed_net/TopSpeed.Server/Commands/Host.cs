@@ -63,15 +63,13 @@ namespace TopSpeed.Server.Commands
 
         public bool Start()
         {
-            if (!IsInputAvailable())
-            {
-                var message = LocalizationService.Mark("Standard input is not available. Server commands are disabled.");
-                _logger.Warning(message);
-                ConsoleSink.WriteLine(message);
-                return false;
-            }
-
-            ConsoleSink.WriteLine(LocalizationService.Mark("Server command interface ready. Type \"help\" to get the list of commands."));
+            // The loop now runs even with no console. A server under a service manager has no
+            // standard input, but somebody may attach to it later, and the loop is what serves
+            // them when they do; it simply waits until a session exists.
+            if (IsInputAvailable())
+                ConsoleSink.WriteLine(LocalizationService.Mark("Server command interface ready. Type \"help\" to get the list of commands."));
+            else
+                _logger.Info(LocalizationService.Mark("No console is attached. Server commands are available by attaching to this server."));
             _thread = new Thread(RunLoop)
             {
                 IsBackground = true,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace TopSpeed.Server.Commands
 {
@@ -28,9 +29,11 @@ namespace TopSpeed.Server.Commands
 
         private static readonly object Gate = new object();
         private static readonly Queue<string> Recent = new Queue<string>();
+        private static readonly ManualResetEventSlim SessionAvailable = new ManualResetEventSlim(false);
 
         private static ICommandSession _console = new HeadlessCommandSession();
         private static ICommandSession? _attached;
+        private static volatile bool _stopping;
 
         /// <summary>Whether the server's own console is able to take commands.</summary>
         public static bool ConsoleHoldsSession
@@ -80,6 +83,7 @@ namespace TopSpeed.Server.Commands
                 }
 
                 _attached = session;
+                SessionAvailable.Set();
                 return true;
             }
         }
@@ -88,8 +92,11 @@ namespace TopSpeed.Server.Commands
         {
             lock (Gate)
             {
-                if (ReferenceEquals(_attached, session))
-                    _attached = null;
+                if (!ReferenceEquals(_attached, session))
+                    return;
+
+                _attached = null;
+                SessionAvailable.Reset();
             }
         }
 
@@ -132,25 +139,51 @@ namespace TopSpeed.Server.Commands
             return false;
         }
 
+        /// <summary>
+        /// Blocks until a command arrives from whichever session is active. A server with no
+        /// console and nobody attached waits here rather than giving up, which is what lets the
+        /// command loop keep running under a service manager until somebody attaches to it.
+        /// False means the server is shutting down.
+        /// </summary>
         public static bool TryReadLine(out string value)
         {
-            ICommandSession target;
-            lock (Gate)
-                target = _attached ?? _console;
+            value = string.Empty;
 
-            if (target.TryReadLine(out value))
-                return true;
-
-            lock (Gate)
+            while (!_stopping)
             {
-                if (ReferenceEquals(_attached, target))
+                ICommandSession target;
+                lock (Gate)
+                    target = _attached ?? _console;
+
+                if (!target.CanRead)
                 {
+                    // Polled rather than purely event driven so that shutdown is always noticed
+                    // even if no session ever arrives.
+                    SessionAvailable.Wait(TimeSpan.FromMilliseconds(250));
+                    continue;
+                }
+
+                if (target.TryReadLine(out value))
+                    return true;
+
+                lock (Gate)
+                {
+                    if (!ReferenceEquals(_attached, target))
+                        return false;
+
                     // The client went away. The server keeps running and waits for the next one.
                     _attached = null;
+                    SessionAvailable.Reset();
                 }
             }
 
             return false;
+        }
+
+        public static void Stop()
+        {
+            _stopping = true;
+            SessionAvailable.Set();
         }
     }
 }

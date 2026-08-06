@@ -24,7 +24,14 @@ namespace TopSpeed.Server
             // console and a control connection are served by the same command code. The console
             // session reports itself unreadable when there is no stdin, which is how a server
             // started by a service manager ends up offering its session to whoever attaches.
-            CommandSessions.UseConsoleSession(new ConsoleCommandSession());
+            // A service has no standard input handle at all, and reading one can block forever
+            // rather than reporting end of input. That would wedge the command loop on a
+            // console that does not exist, leaving an attached client able to see output but
+            // never able to have a command answered. Service mode is known here, so no console
+            // session is offered in the first place.
+            CommandSessions.UseConsoleSession(OperatingSystem.IsWindows() && IsServiceMode(args)
+                ? new HeadlessCommandSession()
+                : new ConsoleCommandSession());
 
             // Before anything is bound, find out whether this folder already has a server. If
             // it does, this copy becomes a console onto that one rather than a second server

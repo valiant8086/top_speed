@@ -18,6 +18,12 @@ namespace TopSpeed.Server
         {
             LocalizationBootstrap.Configure("en", LocalizationBootstrap.ServerCatalogGroup);
 
+            // Output and commands go through the session layer from here on, so that both the
+            // console and a control connection are served by the same command code. The console
+            // session reports itself unreadable when there is no stdin, which is how a server
+            // started by a service manager ends up offering its session to whoever attaches.
+            CommandSessions.UseConsoleSession(new ConsoleCommandSession());
+
             if (IsHelpRequested(args))
             {
                 ShowHelp();

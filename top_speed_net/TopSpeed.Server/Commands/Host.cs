@@ -707,22 +707,7 @@ namespace TopSpeed.Server.Commands
 
         private static bool IsInputAvailable()
         {
-            if (Console.IsInputRedirected)
-                return true;
-
-            try
-            {
-                _ = Console.KeyAvailable;
-                return true;
-            }
-            catch (InvalidOperationException)
-            {
-                return false;
-            }
-            catch (IOException)
-            {
-                return false;
-            }
+            return ConsoleCommandSession.IsInputAvailable();
         }
 
         private static string BuildOptionLine(string labelMessageId, string value)

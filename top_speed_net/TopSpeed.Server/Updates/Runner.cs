@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using TopSpeed.Server.Commands;
 using TopSpeed.Server.Logging;
 
 using TopSpeed.Localization;
@@ -185,21 +186,7 @@ namespace TopSpeed.Server.Updates
                 if (!ConsoleSink.WriteLine(prompt))
                     return false;
 
-                string? line;
-                try
-                {
-                    line = Console.ReadLine();
-                }
-                catch (InvalidOperationException)
-                {
-                    return false;
-                }
-                catch (IOException)
-                {
-                    return false;
-                }
-
-                if (line == null)
+                if (!CommandSessions.TryReadLine(out var line))
                     return false;
 
                 var text = line.Trim();

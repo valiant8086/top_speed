@@ -307,7 +307,7 @@ namespace TopSpeed.Server.Commands
         /// </summary>
         private void ExecuteService()
         {
-            Service.ServiceMenu.Show(AppContext.BaseDirectory);
+            Service.ServiceMenu.Show(AppContext.BaseDirectory, ExecuteShutdown);
         }
 
         private static string CurrentServiceLabel()
@@ -344,7 +344,7 @@ namespace TopSpeed.Server.Commands
                         "service",
                         LocalizationService.Mark("Service"),
                         OptionValueType.Menu,
-                        () => Service.ServiceMenu.Show(AppContext.BaseDirectory),
+                        () => Service.ServiceMenu.Show(AppContext.BaseDirectory, ExecuteShutdown),
                         CurrentServiceLabel)
                 });
         }

@@ -103,6 +103,9 @@ namespace TopSpeed.Server
                     case "--start-service":
                         action = Service.ServiceAction.Start;
                         return true;
+                    case "--start-service-when-free":
+                        action = Service.ServiceAction.StartWhenFree;
+                        return true;
                     case "--stop-service":
                         action = Service.ServiceAction.Stop;
                         return true;

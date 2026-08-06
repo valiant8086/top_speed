@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 12:34-0400\n"
+"POT-Creation-Date: 2026-08-06 12:49-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1008,6 +1008,10 @@ msgstr ""
 msgid "Laps must be between 1 and 500."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Left running. The service was not started."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Types.cs
 #, csharp-format
 msgid "Line {0}: {1}"
@@ -1178,6 +1182,12 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Access.cs
 msgid "Only host can do this."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"Only one server can run from this folder, so this one has to stop before the "
+"service can start."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1721,6 +1731,10 @@ msgstr ""
 msgid "Standard input is not available. Update download was skipped."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Stop this server now and start the service? (y/n)"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
 #, csharp-format
 msgid "Stopping race: room={0}, active={1}, trackedResults={2}."
@@ -1882,6 +1896,12 @@ msgstr ""
 msgid ""
 "This server is running in its own console window on this machine. Use that "
 "window to control it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"This server is stopping. The service will start by itself once it has, and a "
+"separate window will say whether it did."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs

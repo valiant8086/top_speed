@@ -24,7 +24,11 @@ namespace TopSpeed.Server.Service
     /// </summary>
     internal static class ServiceMenu
     {
-        public static void Show(string directory)
+        /// <param name="stopLocalServer">
+        /// How to stop the server this menu is running inside, when there is one. Null from a
+        /// window attached to a server elsewhere, which has no server of its own to stop.
+        /// </param>
+        public static void Show(string directory, Action? stopLocalServer = null)
         {
             var manager = ServiceManagers.ForCurrentPlatform();
 
@@ -84,8 +88,67 @@ namespace TopSpeed.Server.Service
                     continue;
                 }
 
+                if (action == ServiceAction.Start
+                    && stopLocalServer != null
+                    && Control.ControlTransport.EndpointExists(directory))
+                {
+                    if (StopThisServerAndStartTheService(directory, stopLocalServer))
+                        return;
+
+                    continue;
+                }
+
                 ServiceCommands.Execute(action, directory, startAutomatically: true);
             }
+        }
+
+        /// <summary>
+        /// Hands the starting over to a copy that will outlive this one, then stops this server.
+        ///
+        /// This is the only way the service can ever be started from here. Only one server may
+        /// run from a folder, and reaching this menu at all means one is running, so the folder
+        /// is always occupied by the very process being asked to free it. It cannot stop itself
+        /// and then watch what happens, so something else has to do the watching.
+        ///
+        /// The order matters. The copy is launched first, and only if it actually started, so
+        /// that refusing the rights prompt leaves the running server exactly as it was rather
+        /// than stopping it for a start that was never going to happen.
+        ///
+        /// Returns true when this server is on its way down and the menu should stop.
+        /// </summary>
+        private static bool StopThisServerAndStartTheService(string directory, Action stopLocalServer)
+        {
+            ConsoleSink.WriteLine(LocalizationService.Mark(
+                "Only one server can run from this folder, so this one has to stop before the service can start."));
+
+            if (!Confirm(LocalizationService.Translate(LocalizationService.Mark(
+                "Stop this server now and start the service? (y/n)"))))
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark("Left running. The service was not started."));
+                return false;
+            }
+
+            if (!ServiceCommands.LaunchDetached(ServiceAction.StartWhenFree, directory))
+                return false;
+
+            ConsoleSink.WriteLine(LocalizationService.Mark(
+                "This server is stopping. The service will start by itself once it has, and a separate window will say whether it did."));
+
+            stopLocalServer();
+            return true;
+        }
+
+        private static bool Confirm(string question)
+        {
+            if (!CommandInput.TryReadLine(question, out var answer))
+                return false;
+
+            var text = answer.Trim();
+
+            // Anything that is not plainly yes is treated as no, because the cost of
+            // misreading it is a server stopped by somebody who did not ask for that.
+            return string.Equals(text, "y", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(text, "yes", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -33,10 +33,25 @@ namespace TopSpeed.Server
                 ? new HeadlessCommandSession()
                 : new ConsoleCommandSession());
 
+            var baseDirectory = AppContext.BaseDirectory;
+
+            // Ahead of the attach check, because these act on the service rather than talk to
+            // a running server, and a folder whose server is already running is exactly when
+            // stopping or removing it is asked for.
+            if (TryGetServiceAction(args, out var serviceAction))
+            {
+                var code = ServiceCommands.Execute(
+                    serviceAction,
+                    baseDirectory,
+                    ReadConfiguredPort(baseDirectory),
+                    startAutomatically: true);
+                PauseBeforeClosing();
+                return code;
+            }
+
             // Before anything is bound, find out whether this folder already has a server. If
             // it does, this copy becomes a console onto that one rather than a second server
             // quietly claiming the same ports.
-            var baseDirectory = AppContext.BaseDirectory;
             if (!IsExplicitStart(args))
             {
                 var attached = ControlClient.Run(baseDirectory);
@@ -67,7 +82,12 @@ namespace TopSpeed.Server
             // installer writes into the registration. That is exact, unlike guessing from
             // whether the process happens to look interactive.
             if (OperatingSystem.IsWindows() && IsServiceMode(args))
+            {
+                // Recorded so the service menu knows to send somebody to a window that can ask
+                // for rights, rather than trying to raise a prompt where none can appear.
+                ServiceRuntime.IsRunningAsService = true;
                 return WindowsServiceHost.Run(args, baseDirectory);
+            }
 
             using var shutdown = new CancellationTokenSource();
             return RunServer(args, baseDirectory, shutdown);

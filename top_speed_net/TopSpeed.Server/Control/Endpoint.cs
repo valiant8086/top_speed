@@ -44,7 +44,13 @@ namespace TopSpeed.Server.Control
                 : full;
         }
 
-        public static string PipeNameFor(string directory)
+        /// <summary>
+        /// A name unique to one install folder, in a form that is legal everywhere a name is
+        /// needed. Both the control endpoint and the service registration use this, so a
+        /// running service can work out what it was registered as by looking at the folder it
+        /// is running from, and the two can never drift apart or need storing anywhere.
+        /// </summary>
+        public static string InstanceKeyFor(string directory)
         {
             var normalized = NormalizeDirectory(directory);
             var digest = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
@@ -54,6 +60,11 @@ namespace TopSpeed.Server.Control
                 builder.Append(digest[i].ToString("x2", CultureInfo.InvariantCulture));
 
             return builder.ToString();
+        }
+
+        public static string PipeNameFor(string directory)
+        {
+            return InstanceKeyFor(directory);
         }
 
         public static string SocketPathFor(string directory)

@@ -56,10 +56,10 @@ namespace TopSpeed.Server.Control
                 return ControlClientOutcome.Failed;
 
             using (stream)
-                return Pump(stream);
+                return Pump(stream, directory);
         }
 
-        private static ControlClientOutcome Pump(Stream stream)
+        private static ControlClientOutcome Pump(Stream stream, string directory)
         {
             var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             using var reader = new StreamReader(stream, encoding, false, 4096, leaveOpen: true);
@@ -122,6 +122,16 @@ namespace TopSpeed.Server.Control
                     var input = Console.ReadLine();
                     if (input == null)
                         break;
+
+                    // Handled here rather than sent on, for the same reason exit is: this is a
+                    // process the owner launched, so it is the one that may ask for the rights
+                    // installing or removing a service needs. The server on the other end is
+                    // very likely the service itself, which cannot ask for anything.
+                    if (string.Equals(input.Trim(), "service", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Service.ServiceMenu.Show(directory, Service.ServiceIdentity.ReadConfiguredPort(directory));
+                        continue;
+                    }
 
                     if (string.Equals(input.Trim(), "exit", StringComparison.OrdinalIgnoreCase))
                     {

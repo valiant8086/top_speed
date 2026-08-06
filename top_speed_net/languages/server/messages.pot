@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 04:25-0400\n"
+"POT-Creation-Date: 2026-08-06 05:13-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --install-service       Install this folder's server as a service."
+msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "  --log <levels>          Alias for --log-level."
@@ -44,6 +48,23 @@ msgid "  --port <number>         Server port (1-65535)."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid ""
+"  --service-status        Say whether this folder is installed as a service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --start-service         Start the installed service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --stop-service          Stop the installed service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --uninstall-service     Remove it again. The folder is left alone."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "  -h, --help              Show this help."
 msgstr ""
 
@@ -57,6 +78,26 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "(off)"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "0. Back"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "1. Install"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "2. Remove"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "3. Start"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "4. Stop"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
@@ -93,6 +134,16 @@ msgstr ""
 msgid ""
 "A server is already running from this folder, but this account is not "
 "allowed to control it. Run as an administrator to attach to it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"A service for this folder is still being removed. Close the Services window "
+"if it is open, then try again."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "A service is already installed for this folder."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
@@ -199,6 +250,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Bots.cs
 msgid "Bots can only be removed in race-with-bots rooms."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "Cancelled. Nothing was changed."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Bots.cs
@@ -543,6 +598,7 @@ msgid "Enter message of the day (max {0} chars, empty clears value):"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid "Enter option number:"
 msgstr ""
 
@@ -645,6 +701,40 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Packets.cs
 #, csharp-format
 msgid "Ignoring unknown packet command {0} from {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Install or control this server as a system service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid "Installed as \"{0}\" and running. Starts with the machine: {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid "Installed as \"{0}\" and stopped. Starts with the machine: {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid "Installed as \"{0}\"."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid "Installed as service \"{0}\", running as {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid ""
+"Installing a service on this system is done by hand. Choose install to have "
+"the file written and the commands shown."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "Installing and controlling services needs administrator rights."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
@@ -1051,9 +1141,17 @@ msgstr ""
 msgid "No server is running from this folder."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "No service is installed for this folder."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Host/GameStart.cs
 #, csharp-format
 msgid "Not enough players. {0} required to start."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "Not installed as a service."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Host/Rules.cs
@@ -1284,6 +1382,11 @@ msgstr ""
 msgid "Removed bot {0}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid "Removed service \"{0}\". The server folder was left alone."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Restart required for this change."
 msgstr ""
@@ -1359,6 +1462,10 @@ msgstr ""
 msgid ""
 "Room track change denied: room={0}, player={1}, raceStarted={2}, "
 "preparing={3}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "Running as a service (this folder only):"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
@@ -1523,6 +1630,14 @@ msgid "Server version: {0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Service"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Service:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Show available server commands."
 msgstr ""
 
@@ -1601,6 +1716,10 @@ msgstr ""
 msgid "Text chat is disabled on this server."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "That is not one of the choices."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
 msgid "The control session detached."
 msgstr ""
@@ -1638,6 +1757,11 @@ msgstr ""
 msgid "The server is shutting down to install an update."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid "The server program was not found at {0}."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
 msgid "The server refused the connection."
 msgstr ""
@@ -1646,6 +1770,38 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Admin.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 msgid "The server will be shut down immediately by the host."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"The service did not finish starting. Check the server log in its folder."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service did not stop in time."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is already running."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is already stopped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is running."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is stopped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"The service was installed, but this account could not give it write access "
+"to the server folder. The service will not be able to save settings or "
+"updates until that is granted."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Service.cs
@@ -1683,6 +1839,21 @@ msgstr ""
 msgid "This game room is unavailable because it is full."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "This needs administrator rights. Approve the prompt to continue."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid ""
+"This server cannot be installed as a service from {0}. The server updates "
+"itself in place, so it must run from a folder it can write to, and giving a "
+"service write access inside a protected location would let anything that can "
+"write there run as that service later. Move the server folder somewhere "
+"else, such as a folder you created yourself, and install it from there."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Packets/Core.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
@@ -1695,6 +1866,58 @@ msgid ""
 "window to control it."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"This server is the service, so it cannot install or control itself. Run the "
+"server program from its own folder and use its service menu, which can ask "
+"for the rights this needs."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"To remove the service, run:\n"
+"  sudo launchctl bootout system/{0}\n"
+"  sudo rm /Library/LaunchDaemons/{0}.plist"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"To remove the service, run:\n"
+"  sudo systemctl disable --now {0}\n"
+"  sudo rm /etc/systemd/system/{0}\n"
+"  sudo systemctl daemon-reload"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"To start it, run:\n"
+"  sudo launchctl kickstart -k system/{0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"To start it, run:\n"
+"  sudo systemctl start {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"To stop it, run:\n"
+"  sudo launchctl bootout system/{0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"To stop it, run:\n"
+"  sudo systemctl stop {0}"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Load/Sections.cs
 #, csharp-format
 msgid "Top-level key '{0}' is not supported."
@@ -1702,6 +1925,11 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Lifecycle.cs
 msgid "TopSpeed Server"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Identity.cs
+#, csharp-format
+msgid "TopSpeed Server ({0}, port {1})"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
@@ -1714,6 +1942,11 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "TopSpeed Server stopped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Identity.cs
+#, csharp-format
+msgid "TopSpeed multiplayer race server running from {0}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -2076,6 +2309,31 @@ msgstr ""
 msgid "Would you like to download the update? (y/n)"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"Wrote {0}.\n"
+"\n"
+"Check it, then install it by running:\n"
+"  sudo cp {0} /Library/LaunchDaemons/{1}.plist\n"
+"  sudo launchctl bootstrap system /Library/LaunchDaemons/{1}.plist\n"
+"\n"
+"After that it starts with the machine."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"Wrote {0}.\n"
+"\n"
+"Check it, then install it by running:\n"
+"  sudo cp {0} /etc/systemd/system/{1}\n"
+"  sudo systemctl enable --now {1}\n"
+"\n"
+"After that it starts with the machine. To see how it is doing:\n"
+"  systemctl status {1}"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs
 msgid "Yamaha YZF-R1"
 msgstr ""
@@ -2266,6 +2524,18 @@ msgstr ""
 msgid "info"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "installed"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "installed, running"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "installed, stopped"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Transmission/Modes.cs
 msgid ""
 "launch_coupling_max must be greater than or equal to launch_coupling_min in "
@@ -2306,6 +2576,10 @@ msgstr ""
 msgid "multiple"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "no"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Lifecycle.cs
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 #: top_speed_net/TopSpeed.Server/Program.cs
@@ -2314,6 +2588,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Bots/Setup.cs
 msgid "normal"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "not installed"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -2353,6 +2631,10 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Online.cs
 #, csharp-format
 msgid "room {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "set up by hand on this system"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Validation/Core.cs
@@ -2410,6 +2692,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "warning"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "yes"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs

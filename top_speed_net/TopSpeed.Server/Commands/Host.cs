@@ -54,6 +54,7 @@ namespace TopSpeed.Server.Commands
                 new CommandDefinition("players", LocalizationService.Mark("List connected players and protocol versions."), ExecutePlayers),
                 new CommandDefinition("version", LocalizationService.Mark("Display server and protocol versions."), ExecuteVersion),
                 new CommandDefinition("update", LocalizationService.Mark("Check for server updates. Add --force to stop waiting and act now."), ExecuteUpdate),
+                new CommandDefinition("service", LocalizationService.Mark("Install or control this server as a system service."), ExecuteService),
                 new CommandDefinition("shutdown", LocalizationService.Mark("Shutdown the server."), ExecuteShutdown)
             });
             _featureOptionsMenu = CreateFeatureOptionsMenu();
@@ -299,6 +300,30 @@ namespace TopSpeed.Server.Commands
             ShowOptionsMenu(_serverOptionsMenu);
         }
 
+        /// <summary>
+        /// Reachable as a command as well as through the options menu, because somebody
+        /// attached to a server is answered by their own window here rather than by the server,
+        /// and typing one word is a great deal easier than being told to go and find a flag.
+        /// </summary>
+        private void ExecuteService()
+        {
+            Service.ServiceMenu.Show(AppContext.BaseDirectory, _settings.Port);
+        }
+
+        private static string CurrentServiceLabel()
+        {
+            var manager = Service.ServiceManagers.ForCurrentPlatform();
+            var status = manager.Query(AppContext.BaseDirectory);
+            return status.State switch
+            {
+                Service.ServiceInstallState.Running => LocalizationService.Translate(LocalizationService.Mark("installed, running")),
+                Service.ServiceInstallState.Stopped => LocalizationService.Translate(LocalizationService.Mark("installed, stopped")),
+                Service.ServiceInstallState.NotInstalled => LocalizationService.Translate(LocalizationService.Mark("not installed")),
+                Service.ServiceInstallState.Unsupported => LocalizationService.Translate(LocalizationService.Mark("set up by hand on this system")),
+                _ => LocalizationService.Translate(LocalizationService.Mark("installed"))
+            };
+        }
+
         private OptionMenu CreateServerOptionsMenu()
         {
             return new OptionMenu(
@@ -314,7 +339,13 @@ namespace TopSpeed.Server.Commands
                     new OptionItem("server_architecture", LocalizationService.Mark("Server architecture"), OptionValueType.Choice, EditRuntimeArchitecture, CurrentRuntimeAssetLabel),
                     new OptionItem("startup_update_mode", LocalizationService.Mark("Update checking"), OptionValueType.Choice, EditStartupUpdateMode, CurrentStartupUpdateModeLabel),
                     new OptionItem("log_file", LocalizationService.Mark("Log file"), OptionValueType.Text, EditLogFile, () => FormatLogFile(_settings.LogFile)),
-                    new OptionItem("moderation", LocalizationService.Mark("Moderation"), OptionValueType.Menu, () => ShowOptionsMenu(_moderationOptionsMenu))
+                    new OptionItem("moderation", LocalizationService.Mark("Moderation"), OptionValueType.Menu, () => ShowOptionsMenu(_moderationOptionsMenu)),
+                    new OptionItem(
+                        "service",
+                        LocalizationService.Mark("Service"),
+                        OptionValueType.Menu,
+                        () => Service.ServiceMenu.Show(AppContext.BaseDirectory, _settings.Port),
+                        CurrentServiceLabel)
                 });
         }
 

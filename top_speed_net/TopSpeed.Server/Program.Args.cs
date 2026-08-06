@@ -72,6 +72,49 @@ namespace TopSpeed.Server
             ConsoleSink.WriteLine(LocalizationService.Mark("  --log <levels>          Alias for --log-level."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --log-file <path>       Output log file path (e.g. log.txt)."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  -h, --help              Show this help."));
+            ConsoleSink.WriteLine(string.Empty);
+            ConsoleSink.WriteLine(LocalizationService.Mark("Running as a service (this folder only):"));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --service-status        Say whether this folder is installed as a service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --install-service       Install this folder's server as a service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --uninstall-service     Remove it again. The folder is left alone."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --start-service         Start the installed service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --stop-service          Stop the installed service."));
+        }
+
+        /// <summary>
+        /// Each folder has its own service, so these never need to be told which one they mean.
+        /// </summary>
+        private static bool TryGetServiceAction(string[] args, out Service.ServiceAction action)
+        {
+            action = Service.ServiceAction.Status;
+            for (var i = 0; i < args.Length; i++)
+            {
+                switch (args[i].ToLowerInvariant())
+                {
+                    case "--service-status":
+                        action = Service.ServiceAction.Status;
+                        return true;
+                    case "--install-service":
+                        action = Service.ServiceAction.Install;
+                        return true;
+                    case "--uninstall-service":
+                        action = Service.ServiceAction.Uninstall;
+                        return true;
+                    case "--start-service":
+                        action = Service.ServiceAction.Start;
+                        return true;
+                    case "--stop-service":
+                        action = Service.ServiceAction.Stop;
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int ReadConfiguredPort(string baseDirectory)
+        {
+            return Service.ServiceIdentity.ReadConfiguredPort(baseDirectory);
         }
 
         private static string FormatLogLevels(LogLevel levels)

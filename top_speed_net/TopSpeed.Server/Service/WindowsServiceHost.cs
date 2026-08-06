@@ -20,8 +20,6 @@ namespace TopSpeed.Server.Service
     [SupportedOSPlatform("windows")]
     internal sealed class WindowsServiceHost : ServiceBase
     {
-        public const string DefaultServiceName = "TopSpeedServer";
-
         private readonly string[] _args;
         private readonly string _baseDirectory;
         private readonly CancellationTokenSource _shutdown = new CancellationTokenSource();
@@ -32,7 +30,15 @@ namespace TopSpeed.Server.Service
         {
             _args = args;
             _baseDirectory = baseDirectory;
-            ServiceName = DefaultServiceName;
+
+            // Worked out from the folder rather than fixed, so two folders can be installed at
+            // once instead of colliding on one name.
+            //
+            // Windows ignores this at run time for a service that owns its process, so a
+            // registration made by hand under some other name still works. It is set correctly
+            // anyway: it costs nothing, and something that reports itself accurately is easier
+            // to trust than something that happens to be ignored.
+            ServiceName = ServiceIdentity.NameFor(baseDirectory);
             CanShutdown = true;
             CanStop = true;
         }

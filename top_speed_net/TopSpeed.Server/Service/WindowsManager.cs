@@ -1,0 +1,487 @@
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.ServiceProcess;
+using TopSpeed.Localization;
+
+namespace TopSpeed.Server.Service
+{
+    /// <summary>
+    /// Drives the Windows service manager through its own API rather than by running sc.exe.
+    ///
+    /// Not for secrecy, since nothing here is secret, but because sc.exe is driven entirely by
+    /// the shape of its command line: the space after "binPath=" is load bearing, quoting a
+    /// path that contains spaces inside an argument that is itself quoted is a well known trap,
+    /// and a mistake shows up as a service that registers happily and then fails to start. The
+    /// API takes the path as a value, so none of that can happen, and it reports why it failed.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    internal sealed class WindowsServiceManager : IServiceManager
+    {
+        private const string RunAsAccount = @"NT AUTHORITY\LocalService";
+
+        public ServiceStatus Query(string directory)
+        {
+            var name = ServiceIdentity.NameFor(directory);
+            try
+            {
+                using var controller = new ServiceController(name);
+                var state = controller.Status switch
+                {
+                    ServiceControllerStatus.Running => ServiceInstallState.Running,
+                    ServiceControllerStatus.StartPending => ServiceInstallState.Running,
+                    ServiceControllerStatus.Stopped => ServiceInstallState.Stopped,
+                    ServiceControllerStatus.StopPending => ServiceInstallState.Stopped,
+                    _ => ServiceInstallState.Unknown
+                };
+
+                return new ServiceStatus(state, name, controller.StartType == ServiceStartMode.Automatic);
+            }
+            catch (InvalidOperationException)
+            {
+                // The only way the manager reports "no such service" is by throwing.
+                return new ServiceStatus(ServiceInstallState.NotInstalled, name, false);
+            }
+            catch (Win32Exception)
+            {
+                return new ServiceStatus(ServiceInstallState.NotInstalled, name, false);
+            }
+        }
+
+        public ServiceActionResult Install(string directory, int port, bool startAutomatically)
+        {
+            if (ServiceIdentity.IsProtectedLocation(directory, out var location))
+            {
+                return ServiceActionResult.Failed(LocalizationService.Format(
+                    LocalizationService.Mark("This server cannot be installed as a service from {0}. The server updates itself in place, so it must run from a folder it can write to, and giving a service write access inside a protected location would let anything that can write there run as that service later. Move the server folder somewhere else, such as a folder you created yourself, and install it from there."),
+                    location ?? string.Empty));
+            }
+
+            var executable = ServiceIdentity.ExecutablePathFor(directory);
+            if (!File.Exists(executable))
+            {
+                return ServiceActionResult.Failed(LocalizationService.Format(
+                    LocalizationService.Mark("The server program was not found at {0}."),
+                    executable));
+            }
+
+            if (!IsElevated())
+                return ServiceActionResult.RequiresElevation(NeedsAdministrator());
+
+            var name = ServiceIdentity.NameFor(directory);
+            var manager = IntPtr.Zero;
+            var service = IntPtr.Zero;
+            try
+            {
+                manager = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_CREATE_SERVICE);
+                if (manager == IntPtr.Zero)
+                    return ServiceActionResult.Failed(LastErrorMessage());
+
+                service = CreateServiceW(
+                    manager,
+                    name,
+                    ServiceIdentity.DisplayNameFor(directory, port),
+                    SERVICE_ALL_ACCESS,
+                    SERVICE_WIN32_OWN_PROCESS,
+                    startAutomatically ? SERVICE_AUTO_START : SERVICE_DEMAND_START,
+                    SERVICE_ERROR_NORMAL,
+                    ServiceIdentity.CommandLineFor(directory),
+                    null,
+                    IntPtr.Zero,
+                    null,
+                    // No password, and none is possible: this account has none to steal, and
+                    // nothing has to be stored anywhere for the service to start again.
+                    RunAsAccount,
+                    null);
+
+                if (service == IntPtr.Zero)
+                {
+                    var error = Marshal.GetLastWin32Error();
+                    if (error == ERROR_SERVICE_EXISTS)
+                    {
+                        return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                            "A service is already installed for this folder.")));
+                    }
+
+                    if (error == ERROR_SERVICE_MARKED_FOR_DELETE)
+                    {
+                        return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                            "A service for this folder is still being removed. Close the Services window if it is open, then try again.")));
+                    }
+
+                    return ServiceActionResult.Failed(ErrorMessage(error));
+                }
+
+                SetDescription(service, ServiceIdentity.DescriptionFor(directory));
+                SetRestartOnFailure(service);
+                if (startAutomatically)
+                    SetDelayedStart(service);
+
+                var granted = GrantServiceAccountAccess(directory);
+                if (granted != null)
+                    return ServiceActionResult.Failed(granted);
+
+                return ServiceActionResult.Ok(LocalizationService.Format(
+                    LocalizationService.Mark("Installed as service \"{0}\", running as {1}."),
+                    name,
+                    RunAsAccount));
+            }
+            finally
+            {
+                if (service != IntPtr.Zero)
+                    CloseServiceHandle(service);
+                if (manager != IntPtr.Zero)
+                    CloseServiceHandle(manager);
+            }
+        }
+
+        public ServiceActionResult Uninstall(string directory)
+        {
+            if (!IsElevated())
+                return ServiceActionResult.RequiresElevation(NeedsAdministrator());
+
+            var name = ServiceIdentity.NameFor(directory);
+
+            // Removing a running service leaves it registered until the last handle closes and
+            // the machine reboots, so it is stopped first and the caller is spared a service
+            // that is neither present nor gone.
+            var status = Query(directory);
+            if (status.State == ServiceInstallState.Running)
+            {
+                var stopped = Stop(directory);
+                if (!stopped.Succeeded)
+                    return stopped;
+            }
+
+            var manager = IntPtr.Zero;
+            var service = IntPtr.Zero;
+            try
+            {
+                manager = OpenSCManagerW(null, null, SC_MANAGER_CONNECT);
+                if (manager == IntPtr.Zero)
+                    return ServiceActionResult.Failed(LastErrorMessage());
+
+                service = OpenServiceW(manager, name, DELETE);
+                if (service == IntPtr.Zero)
+                {
+                    var error = Marshal.GetLastWin32Error();
+                    if (error == ERROR_SERVICE_DOES_NOT_EXIST)
+                    {
+                        return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                            "No service is installed for this folder.")));
+                    }
+
+                    return ServiceActionResult.Failed(ErrorMessage(error));
+                }
+
+                if (!DeleteService(service))
+                    return ServiceActionResult.Failed(LastErrorMessage());
+
+                return ServiceActionResult.Ok(LocalizationService.Format(
+                    LocalizationService.Mark("Removed service \"{0}\". The server folder was left alone."),
+                    name));
+            }
+            finally
+            {
+                if (service != IntPtr.Zero)
+                    CloseServiceHandle(service);
+                if (manager != IntPtr.Zero)
+                    CloseServiceHandle(manager);
+            }
+        }
+
+        public ServiceActionResult Start(string directory)
+        {
+            var name = ServiceIdentity.NameFor(directory);
+            try
+            {
+                using var controller = new ServiceController(name);
+                if (controller.Status == ServiceControllerStatus.Running)
+                {
+                    return ServiceActionResult.Ok(LocalizationService.Translate(LocalizationService.Mark(
+                        "The service is already running.")));
+                }
+
+                controller.Start();
+                controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+                return ServiceActionResult.Ok(LocalizationService.Translate(LocalizationService.Mark(
+                    "The service is running.")));
+            }
+            catch (InvalidOperationException ex) when (IsAccessDenied(ex))
+            {
+                return ServiceActionResult.RequiresElevation(NeedsAdministrator());
+            }
+            catch (InvalidOperationException)
+            {
+                return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                    "No service is installed for this folder.")));
+            }
+            catch (System.ServiceProcess.TimeoutException)
+            {
+                return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                    "The service did not finish starting. Check the server log in its folder.")));
+            }
+        }
+
+        public ServiceActionResult Stop(string directory)
+        {
+            var name = ServiceIdentity.NameFor(directory);
+            try
+            {
+                using var controller = new ServiceController(name);
+                if (controller.Status == ServiceControllerStatus.Stopped)
+                {
+                    return ServiceActionResult.Ok(LocalizationService.Translate(LocalizationService.Mark(
+                        "The service is already stopped.")));
+                }
+
+                controller.Stop();
+                controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(40));
+                return ServiceActionResult.Ok(LocalizationService.Translate(LocalizationService.Mark(
+                    "The service is stopped.")));
+            }
+            catch (InvalidOperationException ex) when (IsAccessDenied(ex))
+            {
+                return ServiceActionResult.RequiresElevation(NeedsAdministrator());
+            }
+            catch (InvalidOperationException)
+            {
+                return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                    "No service is installed for this folder.")));
+            }
+            catch (System.ServiceProcess.TimeoutException)
+            {
+                return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                    "The service did not stop in time.")));
+            }
+        }
+
+        /// <summary>
+        /// Lets the account the service runs as write to the server folder.
+        ///
+        /// The server keeps its settings, its log and its own updates here, and LocalService is
+        /// not granted anything in an ordinary folder by default. Without this the service
+        /// starts and then fails at the first thing it tries to save.
+        /// </summary>
+        private static string? GrantServiceAccountAccess(string directory)
+        {
+            try
+            {
+                var info = new DirectoryInfo(ControlEndpointDirectory(directory));
+                var security = info.GetAccessControl();
+                security.AddAccessRule(new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.LocalServiceSid, null),
+                    FileSystemRights.Modify,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                    PropagationFlags.None,
+                    AccessControlType.Allow));
+                info.SetAccessControl(security);
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return LocalizationService.Translate(LocalizationService.Mark(
+                    "The service was installed, but this account could not give it write access to the server folder. The service will not be able to save settings or updates until that is granted."));
+            }
+            catch (IOException ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        private static string ControlEndpointDirectory(string directory)
+        {
+            return ServiceIdentity.DisplayPath(directory);
+        }
+
+        private static void SetDescription(IntPtr service, string description)
+        {
+            var text = Marshal.StringToHGlobalUni(description);
+            try
+            {
+                var info = new SERVICE_DESCRIPTION { lpDescription = text };
+                ChangeServiceConfig2W(service, SERVICE_CONFIG_DESCRIPTION, ref info);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(text);
+            }
+        }
+
+        /// <summary>
+        /// Has the manager start the server again if it exits unexpectedly. This is also what
+        /// lets the server update itself later: it can stop, knowing something will bring it
+        /// back, without needing the privilege to start a service.
+        /// </summary>
+        private static void SetRestartOnFailure(IntPtr service)
+        {
+            const int actionCount = 3;
+            var actions = Marshal.AllocHGlobal(Marshal.SizeOf<SC_ACTION>() * actionCount);
+            try
+            {
+                for (var i = 0; i < actionCount; i++)
+                {
+                    Marshal.StructureToPtr(
+                        new SC_ACTION { Type = SC_ACTION_RESTART, Delay = 5000 },
+                        actions + (Marshal.SizeOf<SC_ACTION>() * i),
+                        false);
+                }
+
+                var failure = new SERVICE_FAILURE_ACTIONS
+                {
+                    dwResetPeriod = 86400,
+                    lpRebootMsg = IntPtr.Zero,
+                    lpCommand = IntPtr.Zero,
+                    cActions = actionCount,
+                    lpsaActions = actions
+                };
+
+                ChangeServiceConfig2W(service, SERVICE_CONFIG_FAILURE_ACTIONS, ref failure);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(actions);
+            }
+        }
+
+        /// <summary>
+        /// Starts shortly after boot rather than during it. A race server has nothing useful to
+        /// do until the network is up, and starting late costs nobody anything.
+        /// </summary>
+        private static void SetDelayedStart(IntPtr service)
+        {
+            var info = new SERVICE_DELAYED_AUTO_START_INFO { fDelayedAutostart = true };
+            ChangeServiceConfig2W(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, ref info);
+        }
+
+        public static bool IsElevated()
+        {
+            try
+            {
+                using var identity = WindowsIdentity.GetCurrent();
+                return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        private static bool IsAccessDenied(Exception ex)
+        {
+            return ex.InnerException is Win32Exception win32 && win32.NativeErrorCode == ERROR_ACCESS_DENIED;
+        }
+
+        private static string NeedsAdministrator()
+        {
+            return LocalizationService.Translate(LocalizationService.Mark(
+                "Installing and controlling services needs administrator rights."));
+        }
+
+        private static string LastErrorMessage()
+        {
+            return ErrorMessage(Marshal.GetLastWin32Error());
+        }
+
+        private static string ErrorMessage(int error)
+        {
+            if (error == ERROR_ACCESS_DENIED)
+                return NeedsAdministrator();
+
+            return new Win32Exception(error).Message;
+        }
+
+        private const int SC_MANAGER_CONNECT = 0x0001;
+        private const int SC_MANAGER_CREATE_SERVICE = 0x0002;
+        private const int SERVICE_ALL_ACCESS = 0xF01FF;
+        private const int DELETE = 0x00010000;
+        private const int SERVICE_WIN32_OWN_PROCESS = 0x00000010;
+        private const int SERVICE_AUTO_START = 0x00000002;
+        private const int SERVICE_DEMAND_START = 0x00000003;
+        private const int SERVICE_ERROR_NORMAL = 0x00000001;
+        private const int SERVICE_CONFIG_DESCRIPTION = 1;
+        private const int SERVICE_CONFIG_FAILURE_ACTIONS = 2;
+        private const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
+        private const int SC_ACTION_RESTART = 1;
+        private const int ERROR_ACCESS_DENIED = 5;
+        private const int ERROR_SERVICE_DOES_NOT_EXIST = 1060;
+        private const int ERROR_SERVICE_MARKED_FOR_DELETE = 1072;
+        private const int ERROR_SERVICE_EXISTS = 1073;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SERVICE_DESCRIPTION
+        {
+            public IntPtr lpDescription;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SERVICE_DELAYED_AUTO_START_INFO
+        {
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fDelayedAutostart;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SC_ACTION
+        {
+            public int Type;
+            public int Delay;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SERVICE_FAILURE_ACTIONS
+        {
+            public int dwResetPeriod;
+            public IntPtr lpRebootMsg;
+            public IntPtr lpCommand;
+            public int cActions;
+            public IntPtr lpsaActions;
+        }
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr OpenSCManagerW(string? machineName, string? databaseName, int access);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr OpenServiceW(IntPtr manager, string serviceName, int access);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateServiceW(
+            IntPtr manager,
+            string serviceName,
+            string displayName,
+            int desiredAccess,
+            int serviceType,
+            int startType,
+            int errorControl,
+            string binaryPath,
+            string? loadOrderGroup,
+            IntPtr tagId,
+            string? dependencies,
+            string? accountName,
+            string? password);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeleteService(IntPtr service);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CloseServiceHandle(IntPtr handle);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_DESCRIPTION info);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_FAILURE_ACTIONS info);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_DELAYED_AUTO_START_INFO info);
+    }
+}

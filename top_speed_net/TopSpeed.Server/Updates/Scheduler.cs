@@ -62,6 +62,12 @@ namespace TopSpeed.Server.Updates
         private string _awaitingVersion = string.Empty;
         private int _attempts;
         private DateTime _nextDueUtc = DateTime.UtcNow;
+
+        /// <summary>
+        /// Separate from <see cref="_nextDueUtc"/> so that polling for an empty server, which is
+        /// free and local, is never confused with checking GitHub, which is neither.
+        /// </summary>
+        private DateTime _installRetryAfterUtc = DateTime.MinValue;
         private bool _checkInFlight;
         private bool _installing;
         private Thread? _thread;
@@ -191,7 +197,9 @@ namespace TopSpeed.Server.Updates
                         {
                             _state = UpdateSchedulerState.PendingInstall;
                             _pending = result.Update;
-                            _nextDueUtc = DateTime.UtcNow;
+                            // The install itself waits on the player count, not on this; this
+                            // only paces re-checks made while players are still connected.
+                            ArmDaily();
                             announcement = LocalizationService.Format(
                                 LocalizationService.Mark("Version {0} is available and will be installed once no players are connected."),
                                 result.Update.VersionText);
@@ -224,7 +232,8 @@ namespace TopSpeed.Server.Updates
             {
                 _state = UpdateSchedulerState.PendingInstall;
                 _pending = update;
-                _nextDueUtc = DateTime.UtcNow;
+                _installRetryAfterUtc = DateTime.MinValue;
+                ArmDaily();
             }
 
             _wake.Set();
@@ -306,14 +315,12 @@ namespace TopSpeed.Server.Updates
         {
             lock (_gate)
             {
-                var remaining = _nextDueUtc - DateTime.UtcNow;
+                // While an install is pending the server has to be watched for emptying, which
+                // is a local counter rather than a request, so polling it often costs nothing.
                 if (_state == UpdateSchedulerState.PendingInstall)
-                {
-                    // Normally this just polls for the server emptying, but a failed install
-                    // pushes the due time out and that backoff has to be honoured.
-                    return remaining > PlayerPollInterval ? remaining : PlayerPollInterval;
-                }
+                    return PlayerPollInterval;
 
+                var remaining = _nextDueUtc - DateTime.UtcNow;
                 return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
             }
         }
@@ -321,27 +328,36 @@ namespace TopSpeed.Server.Updates
         private void Tick()
         {
             UpdateSchedulerState state;
-            ServerUpdateInfo? pending;
             bool due;
+            DateTime installRetryAfter;
 
             lock (_gate)
             {
                 state = _state;
-                pending = _pending;
                 due = DateTime.UtcNow >= _nextDueUtc;
+                installRetryAfter = _installRetryAfterUtc;
                 if (_checkInFlight || _installing)
                     return;
             }
 
             if (state == UpdateSchedulerState.PendingInstall)
             {
-                // A previous install attempt that failed sets a due time in the future, so
-                // without this a bad download would be fetched again every poll interval.
-                if (!due)
-                    return;
+                if (_server.GetPlayersSnapshot().Length == 0)
+                {
+                    // A failed install sets a backoff so a bad download is not fetched again
+                    // on every poll.
+                    if (DateTime.UtcNow >= installRetryAfter)
+                        PerformVerifiedInstall();
 
-                if (pending != null && _server.GetPlayersSnapshot().Length == 0)
-                    PerformInstall(pending, showProgress: false);
+                    return;
+                }
+
+                // Players are still racing, so spend the wait keeping track of what the newest
+                // version is. There is only ever one release, and publishing a new one deletes
+                // the assets of the old one, so a pending update goes stale rather than simply
+                // becoming out of date.
+                if (due)
+                    RunScheduledCheck();
 
                 return;
             }
@@ -349,6 +365,11 @@ namespace TopSpeed.Server.Updates
             if (!due)
                 return;
 
+            RunScheduledCheck();
+        }
+
+        private void RunScheduledCheck()
+        {
             if (!TryBeginCheck())
                 return;
 
@@ -360,6 +381,102 @@ namespace TopSpeed.Server.Updates
             finally
             {
                 EndCheck();
+            }
+        }
+
+        /// <summary>
+        /// Checks again before installing, and installs whatever that check returns rather than
+        /// what was stored earlier. A download URL only stays valid until the next release is
+        /// published, so anything held for a while is not safe to reuse.
+        /// </summary>
+        private void PerformVerifiedInstall()
+        {
+            if (!TryBeginCheck())
+                return;
+
+            ServerUpdateCheckResult result;
+            try
+            {
+                result = _updater.Check();
+            }
+            finally
+            {
+                EndCheck();
+            }
+
+            switch (result.Outcome)
+            {
+                case ServerUpdateCheckOutcome.UpdateAvailable when result.Update != null:
+                    var approved = ApproveForInstall(result.Update);
+                    if (approved != null)
+                        PerformInstall(approved, showProgress: false);
+                    return;
+
+                case ServerUpdateCheckOutcome.UpToDate:
+                    // The version was withdrawn, or another copy of the server already applied it.
+                    lock (_gate)
+                    {
+                        ResetCycle();
+                        ArmDaily();
+                    }
+
+                    Announce(LocalizationService.Mark("The pending update is no longer offered and has been dropped."));
+                    return;
+
+                case ServerUpdateCheckOutcome.NotPublished:
+                    ApplyCheckResult(result, interactive: false);
+                    return;
+
+                default:
+                    ApplyCheckResult(result, interactive: false);
+                    return;
+            }
+        }
+
+        /// <summary>
+        /// Decides whether a freshly checked update may be installed in place of the pending one.
+        /// Auto always takes the newest. Notify does not, because the whole point of that mode is
+        /// that the owner chooses which version goes on; a different one needs saying so.
+        /// </summary>
+        private ServerUpdateInfo? ApproveForInstall(ServerUpdateInfo found)
+        {
+            string? announcement = null;
+
+            lock (_gate)
+            {
+                var pendingVersion = _pending?.VersionText ?? string.Empty;
+                var sameVersion = string.Equals(pendingVersion, found.VersionText, StringComparison.OrdinalIgnoreCase);
+                if (sameVersion)
+                {
+                    _pending = found;
+                    return found;
+                }
+
+                if (_mode == StartupUpdateMode.Auto)
+                {
+                    _pending = found;
+                    announcement = LocalizationService.Format(
+                        LocalizationService.Mark("Version {0} is no longer offered. Installing version {1} instead."),
+                        pendingVersion,
+                        found.VersionText);
+                }
+                else
+                {
+                    ResetCycle();
+                    ArmDaily();
+                    announcement = LocalizationService.Format(
+                        LocalizationService.Mark("Version {0} could not be installed because it is no longer offered. Version {1} is available instead. Type update to install it."),
+                        pendingVersion,
+                        found.VersionText);
+                }
+            }
+
+            if (announcement != null)
+                Announce(announcement);
+
+            lock (_gate)
+            {
+                return _state == UpdateSchedulerState.PendingInstall ? _pending : null;
             }
         }
 
@@ -400,6 +517,7 @@ namespace TopSpeed.Server.Updates
             _pending = null;
             _awaitingVersion = string.Empty;
             _attempts = 0;
+            _installRetryAfterUtc = DateTime.MinValue;
         }
 
         // Callers hold _gate.
@@ -411,7 +529,7 @@ namespace TopSpeed.Server.Updates
         // Callers hold _gate.
         private void ArmRetryAfterFailedInstall()
         {
-            _nextDueUtc = DateTime.UtcNow + UpdateRetrySchedule.NextDelay(int.MaxValue);
+            _installRetryAfterUtc = DateTime.UtcNow + UpdateRetrySchedule.NextDelay(int.MaxValue);
         }
 
         /// <summary>

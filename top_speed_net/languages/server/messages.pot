@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-05 20:33-0400\n"
+"POT-Creation-Date: 2026-08-05 21:02-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -299,6 +299,11 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
 #, csharp-format
 msgid "Could not launch updater: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Runtime.cs
+#, csharp-format
+msgid "Could not listen for {0}: {1}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Packages/CatalogState.cs
@@ -1181,6 +1186,11 @@ msgstr ""
 msgid "Race stopped: room={0} \"{1}\", results={2}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Program.Runtime.cs
+#, csharp-format
+msgid "Received {0}. Shutting down."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 msgid ""
 "Reconnect denied because the remote IP does not match the original session."
@@ -1538,6 +1548,10 @@ msgstr ""
 msgid "The download is incomplete. Expected {0} bytes but received {1}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+msgid "The pending update is no longer offered and has been dropped."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Protocol/TrackPackages/Build/Errors.cs
 msgid "The selected custom track is invalid."
 msgstr ""
@@ -1893,6 +1907,13 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid ""
+"Version {0} could not be installed because it is no longer offered. Version "
+"{1} is available instead. Type update to install it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
 "Version {0} is available and will be installed once no players are connected."
 msgstr ""
 
@@ -1907,6 +1928,11 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid "Version {0} is available. Type update to install it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Version {0} is no longer offered. Installing version {1} instead."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs

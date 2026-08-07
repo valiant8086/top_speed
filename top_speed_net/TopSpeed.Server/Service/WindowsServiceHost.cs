@@ -25,6 +25,15 @@ namespace TopSpeed.Server.Service
         private readonly CancellationTokenSource _shutdown = new CancellationTokenSource();
         private Thread? _worker;
         private int _exitCode;
+        private volatile bool _managerAskedToStop;
+
+        /// <summary>
+        /// Reported to the service manager when the server stops in order to come back, which
+        /// is what applying an update does. A manager only acts on a stop it can see went wrong,
+        /// so a clean exit here would leave an updated server switched off until somebody
+        /// noticed. The particular number carries no meaning beyond not being zero.
+        /// </summary>
+        private const int RestartWantedExitCode = 1;
 
         private WindowsServiceHost(string[] args, string baseDirectory)
         {
@@ -66,8 +75,19 @@ namespace TopSpeed.Server.Service
                 {
                     // A server that stops on its own, which is what an update does, has to tell
                     // the manager rather than leaving it believing the service is still running.
-                    if (!_shutdown.IsCancellationRequested)
+                    //
+                    // What is checked is whether the manager was the one that asked, not whether
+                    // a shutdown was requested at all. Every self chosen stop cancels the same
+                    // token the manager's does, so testing the token treated an update, the
+                    // shutdown command and a signal as though the manager already knew, and the
+                    // service was left reading as running with nothing behind it.
+                    if (!_managerAskedToStop)
+                    {
+                        if (ServiceRuntime.StoppingToRestart)
+                            ExitCode = RestartWantedExitCode;
+
                         Stop();
+                    }
                 }
             })
             {
@@ -79,12 +99,14 @@ namespace TopSpeed.Server.Service
 
         protected override void OnStop()
         {
+            _managerAskedToStop = true;
             RequestShutdown();
         }
 
         protected override void OnShutdown()
         {
             // The machine is going down. Same orderly stop, just less time to do it in.
+            _managerAskedToStop = true;
             RequestShutdown();
         }
 

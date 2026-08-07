@@ -148,6 +148,14 @@ namespace TopSpeed.Server.Updates
                 startInfo.ArgumentList.Add(_config.ServerEntryName);
                 startInfo.ArgumentList.Add("--skip");
                 startInfo.ArgumentList.Add(_config.UpdaterEntryName);
+
+                // A service is started by the service manager and by nothing else. Letting the
+                // updater launch the executable would leave a server running that the manager
+                // has no idea about, sitting on the folder its own service needs, while the
+                // service itself still reads as stopped. The manager brings it back instead.
+                if (Service.ServiceRuntime.IsRunningAsService)
+                    startInfo.ArgumentList.Add("--no-restart");
+
                 Process.Start(startInfo);
                 return true;
             }

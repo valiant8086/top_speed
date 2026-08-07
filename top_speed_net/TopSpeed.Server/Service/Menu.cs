@@ -15,6 +15,15 @@ namespace TopSpeed.Server.Service
     internal static class ServiceRuntime
     {
         public static bool IsRunningAsService { get; set; }
+
+        /// <summary>
+        /// Set when the server is stopping in order to be started again, which is what applying
+        /// an update means. A service manager treats a service that stops on purpose and one
+        /// that stops expecting to come back as the same thing unless it is told otherwise, and
+        /// the difference here is between a server that updates itself and one that quietly
+        /// stays down until somebody notices.
+        /// </summary>
+        public static bool StoppingToRestart { get; set; }
     }
 
     /// <summary>

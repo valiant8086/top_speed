@@ -355,7 +355,7 @@ namespace TopSpeed.Server.Service
                 for (var i = 0; i < actionCount; i++)
                 {
                     Marshal.StructureToPtr(
-                        new SC_ACTION { Type = SC_ACTION_RESTART, Delay = 5000 },
+                        new SC_ACTION { Type = SC_ACTION_RESTART, Delay = RestartDelayMilliseconds },
                         actions + (Marshal.SizeOf<SC_ACTION>() * i),
                         false);
                 }
@@ -375,6 +375,13 @@ namespace TopSpeed.Server.Service
             {
                 Marshal.FreeHGlobal(actions);
             }
+
+            // Without this, the actions above only ever apply to a service that crashed, and a
+            // server that stopped tidily to apply an update would stay stopped no matter what
+            // exit code it reported. This is the "enable actions for stops with errors" box in
+            // the services window, and it is what makes an update able to bring itself back.
+            var flag = new SERVICE_FAILURE_ACTIONS_FLAG { fFailureActionsOnNonCrashFailures = true };
+            ChangeServiceConfig2W(service, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, ref flag);
         }
 
         /// <summary>
@@ -435,6 +442,16 @@ namespace TopSpeed.Server.Service
         private const int SERVICE_CONFIG_DESCRIPTION = 1;
         private const int SERVICE_CONFIG_FAILURE_ACTIONS = 2;
         private const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
+        private const int SERVICE_CONFIG_FAILURE_ACTIONS_FLAG = 4;
+
+        /// <summary>
+        /// Long enough for an update to finish rewriting the folder before the manager starts
+        /// the server again. The updater waits for the old server to go, unpacks over the top of
+        /// it and then leaves the starting to the manager, so a short delay here would race it
+        /// and could bring the server back on top of a half replaced folder. Thirty seconds of
+        /// waiting after a crash is a fair price for that not being possible.
+        /// </summary>
+        private const int RestartDelayMilliseconds = 30000;
         private const int SC_ACTION_RESTART = 1;
         private const int ERROR_ACCESS_DENIED = 5;
         private const int ERROR_SERVICE_DOES_NOT_EXIST = 1060;
@@ -452,6 +469,13 @@ namespace TopSpeed.Server.Service
         {
             [MarshalAs(UnmanagedType.Bool)]
             public bool fDelayedAutostart;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SERVICE_FAILURE_ACTIONS_FLAG
+        {
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fFailureActionsOnNonCrashFailures;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -512,5 +536,9 @@ namespace TopSpeed.Server.Service
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_DELAYED_AUTO_START_INFO info);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_FAILURE_ACTIONS_FLAG info);
     }
 }

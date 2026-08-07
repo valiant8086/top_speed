@@ -13,9 +13,8 @@ namespace TopSpeed.Server.Logging
         private bool _writeToConsole;
 
         /// <summary>
-        /// Set when a log file was asked for but could not be opened. The most common reason is
-        /// a second copy of the server started from the same folder, since both resolve the same
-        /// configured path and the file cannot be shared.
+        /// Set when a log file was asked for but could not be opened, so the server can say so
+        /// and carry on rather than refusing to run over a log.
         /// </summary>
         public string? FileError { get; }
 
@@ -33,7 +32,19 @@ namespace TopSpeed.Server.Logging
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath) ?? ".");
-                _writer = new StreamWriter(logFilePath, append, Encoding.UTF8)
+
+                // Opened so that other programs may read it while the server is running. The
+                // default refuses them, which meant the log of a server running unattended,
+                // exactly the one worth reading, could not be opened until the server stopped.
+                // Sharing is limited to reading: a second writer would interleave lines into
+                // nonsense, and this stays the one thing writing here.
+                var stream = new FileStream(
+                    logFilePath,
+                    append ? FileMode.Append : FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.Read | FileShare.Delete);
+
+                _writer = new StreamWriter(stream, Encoding.UTF8)
                 {
                     AutoFlush = true
                 };

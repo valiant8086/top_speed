@@ -24,11 +24,18 @@ namespace TopSpeed.Updater
                 var options = ParseArgs(safeArgs);
                 enableLog = options.EnableLog;
                 logPath = enableLog ? Path.Combine(Path.GetFullPath(options.TargetDir), "updater.log") : string.Empty;
-                Log(enableLog, logPath, $"Parsed args. pid={options.ProcessId}, zip={options.ZipPath}, dir={options.TargetDir}, game={options.GameExeName}, skip={options.SkipFileName}");
+                Log(enableLog, logPath, $"Parsed args. pid={options.ProcessId}, zip={options.ZipPath}, dir={options.TargetDir}, game={options.GameExeName}, skip={options.SkipFileName}, noRestart={options.NoRestart}");
                 WaitForProcessExit(options.ProcessId);
                 Log(enableLog, logPath, "Waited for game process exit.");
                 InstallZip(options, enableLog, logPath);
                 Log(enableLog, logPath, "Zip install complete.");
+
+                if (options.NoRestart)
+                {
+                    Log(enableLog, logPath, "Restart left to the service manager.");
+                    return 0;
+                }
+
                 StartGame(options, enableLog, logPath);
                 Log(enableLog, logPath, "Game restart requested successfully.");
                 return 0;
@@ -50,6 +57,16 @@ namespace TopSpeed.Updater
                 if (string.Equals(key, "--log", StringComparison.OrdinalIgnoreCase))
                 {
                     options.EnableLog = true;
+                    continue;
+                }
+
+                // Files are replaced and that is all. Used when something else owns starting the
+                // program again, which is the case for a server running as a system service:
+                // launching the executable directly would produce a running program that the
+                // service manager knows nothing about, holding the folder its own service needs.
+                if (string.Equals(key, "--no-restart", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.NoRestart = true;
                     continue;
                 }
 
@@ -404,6 +421,7 @@ namespace TopSpeed.Updater
             public string GameExeName { get; set; } = string.Empty;
             public string SkipFileName { get; set; } = string.Empty;
             public bool EnableLog { get; set; }
+            public bool NoRestart { get; set; }
         }
     }
 }

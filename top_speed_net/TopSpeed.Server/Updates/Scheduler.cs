@@ -507,6 +507,11 @@ namespace TopSpeed.Server.Updates
             Announce(LocalizationService.Format(
                 LocalizationService.Mark("Update {0} is ready to install. The server is shutting down to apply it."),
                 update.VersionText));
+
+            // Recorded before asking to stop, so that a service host can tell this apart from
+            // being told to stop by the service manager. One expects to be started again and
+            // the other does not, and the manager only knows the difference if it is told.
+            Service.ServiceRuntime.StoppingToRestart = true;
             _requestShutdown();
         }
 

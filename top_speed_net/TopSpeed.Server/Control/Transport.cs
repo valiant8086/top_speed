@@ -105,6 +105,12 @@ namespace TopSpeed.Server.Control
         /// Whether an endpoint exists for this folder, regardless of whether it can be
         /// connected to right now. Named pipes are enumerable, so this needs no permission
         /// beyond listing them, and it never has to elevate to find out.
+        ///
+        /// The pipe namespace is listed rather than the pipe being asked about by name. Opening
+        /// a pipe by name is a connection, even to ask whether it is there: it takes the waiting
+        /// instance, is served as a session and dropped again, which reads in the log as
+        /// somebody attaching and leaving and can hold the one session away from a real client
+        /// for as long as it lasts. Listing touches no instance.
         /// </summary>
         public static bool EndpointExists(string directory)
         {
@@ -113,7 +119,14 @@ namespace TopSpeed.Server.Control
                 if (!OperatingSystem.IsWindows())
                     return File.Exists(ControlEndpoint.SocketPathFor(directory));
 
-                return File.Exists(@"\\.\pipe\" + ControlEndpoint.PipeNameFor(directory));
+                var name = ControlEndpoint.PipeNameFor(directory);
+                foreach (var entry in Directory.EnumerateFileSystemEntries(@"\\.\pipe\"))
+                {
+                    if (string.Equals(Path.GetFileName(entry), name, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+
+                return false;
             }
             catch (IOException)
             {

@@ -18,7 +18,6 @@ namespace TopSpeed.Server.Control
     internal static class ControlEndpoint
     {
         public const string SocketFileName = "server.sock";
-        public const string StatusFileName = "server.status";
         private const string PipePrefix = "TopSpeedServer-";
 
         public static bool UsesNamedPipe => OperatingSystem.IsWindows();
@@ -70,11 +69,6 @@ namespace TopSpeed.Server.Control
         public static string SocketPathFor(string directory)
         {
             return Path.Combine(NormalizeDirectory(directory), SocketFileName);
-        }
-
-        public static string StatusPathFor(string directory)
-        {
-            return Path.Combine(NormalizeDirectory(directory), StatusFileName);
         }
 
         /// <summary>The address to hand to a pipe or socket API for this directory.</summary>

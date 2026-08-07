@@ -136,14 +136,10 @@ namespace TopSpeed.Server.Service
                         "Starting and stopping it will need administrator rights, because this account could not grant them here."));
                 }
 
-                // Said now rather than left to be discovered as a failed start, since installing
-                // from the server you are already running is the obvious way to go about it.
-                if (Control.ControlTransport.EndpointExists(directory))
-                {
-                    installed += "\n" + LocalizationService.Translate(LocalizationService.Mark(
-                        "A server is already running from this folder, so the service cannot start until it stops. Shut that one down first, then start the service."));
-                }
-
+                // Nothing is said here about a server already running from this folder.
+                // Installing registers the service to start with the machine and starts nothing
+                // now, so a server running at this moment is neither in the way nor relevant,
+                // and starting the service later stops it as part of doing so.
                 return ServiceActionResult.Ok(installed);
             }
             finally

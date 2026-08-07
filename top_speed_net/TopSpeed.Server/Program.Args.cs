@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using TopSpeed.Server.Config;
 using TopSpeed.Server.Control;
 using TopSpeed.Server.Logging;
@@ -226,29 +227,6 @@ namespace TopSpeed.Server
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Holds the window open until somebody has read what is on it. A window launched from
-        /// a file manager closes the instant this process exits, taking the last message with
-        /// it before it can be read or spoken.
-        ///
-        /// Waits for a keypress rather than a set time, because how long a message takes to
-        /// read is not ours to guess, and waits every time rather than working out whether it
-        /// owns the window, because Windows answers that wrongly under an elevated launch. An
-        /// extra keypress at an existing prompt costs far less than a message nobody can read,
-        /// and redirected input reaches end of stream at once, so this never delays a script.
-        /// </summary>
-        private static void PauseBeforeClosing()
-        {
-            ConsoleSink.WriteLine(LocalizationService.Mark("Press Enter to close this window."));
-            try
-            {
-                Console.ReadLine();
-            }
-            catch (IOException)
-            {
-            }
         }
 
         /// <summary>

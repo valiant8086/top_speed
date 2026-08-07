@@ -56,14 +56,18 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// Runs this same program again for the one action, asking the system for administrator
-        /// rights as it goes. The consent prompt is the system's own, so nothing here ever sees
-        /// or asks for a password.
+        /// Runs this same program again for the one action, with the rights this one cannot
+        /// have. A process cannot be granted them while it is running: on Windows the token is
+        /// settled when a process is created, so a second process is the only way, and the
+        /// consent prompt belongs to the system, meaning nothing here sees or asks for a
+        /// password.
+        ///
+        /// That copy is hidden and reports by finishing. A window of its own would be a second
+        /// place to read and a second thing to dismiss, for a job nobody needs to watch.
         /// </summary>
         private static int Elevate(ServiceAction action, string directory)
         {
-            ConsoleSink.WriteLine(LocalizationService.Mark(
-                "This needs administrator rights. Approve the prompt to continue."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("This needs administrator rights."));
 
             try
             {
@@ -74,7 +78,8 @@ namespace TopSpeed.Server.Service
                     // Both are required together: the verb is only honoured by the shell, and
                     // the shell is only used when the process is not started directly.
                     UseShellExecute = true,
-                    Verb = "runas"
+                    Verb = "runas",
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
                 info.ArgumentList.Add(FlagFor(action));
 
@@ -83,6 +88,13 @@ namespace TopSpeed.Server.Service
                     return 1;
 
                 process.WaitForExit();
+
+                // What happened is read back off the service rather than carried between the
+                // two processes. It needs no channel, and it cannot disagree with the truth.
+                if (process.ExitCode != 0)
+                    ConsoleSink.WriteLine(LocalizationService.Mark("That did not finish."));
+
+                ConsoleSink.WriteLine(Describe(ServiceManagers.ForCurrentPlatform().Query(directory), directory));
                 return process.ExitCode;
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)

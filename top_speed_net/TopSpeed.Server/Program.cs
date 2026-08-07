@@ -51,9 +51,7 @@ namespace TopSpeed.Server
                 // busy it says so and stops there. It could go and tell the running server to
                 // shut down, and deliberately does not: a flag in a script or a shortcut must
                 // not drop a server full of players as a side effect of asking for a start.
-                var code = ServiceCommands.Execute(serviceAction, baseDirectory, startAutomatically: true);
-                PauseBeforeClosing();
-                return code;
+                return ServiceCommands.Execute(serviceAction, baseDirectory, startAutomatically: true);
             }
 
             // Before anything is bound, find out whether this folder already has a server. If
@@ -64,21 +62,16 @@ namespace TopSpeed.Server
                 var attached = ControlClient.Run(baseDirectory);
                 if (attached != ControlClientOutcome.NoServerRunning)
                 {
-                    var code = ServiceRuntime.HandingOverToService
+                    // Handed over only once the client has returned, so the connection it held
+                    // is already dropped and the folder is free for the service to claim.
+                    return ServiceRuntime.HandingOverToService
                         ? ServiceConsole.CompleteHandover(baseDirectory)
                         : attached == ControlClientOutcome.SessionEnded ? 0 : 1;
-
-                    // After the client has returned, so the connection is already dropped and a
-                    // window left sitting on its closing message never keeps the session from
-                    // the next person who wants it.
-                    PauseBeforeClosing();
-                    return code;
                 }
 
                 if (IsAttachRequested(args))
                 {
                     ConsoleSink.WriteLine(LocalizationService.Mark("No server is running from this folder."));
-                    PauseBeforeClosing();
                     return 1;
                 }
             }
@@ -104,10 +97,7 @@ namespace TopSpeed.Server
             // the ports and the endpoint this server held are genuinely released and the service
             // can have them. The window stays and becomes a connection to the service.
             if (ServiceRuntime.HandingOverToService)
-            {
                 exitCode = ServiceConsole.CompleteHandover(baseDirectory);
-                PauseBeforeClosing();
-            }
 
             return exitCode;
         }

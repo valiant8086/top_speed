@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 04:50-0400\n"
+"POT-Creation-Date: 2026-08-07 13:59-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -154,12 +154,6 @@ msgid ""
 "A server is already running from this folder, so the service cannot start as "
 "well. Stop that server first, using its shutdown command if it is the one "
 "you are reading this in, and then start the service."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
-msgid ""
-"A server is already running from this folder, so the service cannot start "
-"until it stops. Shut that one down first, then start the service."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -1205,12 +1199,6 @@ msgstr ""
 msgid "Only host can do this."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid ""
-"Only one server can run from this folder, so the one running now has to stop "
-"for the service to have it."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Open server options menu."
 msgstr ""
@@ -1264,10 +1252,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs
 msgid "Porsche 911 GT3 RS"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "Press Enter to close this window."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
@@ -1754,19 +1738,21 @@ msgid ""
 "account could not grant them here."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid "Stop it and start the service? (y/n)"
+#: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
+#, csharp-format
+msgid "Stopping race: room={0}, active={1}, trackedResults={2}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
-"Stopping it, then starting the service. This window will connect to the "
-"service once it is up."
+"Stopping the server will disconnect anybody playing on it. Stop it and start "
+"the service? (y/n)"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
-#, csharp-format
-msgid "Stopping race: room={0}, active={1}, trackedResults={2}."
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"Stopping the server, then starting the service. This window will connect to "
+"the service once it is up."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1775,6 +1761,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Moderation/TextChat.cs
 msgid "Text chat is disabled on this server."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "That did not finish."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
@@ -1906,7 +1896,7 @@ msgid "This game room is unavailable because it is full."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
-msgid "This needs administrator rights. Approve the prompt to continue."
+msgid "This needs administrator rights."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
@@ -2841,6 +2831,13 @@ msgstr ""
 #, csharp-format
 msgid ""
 "{0} payload mismatch: room={1}, connectionPlayer={2}/{3}, payload={4}/{5}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+#, csharp-format
+msgid ""
+"{0} players are connected and will be disconnected. Stop the server and "
+"start the service? (y/n)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs

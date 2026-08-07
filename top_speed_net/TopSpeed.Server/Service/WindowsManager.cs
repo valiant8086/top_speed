@@ -446,12 +446,16 @@ namespace TopSpeed.Server.Service
 
         /// <summary>
         /// Long enough for an update to finish rewriting the folder before the manager starts
-        /// the server again. The updater waits for the old server to go, unpacks over the top of
-        /// it and then leaves the starting to the manager, so a short delay here would race it
-        /// and could bring the server back on top of a half replaced folder. Thirty seconds of
-        /// waiting after a crash is a fair price for that not being possible.
+        /// the server again.
+        ///
+        /// The updater waits for the old server to go, unpacks over the top of it, and leaves
+        /// the starting to the manager. Starting too early is the one outcome worth engineering
+        /// against: the new server locks its own files, the updater's remaining writes fail, and
+        /// what is left is a folder holding two versions rather than a clean failure. A realistic
+        /// unpack is seconds, so two minutes is roughly ten times over, and the cost of being
+        /// generous is only a slower comeback from a crash.
         /// </summary>
-        private const int RestartDelayMilliseconds = 30000;
+        private const int RestartDelayMilliseconds = 120000;
         private const int SC_ACTION_RESTART = 1;
         private const int ERROR_ACCESS_DENIED = 5;
         private const int ERROR_SERVICE_DOES_NOT_EXIST = 1060;

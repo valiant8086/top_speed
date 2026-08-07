@@ -29,7 +29,12 @@ namespace TopSpeed.Server
             // console that does not exist, leaving an attached client able to see output but
             // never able to have a command answered. Service mode is known here, so no console
             // session is offered in the first place.
-            CommandSessions.UseConsoleSession(OperatingSystem.IsWindows() && IsServiceMode(args)
+            // True under any service manager, not only Windows. Recorded before anything else
+            // because it decides whether a console session is offered and whether the updater
+            // may start the program again, and both are wrong if answered late.
+            ServiceRuntime.IsRunningAsService = IsServiceMode(args);
+
+            CommandSessions.UseConsoleSession(ServiceRuntime.IsRunningAsService
                 ? new HeadlessCommandSession()
                 : new ConsoleCommandSession());
 
@@ -83,13 +88,10 @@ namespace TopSpeed.Server
             // A service is always launched by the manager with this argument, which the
             // installer writes into the registration. That is exact, unlike guessing from
             // whether the process happens to look interactive.
-            if (OperatingSystem.IsWindows() && IsServiceMode(args))
-            {
-                // Recorded so the service menu knows to send somebody to a window that can ask
-                // for rights, rather than trying to raise a prompt where none can appear.
-                ServiceRuntime.IsRunningAsService = true;
+            // Only the host is Windows only. Everywhere else the manager runs the program as an
+            // ordinary process and watches it, so there is nothing extra to report to.
+            if (OperatingSystem.IsWindows() && ServiceRuntime.IsRunningAsService)
                 return WindowsServiceHost.Run(args, baseDirectory);
-            }
 
             using var shutdown = new CancellationTokenSource();
             return RunServer(args, baseDirectory, shutdown);

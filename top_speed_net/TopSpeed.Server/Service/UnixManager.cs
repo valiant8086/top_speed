@@ -86,6 +86,23 @@ namespace TopSpeed.Server.Service
             var name = UnitNameFor(directory);
             var path = Path.Combine(folder, name);
 
+            File.WriteAllText(path, BuildSystemdUnit(directory));
+
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n  sudo cp {0} /etc/systemd/system/{1}\n  sudo systemctl enable --now {1}\n\nAfter that it starts with the machine. To see how it is doing:\n  systemctl status {1}"),
+                path,
+                name));
+        }
+
+        /// <summary>
+        /// The unit text, built apart from writing it so it can be checked without a machine
+        /// that runs systemd. Nobody here has one, and the parts of it that matter are exactly
+        /// the parts that are silently wrong if they are missing.
+        /// </summary>
+        public static string BuildSystemdUnit(string directory)
+        {
+            var folder = ServiceIdentity.DisplayPath(directory);
+
             var unit = new StringBuilder();
             unit.Append("[Unit]\n");
             unit.Append("Description=").Append(ServiceIdentity.DisplayNameFor(directory)).Append('\n');
@@ -94,51 +111,64 @@ namespace TopSpeed.Server.Service
             unit.Append("After=network-online.target\n\n");
             unit.Append("[Service]\n");
             unit.Append("Type=simple\n");
-            unit.Append("ExecStart=").Append(ServiceIdentity.ExecutablePathFor(directory)).Append('\n');
+            // The argument matters as much as the path. It tells the server something else is
+            // managing it, which is what stops the updater from launching a second copy behind
+            // this unit's back after an update.
+            unit.Append("ExecStart=").Append(ServiceIdentity.ExecutablePathFor(directory)).Append(" --service\n");
             unit.Append("WorkingDirectory=").Append(folder).Append('\n');
             // The account that owns the folder, so the server can still write its settings, its
             // log and its own updates. Nothing new is created and no password exists.
             unit.Append("User=").Append(Environment.UserName).Append('\n');
             // The server exits on its own to apply an update and counts on being brought back.
             unit.Append("Restart=always\n");
-            unit.Append("RestartSec=5\n\n");
+            // Long enough for an update to finish rewriting the folder first. Unlike Windows,
+            // nothing here can start the unit except systemd, since that needs root and the
+            // server deliberately does not have it, so this wait is the only thing keeping a
+            // restart from landing on a folder that is still being replaced.
+            unit.Append("RestartSec=120\n\n");
             unit.Append("[Install]\n");
             unit.Append("WantedBy=multi-user.target\n");
-
-            File.WriteAllText(path, unit.ToString());
-
-            return ServiceActionResult.Ok(LocalizationService.Format(
-                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n  sudo cp {0} /etc/systemd/system/{1}\n  sudo systemctl enable --now {1}\n\nAfter that it starts with the machine. To see how it is doing:\n  systemctl status {1}"),
-                path,
-                name));
+            return unit.ToString();
         }
 
         private static ServiceActionResult WriteLaunchd(string directory)
         {
+            var label = UnitNameFor(directory);
+            var path = Path.Combine(ServiceIdentity.DisplayPath(directory), label + ".plist");
+
+            File.WriteAllText(path, BuildLaunchdPlist(directory));
+
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n  sudo cp {0} /Library/LaunchDaemons/{1}.plist\n  sudo launchctl bootstrap system /Library/LaunchDaemons/{1}.plist\n\nAfter that it starts with the machine."),
+                path,
+                label));
+        }
+
+        /// <summary>
+        /// The job description, built apart from writing it for the same reason as the systemd
+        /// one: it can be checked here, and it cannot be checked on a machine we have.
+        /// </summary>
+        public static string BuildLaunchdPlist(string directory)
+        {
             var folder = ServiceIdentity.DisplayPath(directory);
             var label = UnitNameFor(directory);
-            var path = Path.Combine(folder, label + ".plist");
 
             var plist = new StringBuilder();
             plist.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
             plist.Append("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n");
             plist.Append("<plist version=\"1.0\">\n<dict>\n");
             AppendKey(plist, "Label", label);
+            // The argument tells the server it is being managed, so the updater leaves starting
+            // it again to launchd rather than launching a copy launchd knows nothing about.
             plist.Append("  <key>ProgramArguments</key>\n  <array>\n    <string>")
                 .Append(Escape(ServiceIdentity.ExecutablePathFor(directory)))
-                .Append("</string>\n  </array>\n");
+                .Append("</string>\n    <string>--service</string>\n  </array>\n");
             AppendKey(plist, "WorkingDirectory", folder);
             AppendKey(plist, "UserName", Environment.UserName);
             plist.Append("  <key>RunAtLoad</key>\n  <true/>\n");
             plist.Append("  <key>KeepAlive</key>\n  <true/>\n");
             plist.Append("</dict>\n</plist>\n");
-
-            File.WriteAllText(path, plist.ToString());
-
-            return ServiceActionResult.Ok(LocalizationService.Format(
-                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n  sudo cp {0} /Library/LaunchDaemons/{1}.plist\n  sudo launchctl bootstrap system /Library/LaunchDaemons/{1}.plist\n\nAfter that it starts with the machine."),
-                path,
-                label));
+            return plist.ToString();
         }
 
         private static void AppendKey(StringBuilder builder, string key, string value)

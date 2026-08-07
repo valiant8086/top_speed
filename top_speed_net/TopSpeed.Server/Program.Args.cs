@@ -213,9 +213,12 @@ namespace TopSpeed.Server
         /// </summary>
         private static bool IsServiceMode(string[] args)
         {
-            if (!OperatingSystem.IsWindows())
-                return false;
-
+            // Asked on every platform, not only Windows. The flag means "something else is
+            // managing me", which is as true of a systemd unit or a launchd job as it is of a
+            // Windows service, and it decides whether the updater is allowed to start the
+            // program again afterwards. Answering false everywhere but Windows meant a daemon
+            // updating itself got launched by the updater and restarted by its manager at the
+            // same time. Only the branch that runs the Windows service host is Windows only.
             for (var i = 0; i < args.Length; i++)
             {
                 if (string.Equals(args[i], "--service", StringComparison.OrdinalIgnoreCase))

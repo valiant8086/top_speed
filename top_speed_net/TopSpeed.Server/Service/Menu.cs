@@ -18,17 +18,74 @@ namespace TopSpeed.Server.Service
     }
 
     /// <summary>
-    /// The service menu, deliberately free of any dependency on a loaded configuration so that
-    /// the same code serves both places it is reached from: a server showing its own options,
-    /// and a window attached to a server that cannot do this for itself.
+    /// Everything somebody can ask for about this folder's service, from wherever they ask it.
+    ///
+    /// There are three places: a server running in its own window, a window attached to a
+    /// server elsewhere, and a plain command line carrying one of the flags. They differ in
+    /// exactly one respect, which is who is able to stop the server currently holding the
+    /// folder, so that is the one thing handed in. Everything else is shared, because three
+    /// copies of "start the service" would be three things to keep in step and only one of them
+    /// would ever get tested.
+    ///
+    /// Deliberately free of any dependency on loaded configuration, since two of those three
+    /// callers have none.
     /// </summary>
-    internal static class ServiceMenu
+    internal static class ServiceConsole
     {
-        /// <param name="stopLocalServer">
-        /// How to stop the server this menu is running inside, when there is one. Null from a
-        /// window attached to a server elsewhere, which has no server of its own to stop.
+        /// <param name="stopHostingServer">
+        /// How to stop the server holding this folder, when the caller can offer anything.
+        /// A server in its own window stops itself; a window attached to one asks it to stop;
+        /// a bare command line passes null, having neither a server of its own nor a
+        /// connection to ask through.
         /// </param>
-        public static void Show(string directory, Action? stopLocalServer = null)
+        public static void Run(string arguments, string directory, Action? stopHostingServer)
+        {
+            var verb = (arguments ?? string.Empty).Trim();
+            if (verb.Length == 0)
+            {
+                ShowMenu(directory, stopHostingServer);
+                return;
+            }
+
+            if (!TryParseVerb(verb, out var action))
+            {
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("\"{0}\" is not something the service command understands."),
+                    verb);
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "Use: service, or service with one of install, uninstall, start, stop, status."));
+                return;
+            }
+
+            Perform(action, directory, stopHostingServer);
+        }
+
+        private static bool TryParseVerb(string verb, out ServiceAction action)
+        {
+            switch (verb.ToLowerInvariant())
+            {
+                case "install":
+                    action = ServiceAction.Install;
+                    return true;
+                case "uninstall":
+                    action = ServiceAction.Uninstall;
+                    return true;
+                case "start":
+                    action = ServiceAction.Start;
+                    return true;
+                case "stop":
+                    action = ServiceAction.Stop;
+                    return true;
+                case "status":
+                    action = ServiceAction.Status;
+                    return true;
+                default:
+                    action = ServiceAction.Status;
+                    return false;
+            }
+        }
+
+        private static void ShowMenu(string directory, Action? stopHostingServer)
         {
             var manager = ServiceManagers.ForCurrentPlatform();
 
@@ -44,7 +101,7 @@ namespace TopSpeed.Server.Service
                 if (port > 0)
                     ConsoleSink.WriteLineFormat(LocalizationService.Mark("Configured port: {0}."), port);
                 ConsoleSink.WriteLine(LocalizationService.Mark("1. Install"));
-                ConsoleSink.WriteLine(LocalizationService.Mark("2. Remove"));
+                ConsoleSink.WriteLine(LocalizationService.Mark("2. Uninstall"));
                 ConsoleSink.WriteLine(LocalizationService.Mark("3. Start"));
                 ConsoleSink.WriteLine(LocalizationService.Mark("4. Stop"));
                 ConsoleSink.WriteLine(LocalizationService.Mark("0. Back"));
@@ -79,50 +136,57 @@ namespace TopSpeed.Server.Service
                         continue;
                 }
 
-                if (ServiceRuntime.IsRunningAsService)
-                {
-                    // The prompt would have nowhere to appear. Whoever is reading this is at a
-                    // machine and can do it from there.
-                    ConsoleSink.WriteLine(LocalizationService.Mark(
-                        "This server is the service, so it cannot install or control itself. Run the server program from its own folder and use its service menu, which can ask for the rights this needs."));
-                    continue;
-                }
-
-                if (action == ServiceAction.Start
-                    && stopLocalServer != null
-                    && Control.ControlTransport.EndpointExists(directory))
-                {
-                    if (StopThisServerAndStartTheService(directory, stopLocalServer))
-                        return;
-
-                    continue;
-                }
-
-                ServiceCommands.Execute(action, directory, startAutomatically: true);
+                if (Perform(action, directory, stopHostingServer))
+                    return;
             }
         }
 
         /// <summary>
-        /// Hands the starting over to a copy that will outlive this one, then stops this server.
-        ///
-        /// This is the only way the service can ever be started from here. Only one server may
-        /// run from a folder, and reaching this menu at all means one is running, so the folder
-        /// is always occupied by the very process being asked to free it. It cannot stop itself
-        /// and then watch what happens, so something else has to do the watching.
-        ///
-        /// The order matters. The copy is launched first, and only if it actually started, so
-        /// that refusing the rights prompt leaves the running server exactly as it was rather
-        /// than stopping it for a start that was never going to happen.
-        ///
-        /// Returns true when this server is on its way down and the menu should stop.
+        /// Carries out one action. Returns true when the caller should stop asking for more,
+        /// which happens when the server this is running inside is on its way down.
         /// </summary>
-        private static bool StopThisServerAndStartTheService(string directory, Action stopLocalServer)
+        private static bool Perform(ServiceAction action, string directory, Action? stopHostingServer)
+        {
+            if (ServiceRuntime.IsRunningAsService)
+            {
+                // Reachable only if something typed this straight at a service, since a window
+                // attached to one answers the service command itself rather than passing it on.
+                // The prompt would have nowhere to appear, so say who can be asked instead.
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "This server is the service, so it cannot install or control itself. Run the server program from its own folder and use its service menu, which can ask for the rights this needs."));
+                return false;
+            }
+
+            if (action == ServiceAction.Start
+                && stopHostingServer != null
+                && Control.ControlTransport.EndpointExists(directory))
+            {
+                return StopTheServerAndStartTheService(directory, stopHostingServer);
+            }
+
+            ServiceCommands.Execute(action, directory, startAutomatically: true);
+            return false;
+        }
+
+        /// <summary>
+        /// Hands the starting over to a copy that will outlive the server being stopped.
+        ///
+        /// Only one server may run from a folder, and asking for a start from anywhere that can
+        /// offer a stop means one is running, so the folder is held by the very thing being
+        /// asked to free it. Nothing can both go away and watch what happens next, so a separate
+        /// copy waits for the folder and does the starting.
+        ///
+        /// The order matters. The copy is launched first, and the server is stopped only once it
+        /// actually started, so refusing the rights prompt leaves a running server exactly as it
+        /// was rather than stopping it for a start that was never going to happen.
+        /// </summary>
+        private static bool StopTheServerAndStartTheService(string directory, Action stopHostingServer)
         {
             ConsoleSink.WriteLine(LocalizationService.Mark(
-                "Only one server can run from this folder, so this one has to stop before the service can start."));
+                "Only one server can run from this folder, so the one running now has to stop before the service can start."));
 
             if (!Confirm(LocalizationService.Translate(LocalizationService.Mark(
-                "Stop this server now and start the service? (y/n)"))))
+                "Stop it now and start the service? (y/n)"))))
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("Left running. The service was not started."));
                 return false;
@@ -132,9 +196,9 @@ namespace TopSpeed.Server.Service
                 return false;
 
             ConsoleSink.WriteLine(LocalizationService.Mark(
-                "This server is stopping. The service will start by itself once it has, and a separate window will say whether it did."));
+                "The server is stopping. The service will start by itself once it has, and a separate window will say whether it did."));
 
-            stopLocalServer();
+            stopHostingServer();
             return true;
         }
 

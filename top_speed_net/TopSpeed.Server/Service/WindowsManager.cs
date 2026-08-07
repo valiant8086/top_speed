@@ -151,15 +151,23 @@ namespace TopSpeed.Server.Service
 
         public ServiceActionResult Uninstall(string directory)
         {
+            var name = ServiceIdentity.NameFor(directory);
+
+            // Asked before the rights are, so that being told nothing is installed does not
+            // cost a consent prompt. Querying needs no privilege; removing does.
+            var status = Query(directory);
+            if (status.State == ServiceInstallState.NotInstalled)
+            {
+                return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                    "No service is installed for this folder.")));
+            }
+
             if (!IsElevated())
                 return ServiceActionResult.RequiresElevation(NeedsAdministrator());
-
-            var name = ServiceIdentity.NameFor(directory);
 
             // Removing a running service leaves it registered until the last handle closes and
             // the machine reboots, so it is stopped first and the caller is spared a service
             // that is neither present nor gone.
-            var status = Query(directory);
             if (status.State == ServiceInstallState.Running)
             {
                 var stopped = Stop(directory);

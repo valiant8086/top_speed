@@ -40,6 +40,12 @@ namespace TopSpeed.Server
             // stopping or removing it is asked for.
             if (TryGetServiceAction(args, out var serviceAction))
             {
+                // The same per action code the menu and the service command reach, with the one
+                // thing they can offer and this cannot: something to stop. A copy started with a
+                // flag is neither a server nor attached to one, so when a start finds the folder
+                // busy it says so and stops there. It could go and tell the running server to
+                // shut down, and deliberately does not: a flag in a script or a shortcut must
+                // not drop a server full of players as a side effect of asking for a start.
                 var code = ServiceCommands.Execute(serviceAction, baseDirectory, startAutomatically: true);
                 PauseBeforeClosing();
                 return code;

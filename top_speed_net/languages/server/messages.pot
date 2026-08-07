@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 12:49-0400\n"
+"POT-Creation-Date: 2026-08-07 01:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,6 +72,11 @@ msgstr ""
 msgid "  TopSpeed.Server [options]"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+#, csharp-format
+msgid "\"{0}\" is not something the service command understands."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "(empty)"
 msgstr ""
@@ -89,7 +94,7 @@ msgid "1. Install"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid "2. Remove"
+msgid "2. Uninstall"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
@@ -722,7 +727,9 @@ msgid "Ignoring unknown packet command {0} from {1}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Install or control this server as a system service."
+msgid ""
+"Install or control this server as a system service. Add install, uninstall, "
+"start, stop or status to skip the menu."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
@@ -1186,8 +1193,8 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
-"Only one server can run from this folder, so this one has to stop before the "
-"service can start."
+"Only one server can run from this folder, so the one running now has to stop "
+"before the service can start."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1657,10 +1664,6 @@ msgstr ""
 msgid "Server version: {0}"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Service"
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid "Service:"
 msgstr ""
@@ -1732,7 +1735,7 @@ msgid "Standard input is not available. Update download was skipped."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid "Stop this server now and start the service? (y/n)"
+msgid "Stop it now and start the service? (y/n)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
@@ -1785,8 +1788,19 @@ msgstr ""
 msgid "The server closed the connection."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid ""
+"The server has stopped, so this window is no longer attached to anything."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "The server is shutting down to install an update."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"The server is stopping. The service will start by itself once it has, and a "
+"separate window will say whether it did."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -1896,12 +1910,6 @@ msgstr ""
 msgid ""
 "This server is running in its own console window on this machine. Use that "
 "window to control it."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid ""
-"This server is stopping. The service will start by itself once it has, and a "
-"separate window will say whether it did."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
@@ -2230,6 +2238,11 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
 #, csharp-format
 msgid "Updater not found: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"Use: service, or service with one of install, uninstall, start, stop, status."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
@@ -2562,18 +2575,6 @@ msgstr ""
 msgid "info"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "installed"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "installed, running"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "installed, stopped"
-msgstr ""
-
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Transmission/Modes.cs
 msgid ""
 "launch_coupling_max must be greater than or equal to launch_coupling_min in "
@@ -2629,10 +2630,6 @@ msgid "normal"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "not installed"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "notify: say when an update is available"
 msgstr ""
 
@@ -2669,10 +2666,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Online.cs
 #, csharp-format
 msgid "room {0}"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "set up by hand on this system"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Validation/Core.cs

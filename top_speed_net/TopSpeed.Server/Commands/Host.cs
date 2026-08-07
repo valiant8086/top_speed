@@ -308,8 +308,13 @@ namespace TopSpeed.Server.Commands
         private void ExecuteService(string arguments)
         {
             // This server is the one holding the folder, so it is what has to stop before a
-            // service can start, and it is able to stop itself.
-            Service.ServiceConsole.Run(arguments, AppContext.BaseDirectory, ExecuteShutdown);
+            // service can start, it is able to stop itself, and it knows who would be
+            // disconnected by that.
+            Service.ServiceConsole.Run(
+                arguments,
+                AppContext.BaseDirectory,
+                ExecuteShutdown,
+                () => _server.GetPlayersSnapshot().Length);
         }
 
         private OptionMenu CreateServerOptionsMenu()

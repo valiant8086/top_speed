@@ -49,12 +49,17 @@ namespace TopSpeed.Server.Service
     /// </summary>
     internal static class ServiceConsole
     {
-        public static void Run(string arguments, string directory, Action? stopHostingServer)
+        /// <param name="countPlayers">
+        /// How many players would be disconnected by stopping the server, when that can be
+        /// known. A server running in this process can say; a window attached to one elsewhere
+        /// cannot, and passes nothing.
+        /// </param>
+        public static void Run(string arguments, string directory, Action? stopHostingServer, Func<int>? countPlayers = null)
         {
             var verb = (arguments ?? string.Empty).Trim();
             if (verb.Length == 0)
             {
-                ShowMenu(directory, stopHostingServer);
+                ShowMenu(directory, stopHostingServer, countPlayers);
                 return;
             }
 
@@ -68,7 +73,7 @@ namespace TopSpeed.Server.Service
                 return;
             }
 
-            Perform(action, directory, stopHostingServer);
+            Perform(action, directory, stopHostingServer, countPlayers);
         }
 
         private static bool TryParseVerb(string verb, out ServiceAction action)
@@ -99,7 +104,7 @@ namespace TopSpeed.Server.Service
             }
         }
 
-        private static void ShowMenu(string directory, Action? stopHostingServer)
+        private static void ShowMenu(string directory, Action? stopHostingServer, Func<int>? countPlayers)
         {
             var manager = ServiceManagers.ForCurrentPlatform();
 
@@ -154,7 +159,7 @@ namespace TopSpeed.Server.Service
                         continue;
                 }
 
-                if (Perform(action, directory, stopHostingServer))
+                if (Perform(action, directory, stopHostingServer, countPlayers))
                     return;
             }
         }
@@ -164,7 +169,7 @@ namespace TopSpeed.Server.Service
         /// which happens when the folder is being handed over and this window is on its way to
         /// becoming a connection to the service.
         /// </summary>
-        private static bool Perform(ServiceAction action, string directory, Action? stopHostingServer)
+        private static bool Perform(ServiceAction action, string directory, Action? stopHostingServer, Func<int>? countPlayers)
         {
             if (ServiceRuntime.IsRunningAsService)
             {
@@ -177,8 +182,19 @@ namespace TopSpeed.Server.Service
             }
 
             var startingUp = action == ServiceAction.Start || action == ServiceAction.Restart;
-            if (startingUp && stopHostingServer != null && ControlTransport.EndpointExists(directory))
-                return HandOverToService(directory, stopHostingServer);
+            if (startingUp)
+            {
+                var status = ServiceManagers.ForCurrentPlatform().Query(directory);
+
+                // Asked before anything is offered, because stopping a server is only worth
+                // discussing when there is a service to hand the folder to and it is not already
+                // holding it. Both of these answer in one line and neither is worth a question.
+                var pointless = status.State == ServiceInstallState.NotInstalled
+                    || (action == ServiceAction.Start && status.State == ServiceInstallState.Running);
+
+                if (!pointless && stopHostingServer != null && ControlTransport.EndpointExists(directory))
+                    return HandOverToService(directory, stopHostingServer, countPlayers);
+            }
 
             ServiceCommands.Execute(action, directory, startAutomatically: true);
             return false;
@@ -192,14 +208,14 @@ namespace TopSpeed.Server.Service
         /// talking to one, and once everything is released the service is started and this same
         /// window connects to it. The actual handover happens once the caller has unwound and
         /// the folder is genuinely free, which is why this only asks and marks.
+        ///
+        /// Asking at all is reserved for when somebody would notice. A server with nobody on it
+        /// changes hands without a question, since the only thing being interrupted is the
+        /// asking itself.
         /// </summary>
-        private static bool HandOverToService(string directory, Action stopHostingServer)
+        private static bool HandOverToService(string directory, Action stopHostingServer, Func<int>? countPlayers)
         {
-            ConsoleSink.WriteLine(LocalizationService.Mark(
-                "Only one server can run from this folder, so the one running now has to stop for the service to have it."));
-
-            if (!Confirm(LocalizationService.Translate(LocalizationService.Mark(
-                "Stop it and start the service? (y/n)"))))
+            if (!AgreedToDisconnectPlayers(countPlayers))
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("Left running. The service was not started."));
                 return false;
@@ -207,10 +223,28 @@ namespace TopSpeed.Server.Service
 
             ServiceRuntime.HandingOverToService = true;
             ConsoleSink.WriteLine(LocalizationService.Mark(
-                "Stopping it, then starting the service. This window will connect to the service once it is up."));
+                "Stopping the server, then starting the service. This window will connect to the service once it is up."));
 
             stopHostingServer();
             return true;
+        }
+
+        private static bool AgreedToDisconnectPlayers(Func<int>? countPlayers)
+        {
+            var players = countPlayers?.Invoke() ?? -1;
+            if (players == 0)
+                return true;
+
+            if (players > 0)
+            {
+                return Confirm(LocalizationService.Format(
+                    LocalizationService.Mark("{0} players are connected and will be disconnected. Stop the server and start the service? (y/n)"),
+                    players));
+            }
+
+            // Nobody here can say who is connected, so the question is the honest one.
+            return Confirm(LocalizationService.Translate(LocalizationService.Mark(
+                "Stopping the server will disconnect anybody playing on it. Stop it and start the service? (y/n)")));
         }
 
         /// <summary>

@@ -31,13 +31,11 @@ namespace TopSpeed.Server.Service
         /// <summary>
         /// What appears in the service manager's list.
         ///
-        /// Only the folder, which is the one thing about an installation that cannot change
-        /// while it is installed. The port was here too at first and had to go: a registration
-        /// is written once, the port is a setting somebody can change at any time from the
-        /// options menu or by editing the settings file, and nothing then updates the label. A
-        /// service list confidently reporting a port the server stopped using months ago is
-        /// worse than one that never claimed to know. The live port is shown in the service
-        /// menu instead, where it is read fresh every time.
+        /// The folder alone, because that is the one thing about an installation which cannot
+        /// change while it is installed. A registration is written once and nothing revisits it,
+        /// so anything here that can be reconfigured later would eventually be a confident lie.
+        /// The port in particular is a setting, changeable from the options menu or by editing
+        /// the file, and it is shown in the service menu instead, read fresh each time.
         /// </summary>
         public static string DisplayNameFor(string directory)
         {

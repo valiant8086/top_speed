@@ -79,6 +79,7 @@ namespace TopSpeed.Server
             ConsoleSink.WriteLine(LocalizationService.Mark("  --uninstall-service     Remove it again. The folder is left alone."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --start-service         Start the installed service."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --stop-service          Stop the installed service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --restart-service       Stop it and start it again."));
         }
 
         /// <summary>
@@ -103,11 +104,11 @@ namespace TopSpeed.Server
                     case "--start-service":
                         action = Service.ServiceAction.Start;
                         return true;
-                    case "--start-service-when-free":
-                        action = Service.ServiceAction.StartWhenFree;
-                        return true;
                     case "--stop-service":
                         action = Service.ServiceAction.Stop;
+                        return true;
+                    case "--restart-service":
+                        action = Service.ServiceAction.Restart;
                         return true;
                 }
             }
@@ -213,12 +214,11 @@ namespace TopSpeed.Server
         /// </summary>
         private static bool IsServiceMode(string[] args)
         {
-            // Asked on every platform, not only Windows. The flag means "something else is
-            // managing me", which is as true of a systemd unit or a launchd job as it is of a
-            // Windows service, and it decides whether the updater is allowed to start the
-            // program again afterwards. Answering false everywhere but Windows meant a daemon
-            // updating itself got launched by the updater and restarted by its manager at the
-            // same time. Only the branch that runs the Windows service host is Windows only.
+            // The flag means "something else is managing me", which is as true of a systemd
+            // unit or a launchd job as of a Windows service, so it is read on every platform.
+            // It decides whether a console session is offered and whether the updater may start
+            // the program again once it has replaced it. Only the branch that runs the Windows
+            // service host is Windows only.
             for (var i = 0; i < args.Length; i++)
             {
                 if (string.Equals(args[i], "--service", StringComparison.OrdinalIgnoreCase))
@@ -233,14 +233,11 @@ namespace TopSpeed.Server
         /// a file manager closes the instant this process exits, taking the last message with
         /// it before it can be read or spoken.
         ///
-        /// This waits rather than pausing for a set time, and waits every time rather than only
-        /// when it believes it owns the window. Both of those were tried and neither survived
-        /// contact with a real machine: how long a message takes to read is not ours to guess,
-        /// and asking Windows how many processes share this console answers wrongly under an
-        /// elevated launch, which is exactly when somebody is attaching to a service. An extra
-        /// keypress when running from an existing prompt is a far smaller cost than a message
-        /// nobody can read. Redirected input reaches end of stream at once, so this never
-        /// delays a script.
+        /// Waits for a keypress rather than a set time, because how long a message takes to
+        /// read is not ours to guess, and waits every time rather than working out whether it
+        /// owns the window, because Windows answers that wrongly under an elevated launch. An
+        /// extra keypress at an existing prompt costs far less than a message nobody can read,
+        /// and redirected input reaches end of stream at once, so this never delays a script.
         /// </summary>
         private static void PauseBeforeClosing()
         {

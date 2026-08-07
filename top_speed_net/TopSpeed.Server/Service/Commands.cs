@@ -13,16 +13,7 @@ namespace TopSpeed.Server.Service
         Uninstall,
         Start,
         Stop,
-
-        /// <summary>
-        /// Wait for the server holding this folder to go, then start the service.
-        ///
-        /// Only one server may run from a folder, and every way of reaching the service menu
-        /// has one running: launching the program starts one, and otherwise it attaches to the
-        /// one already there. Starting the service therefore always means stopping something
-        /// first, and something has to outlive it to do the starting.
-        /// </summary>
-        StartWhenFree
+        Restart
     }
 
     /// <summary>
@@ -47,15 +38,13 @@ namespace TopSpeed.Server.Service
                 return 0;
             }
 
-            if (action == ServiceAction.StartWhenFree)
-                WaitForFolderToBeFree(directory);
-
             var result = action switch
             {
                 ServiceAction.Install => manager.Install(directory, startAutomatically),
                 ServiceAction.Uninstall => manager.Uninstall(directory),
-                ServiceAction.Start or ServiceAction.StartWhenFree => manager.Start(directory),
+                ServiceAction.Start => manager.Start(directory),
                 ServiceAction.Stop => manager.Stop(directory),
+                ServiceAction.Restart => Restart(manager, directory),
                 _ => ServiceActionResult.Failed(string.Empty)
             };
 
@@ -109,77 +98,20 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// Waits for whatever server owns this folder to let go of it.
-        ///
-        /// The endpoint is the thing being waited on rather than a process handle or a delay,
-        /// because it is the same thing the starting service will find in its way. It exists
-        /// for exactly as long as a server holds the folder and disappears when that process
-        /// ends however it ends, including being killed, so there is no window in which this
-        /// believes the folder is free while it is not.
-        ///
-        /// Bounded, because a server that refuses to stop must not leave a window waiting for
-        /// it forever. Giving up here simply means the start below reports the folder as busy,
-        /// which is true and recoverable.
+        /// Stops the service and starts it again, reporting both so that a stop which failed is
+        /// not mistaken for a restart that worked. On the platforms this program does not drive
+        /// directly, both halves are instructions, and both are worth showing.
         /// </summary>
-        private static void WaitForFolderToBeFree(string directory)
+        private static ServiceActionResult Restart(IServiceManager manager, string directory)
         {
-            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(45);
-            while (DateTime.UtcNow < deadline)
-            {
-                if (!Control.ControlTransport.EndpointExists(directory))
-                {
-                    // The endpoint is gone, but the process that held it may still be finishing.
-                    // A moment here costs nothing and saves a needless failure.
-                    Thread.Sleep(500);
-                    return;
-                }
+            var stopped = manager.Stop(directory);
+            if (!stopped.Succeeded)
+                return stopped;
 
-                Thread.Sleep(250);
-            }
-        }
-
-        /// <summary>
-        /// Starts another copy of this program to carry out one action and does not wait for it.
-        ///
-        /// Used when the thing being asked for is the stopping of this very process, which
-        /// cannot both go away and observe what happens next. Whatever is launched here has its
-        /// own window to report into and waits to be read before closing.
-        ///
-        /// Launched with no more rights than this process has. Install grants starting and
-        /// stopping to whoever is logged on, so after an ordinary install none are needed, and
-        /// asking for them up front meant every start announced that it needed administrator
-        /// rights and quietly became an elevated window when it did not need to be one. If the
-        /// rights really are missing, the copy discovers that when the start is refused and
-        /// asks for them itself, which is the only point at which anybody can tell.
-        ///
-        /// Returns false when the copy could not be started at all, so the caller can leave the
-        /// running server alone rather than stopping it for a start that will not happen.
-        /// </summary>
-        public static bool LaunchDetached(ServiceAction action, string directory)
-        {
-            try
-            {
-                var info = new ProcessStartInfo
-                {
-                    FileName = ServiceIdentity.ExecutablePathFor(directory),
-                    WorkingDirectory = directory,
-                    UseShellExecute = true
-                };
-                info.ArgumentList.Add(FlagFor(action));
-
-                using var process = Process.Start(info);
-                return process != null;
-            }
-            catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
-            {
-                ConsoleSink.WriteLine(LocalizationService.Mark("Cancelled. Nothing was changed."));
-                return false;
-            }
-            catch (Win32Exception ex)
-            {
-                ConsoleSink.WriteLine(ex.Message);
-                return false;
-            }
+            var started = manager.Start(directory);
+            return started.Succeeded
+                ? ServiceActionResult.Ok(stopped.Message + "\n" + started.Message)
+                : started;
         }
 
         public static string FlagFor(ServiceAction action)
@@ -189,8 +121,8 @@ namespace TopSpeed.Server.Service
                 ServiceAction.Install => "--install-service",
                 ServiceAction.Uninstall => "--uninstall-service",
                 ServiceAction.Start => "--start-service",
-                ServiceAction.StartWhenFree => "--start-service-when-free",
                 ServiceAction.Stop => "--stop-service",
+                ServiceAction.Restart => "--restart-service",
                 _ => "--service-status"
             };
         }

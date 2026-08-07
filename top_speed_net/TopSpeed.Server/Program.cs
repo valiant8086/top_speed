@@ -64,11 +64,15 @@ namespace TopSpeed.Server
                 var attached = ControlClient.Run(baseDirectory);
                 if (attached != ControlClientOutcome.NoServerRunning)
                 {
+                    var code = ServiceRuntime.HandingOverToService
+                        ? ServiceConsole.CompleteHandover(baseDirectory)
+                        : attached == ControlClientOutcome.SessionEnded ? 0 : 1;
+
                     // After the client has returned, so the connection is already dropped and a
                     // window left sitting on its closing message never keeps the session from
                     // the next person who wants it.
                     PauseBeforeClosing();
-                    return attached == ControlClientOutcome.SessionEnded ? 0 : 1;
+                    return code;
                 }
 
                 if (IsAttachRequested(args))
@@ -94,7 +98,18 @@ namespace TopSpeed.Server
                 return WindowsServiceHost.Run(args, baseDirectory);
 
             using var shutdown = new CancellationTokenSource();
-            return RunServer(args, baseDirectory, shutdown);
+            var exitCode = RunServer(args, baseDirectory, shutdown);
+
+            // Here rather than where it was asked for, because this is the first point at which
+            // the ports and the endpoint this server held are genuinely released and the service
+            // can have them. The window stays and becomes a connection to the service.
+            if (ServiceRuntime.HandingOverToService)
+            {
+                exitCode = ServiceConsole.CompleteHandover(baseDirectory);
+                PauseBeforeClosing();
+            }
+
+            return exitCode;
         }
 
         /// <summary>

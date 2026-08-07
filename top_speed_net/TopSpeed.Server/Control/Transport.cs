@@ -46,8 +46,7 @@ namespace TopSpeed.Server.Control
                     // Asynchronous, because both ends read and write this handle at the same
                     // time: a thread sits in a blocking read for the next line while another
                     // writes. Windows serialises overlapping calls on a handle that was not
-                    // opened overlapped, so a pending read blocks a write indefinitely, which
-                    // let the first command through and then wedged the connection for good.
+                    // opened overlapped, so a pending read would block every write behind it.
                     var client = new NamedPipeClientStream(
                         ".",
                         ControlEndpoint.PipeNameFor(directory),
@@ -150,12 +149,12 @@ namespace TopSpeed.Server.Control
             // Whoever is logged on at this machine, so running the server again from its own
             // folder attaches to it without being elevated first.
             //
-            // A service runs as its own account, so granting only the account we run under
-            // locked out the very person who installed it and made attaching an administrator
-            // job. Windows checks accounts and never which program is asking, so there is no
-            // way to say "the same executable may connect" instead; some account has to be
-            // named. Interactive is the one that needs nothing written down and nothing
-            // configured: every logon at the keyboard carries it, elevated or not.
+            // A service runs as its own account, which is nobody's login, so naming only the
+            // account this process runs under would shut out the person who installed it.
+            // Windows checks accounts and never which program is asking, so "the same
+            // executable may connect" cannot be expressed; some account has to be named.
+            // Interactive is the one needing nothing written down and nothing configured:
+            // every logon at the keyboard carries it, elevated or not.
             //
             // It is narrower than it looks in one direction: network logons do not carry
             // Interactive, so this is not reachable from another machine, and neither do

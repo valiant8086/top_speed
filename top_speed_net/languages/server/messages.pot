@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 04:03-0400\n"
+"POT-Creation-Date: 2026-08-07 04:50-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,6 +45,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "  --port <number>         Server port (1-65535)."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --restart-service       Stop it and start it again."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -103,6 +107,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid "4. Stop"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "5. Restart"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
@@ -729,7 +737,7 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid ""
 "Install or control this server as a system service. Add install, uninstall, "
-"start, stop or status to skip the menu."
+"start, stop, restart or status to skip the menu."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
@@ -1166,6 +1174,12 @@ msgstr ""
 msgid "No languages are available."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"No server is running from this folder now. Run the server program again to "
+"start one."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "No server is running from this folder."
 msgstr ""
@@ -1194,7 +1208,7 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
 "Only one server can run from this folder, so the one running now has to stop "
-"before the service can start."
+"for the service to have it."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1741,7 +1755,13 @@ msgid ""
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid "Stop it now and start the service? (y/n)"
+msgid "Stop it and start the service? (y/n)"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"Stopping it, then starting the service. This window will connect to the "
+"service once it is up."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
@@ -1801,12 +1821,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "The server is shutting down to install an update."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid ""
-"The server is stopping. The service will start by itself once it has, and a "
-"separate window will say whether it did."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -2248,7 +2262,8 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
-"Use: service, or service with one of install, uninstall, start, stop, status."
+"Use: service, or service with one of install, uninstall, start, stop, "
+"restart, status."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs

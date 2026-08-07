@@ -183,7 +183,9 @@ namespace TopSpeed.Server.Control
                 pumping = false;
             }
 
-            if (serverWentAway)
+            // Not said during a handover: the server stopping is the point of that, and this
+            // window has already been told it will be connecting to the service instead.
+            if (serverWentAway && !Service.ServiceRuntime.HandingOverToService)
             {
                 WriteLine(LocalizationService.Translate(LocalizationService.Mark(
                     "The server has stopped, so this window is no longer attached to anything.")));

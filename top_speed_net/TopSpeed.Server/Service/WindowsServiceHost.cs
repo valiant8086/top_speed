@@ -73,14 +73,11 @@ namespace TopSpeed.Server.Service
                 }
                 finally
                 {
-                    // A server that stops on its own, which is what an update does, has to tell
-                    // the manager rather than leaving it believing the service is still running.
-                    //
-                    // What is checked is whether the manager was the one that asked, not whether
-                    // a shutdown was requested at all. Every self chosen stop cancels the same
-                    // token the manager's does, so testing the token treated an update, the
-                    // shutdown command and a signal as though the manager already knew, and the
-                    // service was left reading as running with nothing behind it.
+                    // A server that stops on its own, which an update and the shutdown command
+                    // both do, has to tell the manager rather than leave it believing the service
+                    // is still running. Whether the manager was the one that asked is the right
+                    // question because it already knows in that case, and because every self
+                    // chosen stop cancels the same token its own request does.
                     if (!_managerAskedToStop)
                     {
                         if (ServiceRuntime.StoppingToRestart)

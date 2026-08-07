@@ -121,8 +121,15 @@ namespace TopSpeed.Server.Control
                         Release(stream);
                     }
                 }
-                catch (Exception ex) when (!_stop)
+                catch (Exception ex)
                 {
+                    // Dropping the endpoint is how this loop is stopped, so whatever the wait
+                    // throws on the way out is expected and there is nothing left to serve.
+                    // Deciding that here rather than in a filter matters: a filter that declines
+                    // leaves the exception to escape a thread with nothing above it.
+                    if (_stop)
+                        return;
+
                     _logger.Warning(LocalizationService.Format(
                         LocalizationService.Mark("Control connection failed: {0}"),
                         ex.Message));
@@ -154,11 +161,9 @@ namespace TopSpeed.Server.Control
         /// <summary>
         /// Frees the endpoint for the next client.
         ///
-        /// A served pipe instance is replaced rather than disconnected and waited on again. An
-        /// instance whose client vanished is left broken, and waiting on it again fails
-        /// immediately and forever, which turned the accept loop into a spin. The replacement
-        /// is created before the old one is dropped so the name is never briefly absent, since
-        /// a gap there would let a second copy conclude nothing is running here.
+        /// The served instance is replaced rather than disconnected and waited on again: an
+        /// instance whose client has gone is left broken, and waiting on a broken one returns
+        /// at once and forever, which is a spin rather than a wait.
         /// </summary>
         private void Release(Stream stream)
         {
@@ -170,11 +175,10 @@ namespace TopSpeed.Server.Control
                     return;
                 }
 
-                // The old instance goes first. Windows refuses an additional instance that
-                // carries its own security descriptor while the name is still held, so
-                // creating the replacement first failed with access denied and left the accept
-                // loop with nothing to wait on. The name is absent for a moment now, which is
-                // far better than an endpoint that never recovers.
+                // The old instance is dropped before the replacement is made. Windows refuses
+                // an additional instance carrying its own security descriptor while the name is
+                // still held, so the two cannot overlap. The name is absent for that moment,
+                // which is worth far more than an endpoint that never recovers.
                 try
                 {
                     pipe.Dispose();

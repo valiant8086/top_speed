@@ -54,7 +54,7 @@ namespace TopSpeed.Server.Commands
                 new CommandDefinition("players", LocalizationService.Mark("List connected players and protocol versions."), ExecutePlayers),
                 new CommandDefinition("version", LocalizationService.Mark("Display server and protocol versions."), ExecuteVersion),
                 new CommandDefinition("update", LocalizationService.Mark("Check for server updates. Add --force to stop waiting and act now."), ExecuteUpdate),
-                new CommandDefinition("service", LocalizationService.Mark("Install or control this server as a system service. Add install, uninstall, start, stop or status to skip the menu."), ExecuteService),
+                new CommandDefinition("service", LocalizationService.Mark("Install or control this server as a system service. Add install, uninstall, start, stop, restart or status to skip the menu."), ExecuteService),
                 new CommandDefinition("shutdown", LocalizationService.Mark("Shutdown the server."), ExecuteShutdown)
             });
             _featureOptionsMenu = CreateFeatureOptionsMenu();

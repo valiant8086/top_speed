@@ -130,6 +130,12 @@ namespace TopSpeed.Server.Service
                     name,
                     RunAsAccount);
 
+                if (!AllowInteractiveUsersToStartAndStop(service))
+                {
+                    installed += "\n" + LocalizationService.Translate(LocalizationService.Mark(
+                        "Starting and stopping it will need administrator rights, because this account could not grant them here."));
+                }
+
                 // Said now rather than left to be discovered as a failed start, since installing
                 // from the server you are already running is the obvious way to go about it.
                 if (Control.ControlTransport.EndpointExists(directory))
@@ -327,6 +333,68 @@ namespace TopSpeed.Server.Service
             return ServiceIdentity.DisplayPath(directory);
         }
 
+        /// <summary>
+        /// Lets whoever is logged on start and stop this service without becoming an
+        /// administrator first.
+        ///
+        /// Windows grants ordinary accounts only the right to look at a service; starting and
+        /// stopping one belongs to administrators. That is a sensible default for services
+        /// somebody else installed, and a poor fit for a portable game server whose owner is
+        /// the person sitting at the machine. Done here because this is the moment the rights
+        /// to change it exist, and the alternative is a consent prompt every time.
+        ///
+        /// Stopping is given away with a clear conscience: any interactive account can already
+        /// attach to this server and type shutdown, so this only makes the service manager
+        /// agree with what the control channel has allowed all along. Starting is no more than
+        /// running what was already registered, under the account it was registered with.
+        ///
+        /// What is deliberately not granted is the right to change the registration. That one
+        /// is not divided by field: it would also rewrite which program runs and which account
+        /// runs it, needing no password to name a more privileged one, and it is the reason the
+        /// service is not allowed to rewrite its own label either.
+        /// </summary>
+        private static bool AllowInteractiveUsersToStartAndStop(IntPtr service)
+        {
+            try
+            {
+                if (!QueryServiceObjectSecurity(service, SecurityInfos.DiscretionaryAcl, Array.Empty<byte>(), 0, out var needed)
+                    && Marshal.GetLastWin32Error() != ERROR_INSUFFICIENT_BUFFER)
+                {
+                    return false;
+                }
+
+                var current = new byte[needed];
+                if (!QueryServiceObjectSecurity(service, SecurityInfos.DiscretionaryAcl, current, needed, out _))
+                    return false;
+
+                var descriptor = new RawSecurityDescriptor(current, 0);
+                var acl = descriptor.DiscretionaryAcl;
+                if (acl == null)
+                    return false;
+
+                // Appended rather than inserted at the front, so that any rule already refusing
+                // somebody is still considered first and this cannot quietly overrule it.
+                acl.InsertAce(acl.Count, new CommonAce(
+                    AceFlags.None,
+                    AceQualifier.AccessAllowed,
+                    StartStopRights,
+                    new SecurityIdentifier(WellKnownSidType.InteractiveSid, null),
+                    isCallback: false,
+                    opaque: null));
+                descriptor.DiscretionaryAcl = acl;
+
+                var updated = new byte[descriptor.BinaryLength];
+                descriptor.GetBinaryForm(updated, 0);
+                return SetServiceObjectSecurity(service, SecurityInfos.DiscretionaryAcl, updated);
+            }
+            catch (Exception)
+            {
+                // Worth reporting but never worth failing an install over: the service works,
+                // it just asks for rights when it is started or stopped.
+                return false;
+            }
+        }
+
         private static void SetDescription(IntPtr service, string description)
         {
             var text = Marshal.StringToHGlobalUni(description);
@@ -458,6 +526,18 @@ namespace TopSpeed.Server.Service
         private const int RestartDelayMilliseconds = 120000;
         private const int SC_ACTION_RESTART = 1;
         private const int ERROR_ACCESS_DENIED = 5;
+        private const int ERROR_INSUFFICIENT_BUFFER = 122;
+
+        /// <summary>
+        /// Start, stop, and enough to see which of the two it currently is. Notably absent is
+        /// anything that changes the registration.
+        /// </summary>
+        private const int StartStopRights = SERVICE_QUERY_STATUS | SERVICE_START | SERVICE_STOP | READ_CONTROL;
+
+        private const int SERVICE_QUERY_STATUS = 0x0004;
+        private const int SERVICE_START = 0x0010;
+        private const int SERVICE_STOP = 0x0020;
+        private const int READ_CONTROL = 0x00020000;
         private const int ERROR_SERVICE_DOES_NOT_EXIST = 1060;
         private const int ERROR_SERVICE_MARKED_FOR_DELETE = 1072;
         private const int ERROR_SERVICE_EXISTS = 1073;
@@ -524,6 +604,22 @@ namespace TopSpeed.Server.Service
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DeleteService(IntPtr service);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool QueryServiceObjectSecurity(
+            IntPtr service,
+            SecurityInfos securityInformation,
+            byte[] descriptor,
+            uint bufferSize,
+            out uint bytesNeeded);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetServiceObjectSecurity(
+            IntPtr service,
+            SecurityInfos securityInformation,
+            byte[] descriptor);
 
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

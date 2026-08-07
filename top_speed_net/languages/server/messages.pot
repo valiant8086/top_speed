@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 01:37-0400\n"
+"POT-Creation-Date: 2026-08-07 04:03-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1732,6 +1732,12 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Standard input is not available. Update download was skipped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"Starting and stopping it will need administrator rights, because this "
+"account could not grant them here."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs

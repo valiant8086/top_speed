@@ -145,8 +145,15 @@ namespace TopSpeed.Server.Service
         /// cannot both go away and observe what happens next. Whatever is launched here has its
         /// own window to report into and waits to be read before closing.
         ///
-        /// Returns false when the rights were refused, so the caller can leave the running
-        /// server alone rather than stopping it for a start that was never going to happen.
+        /// Launched with no more rights than this process has. Install grants starting and
+        /// stopping to whoever is logged on, so after an ordinary install none are needed, and
+        /// asking for them up front meant every start announced that it needed administrator
+        /// rights and quietly became an elevated window when it did not need to be one. If the
+        /// rights really are missing, the copy discovers that when the start is refused and
+        /// asks for them itself, which is the only point at which anybody can tell.
+        ///
+        /// Returns false when the copy could not be started at all, so the caller can leave the
+        /// running server alone rather than stopping it for a start that will not happen.
         /// </summary>
         public static bool LaunchDetached(ServiceAction action, string directory)
         {
@@ -159,15 +166,6 @@ namespace TopSpeed.Server.Service
                     UseShellExecute = true
                 };
                 info.ArgumentList.Add(FlagFor(action));
-
-                // Only asked for when it is actually missing, so an elevated console does not
-                // raise a prompt it has no need of.
-                if (OperatingSystem.IsWindows() && !WindowsServiceManager.IsElevated())
-                {
-                    info.Verb = "runas";
-                    ConsoleSink.WriteLine(LocalizationService.Mark(
-                        "This needs administrator rights. Approve the prompt to continue."));
-                }
 
                 using var process = Process.Start(info);
                 return process != null;

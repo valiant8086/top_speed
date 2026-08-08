@@ -90,12 +90,16 @@ namespace TopSpeed.Server.Service
                 process.WaitForExit();
 
                 // What happened is read back off the service rather than carried between the
-                // two processes. It needs no channel, and it cannot disagree with the truth.
-                if (process.ExitCode != 0)
-                    ConsoleSink.WriteLine(LocalizationService.Mark("That did not finish."));
+                // two processes. It needs no channel and cannot disagree with the truth, and it
+                // is checked rather than taken on the exit code alone.
+                var status = ServiceManagers.ForCurrentPlatform().Query(directory);
+                var done = process.ExitCode == 0 && Achieved(action, status);
 
-                ConsoleSink.WriteLine(Describe(ServiceManagers.ForCurrentPlatform().Query(directory), directory));
-                return process.ExitCode;
+                ConsoleSink.WriteLine(done
+                    ? Confirm(action, status, directory)
+                    : LocalizationService.Translate(LocalizationService.Mark("That did not finish.")));
+
+                return done ? 0 : 1;
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
             {
@@ -107,6 +111,36 @@ namespace TopSpeed.Server.Service
                 ConsoleSink.WriteLine(ex.Message);
                 return 1;
             }
+        }
+
+        private static bool Achieved(ServiceAction action, ServiceStatus status)
+        {
+            return action switch
+            {
+                ServiceAction.Install => status.IsInstalled,
+                ServiceAction.Uninstall => status.State == ServiceInstallState.NotInstalled,
+                _ => true
+            };
+        }
+
+        /// <summary>
+        /// What to say once it is done.
+        ///
+        /// A removal has to say so in its own words. What it leaves behind is exactly the state
+        /// of a folder that never had a service, so describing that state would answer a request
+        /// to remove something with what sounds like a complaint that there was nothing there.
+        /// Everything else is confirmed by describing where it now stands, which is both true
+        /// and the thing somebody wanted to know.
+        /// </summary>
+        private static string Confirm(ServiceAction action, ServiceStatus status, string directory)
+        {
+            if (action == ServiceAction.Uninstall)
+            {
+                return LocalizationService.Translate(LocalizationService.Mark(
+                    "The service has been removed. The server folder was left alone."));
+            }
+
+            return Describe(status, directory);
         }
 
         /// <summary>

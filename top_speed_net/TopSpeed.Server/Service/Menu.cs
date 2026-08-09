@@ -209,9 +209,8 @@ namespace TopSpeed.Server.Service
         /// window connects to it. The actual handover happens once the caller has unwound and
         /// the folder is genuinely free, which is why this only asks and marks.
         ///
-        /// Asking at all is reserved for when somebody would notice. A server with nobody on it
-        /// changes hands without a question, since the only thing being interrupted is the
-        /// asking itself.
+        /// Asking at all is reserved for when somebody would notice, and when this window is in
+        /// a position to say so.
         /// </summary>
         private static bool HandOverToService(string directory, Action stopHostingServer, Func<int>? countPlayers)
         {
@@ -229,22 +228,23 @@ namespace TopSpeed.Server.Service
             return true;
         }
 
+        /// <summary>
+        /// Whether to go ahead, asked only when there is somebody to be asked about.
+        ///
+        /// A window attached to a server elsewhere cannot count who is on it, and a question that
+        /// cannot name what it would interrupt is a guess dressed as care. Stopping the service
+        /// outright disconnects exactly the same players and asks nothing, so a guess here would
+        /// not even be the strict path, only the noisier one.
+        /// </summary>
         private static bool AgreedToDisconnectPlayers(Func<int>? countPlayers)
         {
-            var players = countPlayers?.Invoke() ?? -1;
-            if (players == 0)
+            var players = countPlayers?.Invoke() ?? 0;
+            if (players <= 0)
                 return true;
 
-            if (players > 0)
-            {
-                return Confirm(LocalizationService.Format(
-                    LocalizationService.Mark("{0} players are connected and will be disconnected. Stop the server and start the service? (y/n)"),
-                    players));
-            }
-
-            // Nobody here can say who is connected, so the question is the honest one.
-            return Confirm(LocalizationService.Translate(LocalizationService.Mark(
-                "Stopping the server will disconnect anybody playing on it. Stop it and start the service? (y/n)")));
+            return Confirm(LocalizationService.Format(
+                LocalizationService.Mark("{0} players are connected and will be disconnected. Stop the server and start the service? (y/n)"),
+                players));
         }
 
         /// <summary>
@@ -256,12 +256,23 @@ namespace TopSpeed.Server.Service
         /// </summary>
         public static int CompleteHandover(string directory)
         {
+            // Being asked to stop and being stopped are not the same moment. A service refuses to
+            // start while the folder's endpoint is still held, and cannot be started at all while
+            // the manager is still stopping the last one, so both of those would be reported as a
+            // handover that failed when all that was wrong was the timing.
+            if (!WaitForEndpoint(directory, TimeSpan.FromSeconds(30), wanted: false))
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "The server has not finished stopping, so the service was not started."));
+                return 1;
+            }
+
             var started = ServiceManagers.ForCurrentPlatform().Start(directory);
             ConsoleSink.WriteLine(started.Message);
             if (!started.Succeeded)
                 return NothingRunningHere();
 
-            if (!WaitForEndpoint(directory, TimeSpan.FromSeconds(60)))
+            if (!WaitForEndpoint(directory, TimeSpan.FromSeconds(60), wanted: true))
                 return NothingRunningHere();
 
             return ControlClient.Run(directory) == ControlClientOutcome.SessionEnded ? 0 : 1;
@@ -278,16 +289,18 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// Waits for a server to claim the folder. The endpoint appearing is the server saying
-        /// it is ready to be talked to, which is exactly what is being waited for, and it says
-        /// so whether the service manager started it or somebody did it by hand.
+        /// Waits for the folder to be claimed, or to be let go.
+        ///
+        /// The endpoint is the plainest statement either way: it appears when a server is ready
+        /// to be talked to and is gone once one has finished stopping, and it says so whoever
+        /// started or stopped that server.
         /// </summary>
-        private static bool WaitForEndpoint(string directory, TimeSpan limit)
+        private static bool WaitForEndpoint(string directory, TimeSpan limit, bool wanted)
         {
             var deadline = DateTime.UtcNow + limit;
             while (DateTime.UtcNow < deadline)
             {
-                if (ControlTransport.EndpointExists(directory))
+                if (ControlTransport.EndpointExists(directory) == wanted)
                     return true;
 
                 Thread.Sleep(250);

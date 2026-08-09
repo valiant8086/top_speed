@@ -226,6 +226,13 @@ namespace TopSpeed.Server.Service
                         "The service is already running.")));
                 }
 
+                // A service still on its way down will not accept a start, and the manager
+                // reports that in a way indistinguishable from there being no such service.
+                // Waiting for it to land is both the accurate answer and the one anybody
+                // watching would give.
+                if (controller.Status == ServiceControllerStatus.StopPending)
+                    controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(40));
+
                 // Checked here rather than left to fail. Only one server may run from a folder,
                 // and the service enforces that by finding the endpoint taken and exiting at
                 // once. The manager can only report that as a start that did not complete,

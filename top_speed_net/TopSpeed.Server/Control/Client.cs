@@ -162,6 +162,18 @@ namespace TopSpeed.Server.Control
                             serviceArguments,
                             directory,
                             () => writer.WriteLine("shutdown"));
+
+                        // The folder is changing hands, so there is nothing left here to type at.
+                        // Waiting for the far end to go is what lets this window carry on by
+                        // itself: it is the point at which the server has genuinely released the
+                        // folder, and reaching it by returning to the prompt would mean the
+                        // handover only happened once somebody pressed a key at a dead console.
+                        if (Service.ServiceRuntime.HandingOverToService)
+                        {
+                            reading.Join(TimeSpan.FromSeconds(60));
+                            break;
+                        }
+
                         continue;
                     }
 

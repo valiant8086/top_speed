@@ -118,9 +118,18 @@ namespace TopSpeed.Server.Service
                 return;
             }
 
-            // Bounded so a wedged shutdown cannot leave the manager waiting indefinitely; the
-            // race loop only has to notice a cancelled token, which takes a tick.
-            _worker?.Join(TimeSpan.FromSeconds(20));
+            // Waiting for the worker is what makes a stop orderly, but only from another thread.
+            // A stop the server chose reaches here on the worker itself, by way of the finally
+            // above, and a thread cannot wait for itself: the bound is all that ends it, so the
+            // service would take the whole twenty seconds to report a stop that had already
+            // happened. Every restart would carry that, with players waiting through it.
+            //
+            // Bounded when it does wait, so a wedged shutdown cannot leave the manager waiting
+            // indefinitely; the race loop only has to notice a cancelled token, which takes a
+            // tick.
+            var worker = _worker;
+            if (worker != null && worker != Thread.CurrentThread)
+                worker.Join(TimeSpan.FromSeconds(20));
         }
 
         protected override void Dispose(bool disposing)

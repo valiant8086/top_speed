@@ -49,6 +49,14 @@ namespace TopSpeed.Server.Service
     /// </summary>
     internal static class ServiceConsole
     {
+        /// <summary>
+        /// How often a handover looks to see whether the folder has changed hands yet. Every one
+        /// of these is time players are not being served, and looking costs a directory listing,
+        /// so it is short.
+        /// </summary>
+        private const int PollInterval = 100;
+
+
         /// <param name="countPlayers">
         /// How many players would be disconnected by stopping the server, when that can be
         /// known. A server running in this process can say; a window attached to one elsewhere
@@ -252,29 +260,41 @@ namespace TopSpeed.Server.Service
         ///
         /// Called once nothing is left holding the folder, which is the whole reason it is not
         /// done where it was asked for: a server cannot release what it is using and watch what
-        /// happens next in the same breath.
+        /// happens next in the same breath. That is as true of the second handover as the first,
+        /// so this goes round again whenever the window it hands back is asked to do the same
+        /// thing, rather than leaving the asking answered by nobody.
         /// </summary>
         public static int CompleteHandover(string directory)
         {
-            // Being asked to stop and being stopped are not the same moment. A service refuses to
-            // start while the folder's endpoint is still held, and cannot be started at all while
-            // the manager is still stopping the last one, so both of those would be reported as a
-            // handover that failed when all that was wrong was the timing.
-            if (!WaitForFolderToBeFree(directory, TimeSpan.FromSeconds(30)))
+            while (true)
             {
-                ConsoleSink.WriteLine(LocalizationService.Mark(
-                    "The server has not finished stopping, so the service was not started."));
-                return 1;
+                // Cleared as this one starts, so that finding it set again below can only mean
+                // the session asked for another handover of its own.
+                ServiceRuntime.HandingOverToService = false;
+
+                // Being asked to stop and being stopped are not the same moment. A service
+                // refuses to start while the folder's endpoint is still held, and cannot be
+                // started at all while the manager is still stopping the last one, so both of
+                // those would be reported as a handover that failed when all that was wrong was
+                // the timing.
+                if (!WaitForFolderToBeFree(directory, TimeSpan.FromSeconds(30)))
+                {
+                    ConsoleSink.WriteLine(LocalizationService.Mark(
+                        "The server has not finished stopping, so the service was not started."));
+                    return 1;
+                }
+
+                // Through the same route as a start asked for directly, rather than straight at
+                // the manager. A service registered before this program granted interactive
+                // accounts the right to start it can still only be started with administrator
+                // rights, and that route is the one that knows how to ask for them.
+                if (ServiceCommands.Execute(ServiceAction.Start, directory, startAutomatically: true) != 0)
+                    return NothingRunningHere();
+
+                var result = Reattach(directory, TimeSpan.FromSeconds(60));
+                if (!ServiceRuntime.HandingOverToService)
+                    return result;
             }
-
-            // Through the same route as a start asked for directly, rather than straight at the
-            // manager. A service registered before this program granted interactive accounts the
-            // right to start it can still only be started with administrator rights, and that
-            // route is the one that knows how to ask for them.
-            if (ServiceCommands.Execute(ServiceAction.Start, directory, startAutomatically: true) != 0)
-                return NothingRunningHere();
-
-            return Reattach(directory, TimeSpan.FromSeconds(60));
         }
 
         /// <summary>
@@ -302,7 +322,9 @@ namespace TopSpeed.Server.Service
                         return outcome == ControlClientOutcome.SessionEnded ? 0 : 1;
                 }
 
-                Thread.Sleep(500);
+                // Short, because the whole of this is time a server is not answering players and
+                // the cost of looking is a directory listing.
+                Thread.Sleep(PollInterval);
             }
 
             if (ServiceManagers.ForCurrentPlatform().Query(directory).State == ServiceInstallState.Running)
@@ -341,7 +363,7 @@ namespace TopSpeed.Server.Service
                 if (!ControlTransport.EndpointExists(directory))
                     return true;
 
-                Thread.Sleep(250);
+                Thread.Sleep(PollInterval);
             }
 
             return false;

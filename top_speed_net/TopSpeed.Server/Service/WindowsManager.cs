@@ -69,6 +69,17 @@ namespace TopSpeed.Server.Service
                     executable));
             }
 
+            // Asked before the rights are, for the same reason removal asks: a folder that
+            // already has a service can be told so without a consent prompt, and the answer does
+            // not change for having been elevated. Without this the only copy that can find out
+            // is the elevated one, whose window is hidden, so the reason went where nobody could
+            // read it and all that came back was that it had not worked.
+            if (Query(directory).IsInstalled)
+            {
+                return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
+                    "A service is already installed for this folder.")));
+            }
+
             if (!IsElevated())
                 return ServiceActionResult.RequiresElevation(NeedsAdministrator());
 

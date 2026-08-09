@@ -44,7 +44,7 @@ namespace TopSpeed.Server.Service
                 ServiceAction.Uninstall => manager.Uninstall(directory),
                 ServiceAction.Start => manager.Start(directory),
                 ServiceAction.Stop => manager.Stop(directory),
-                ServiceAction.Restart => Restart(manager, directory),
+                ServiceAction.Restart => manager.Restart(directory),
                 _ => ServiceActionResult.Failed(string.Empty)
             };
 
@@ -141,23 +141,6 @@ namespace TopSpeed.Server.Service
             }
 
             return Describe(status, directory);
-        }
-
-        /// <summary>
-        /// Stops the service and starts it again, reporting both so that a stop which failed is
-        /// not mistaken for a restart that worked. On the platforms this program does not drive
-        /// directly, both halves are instructions, and both are worth showing.
-        /// </summary>
-        private static ServiceActionResult Restart(IServiceManager manager, string directory)
-        {
-            var stopped = manager.Stop(directory);
-            if (!stopped.Succeeded)
-                return stopped;
-
-            var started = manager.Start(directory);
-            return started.Succeeded
-                ? ServiceActionResult.Ok(stopped.Message + "\n" + started.Message)
-                : started;
         }
 
         public static string FlagFor(ServiceAction action)

@@ -265,6 +265,23 @@ namespace TopSpeed.Server.Service
             }
         }
 
+        /// <summary>
+        /// Windows has no restart of its own, so this is the two halves in order, which is also
+        /// what the Restart button in services.msc does. Both are reported: a stop that failed
+        /// must not read as a restart that worked.
+        /// </summary>
+        public ServiceActionResult Restart(string directory)
+        {
+            var stopped = Stop(directory);
+            if (!stopped.Succeeded)
+                return stopped;
+
+            var started = Start(directory);
+            return started.Succeeded
+                ? ServiceActionResult.Ok(stopped.Message + "\n" + started.Message)
+                : started;
+        }
+
         public ServiceActionResult Stop(string directory)
         {
             var name = ServiceIdentity.NameFor(directory);

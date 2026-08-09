@@ -85,6 +85,14 @@ namespace TopSpeed.Server.Service
         ServiceActionResult Start(string directory);
 
         ServiceActionResult Stop(string directory);
+
+        /// <summary>
+        /// Stops it and starts it again. Its own step rather than the two others in a row,
+        /// because the systems disagree about whether that is what it is: systemd and launchd
+        /// each have a single word for it, and Windows has none, so composing it there is the
+        /// implementation rather than the idea.
+        /// </summary>
+        ServiceActionResult Restart(string directory);
     }
 
     internal static class ServiceManagers

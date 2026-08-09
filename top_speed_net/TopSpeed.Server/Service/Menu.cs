@@ -260,22 +260,62 @@ namespace TopSpeed.Server.Service
             // start while the folder's endpoint is still held, and cannot be started at all while
             // the manager is still stopping the last one, so both of those would be reported as a
             // handover that failed when all that was wrong was the timing.
-            if (!WaitForEndpoint(directory, TimeSpan.FromSeconds(30), wanted: false))
+            if (!WaitForFolderToBeFree(directory, TimeSpan.FromSeconds(30)))
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark(
                     "The server has not finished stopping, so the service was not started."));
                 return 1;
             }
 
-            var started = ServiceManagers.ForCurrentPlatform().Start(directory);
-            ConsoleSink.WriteLine(started.Message);
-            if (!started.Succeeded)
+            // Through the same route as a start asked for directly, rather than straight at the
+            // manager. A service registered before this program granted interactive accounts the
+            // right to start it can still only be started with administrator rights, and that
+            // route is the one that knows how to ask for them.
+            if (ServiceCommands.Execute(ServiceAction.Start, directory, startAutomatically: true) != 0)
                 return NothingRunningHere();
 
-            if (!WaitForEndpoint(directory, TimeSpan.FromSeconds(60), wanted: true))
-                return NothingRunningHere();
+            return Reattach(directory, TimeSpan.FromSeconds(60));
+        }
 
-            return ControlClient.Run(directory) == ControlClientOutcome.SessionEnded ? 0 : 1;
+        /// <summary>
+        /// Waits for the new server to be ready and connects to it.
+        ///
+        /// A service reports itself running the moment its process is up, which is before that
+        /// process has read its settings and opened anything, so the first few attempts finding
+        /// nothing there is the normal course of events rather than a failure. Only the endpoint
+        /// answers the question being asked, so it is tried until it does or until long enough
+        /// has passed that something is genuinely wrong.
+        /// </summary>
+        private static int Reattach(string directory, TimeSpan limit)
+        {
+            ConsoleSink.WriteLine(LocalizationService.Mark("Waiting for the service to be ready..."));
+
+            var deadline = DateTime.UtcNow + limit;
+            while (DateTime.UtcNow < deadline)
+            {
+                if (ControlTransport.EndpointExists(directory))
+                {
+                    // Anything other than nothing being there has been reported by the client
+                    // itself and will not come right by asking again.
+                    var outcome = ControlClient.Run(directory);
+                    if (outcome != ControlClientOutcome.NoServerRunning)
+                        return outcome == ControlClientOutcome.SessionEnded ? 0 : 1;
+                }
+
+                Thread.Sleep(500);
+            }
+
+            if (ServiceManagers.ForCurrentPlatform().Query(directory).State == ServiceInstallState.Running)
+            {
+                // Worth telling apart from nothing running: the players are fine and only this
+                // window missed out, so the remedy is to attach again rather than to start
+                // anything.
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "The service is running, but this window could not attach to it. Run the server program from this folder again to attach."));
+                return 1;
+            }
+
+            return NothingRunningHere();
         }
 
         private static int NothingRunningHere()
@@ -289,18 +329,16 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// Waits for the folder to be claimed, or to be let go.
-        ///
-        /// The endpoint is the plainest statement either way: it appears when a server is ready
-        /// to be talked to and is gone once one has finished stopping, and it says so whoever
-        /// started or stopped that server.
+        /// Waits for the old server to let the folder go. The endpoint is the plainest statement
+        /// of that: it is gone once the server holding it has finished stopping, whoever stopped
+        /// it and however it was asked.
         /// </summary>
-        private static bool WaitForEndpoint(string directory, TimeSpan limit, bool wanted)
+        private static bool WaitForFolderToBeFree(string directory, TimeSpan limit)
         {
             var deadline = DateTime.UtcNow + limit;
             while (DateTime.UtcNow < deadline)
             {
-                if (ControlTransport.EndpointExists(directory) == wanted)
+                if (!ControlTransport.EndpointExists(directory))
                     return true;
 
                 Thread.Sleep(250);

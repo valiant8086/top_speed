@@ -80,6 +80,19 @@ namespace TopSpeed.Server.Service
                 : LocalizationService.Format(LocalizationService.Mark("To stop it, run:\n  sudo systemctl stop {0}"), name));
         }
 
+        /// <summary>
+        /// One command, because both of these systems have one. Telling somebody to stop it and
+        /// then start it would be two chances to be interrupted between the halves, and neither
+        /// system needs it done that way.
+        /// </summary>
+        public ServiceActionResult Restart(string directory)
+        {
+            var name = UnitNameFor(directory);
+            return ServiceActionResult.Ok(OperatingSystem.IsMacOS()
+                ? LocalizationService.Format(LocalizationService.Mark("To restart it, run:\n  sudo launchctl kickstart -k system/{0}"), name)
+                : LocalizationService.Format(LocalizationService.Mark("To restart it, run:\n  sudo systemctl restart {0}"), name));
+        }
+
         private static ServiceActionResult WriteSystemd(string directory)
         {
             var folder = ServiceIdentity.DisplayPath(directory);

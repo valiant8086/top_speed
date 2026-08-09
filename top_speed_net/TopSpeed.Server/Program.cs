@@ -175,6 +175,14 @@ namespace TopSpeed.Server
             LocalizationBootstrap.Configure(settings.Language, LocalizationBootstrap.ServerCatalogGroup);
             ApplyArgumentOverrides(settings, args, logger);
             store.Save(settings, logger);
+
+            // Named here because both halves are only true here: the port has stopped changing,
+            // and the language is loaded.
+            ConsoleTitle.Set(LocalizationService.Format(
+                LocalizationService.Mark("{0}, port {1}"),
+                ConsoleTitle.Product,
+                settings.Port));
+
             var updater = new ServerUpdateRunner(ServerUpdateConfig.Create(settings.UpdateRuntimeAssetTag), logger);
 
             var config = new RaceServerConfig

@@ -232,14 +232,24 @@ namespace TopSpeed.Server
         /// <summary>
         /// The first thing an attaching client is shown, so it answers the question somebody
         /// attaching to a server left running unattended actually has.
+        ///
+        /// Whether this is the service is part of that answer rather than a detail. It decides
+        /// what closing the window does, whether the server comes back with the machine, and
+        /// which of two servers on one machine has been reached, and the window on its own has
+        /// no way to tell.
         /// </summary>
         private static string DescribeServerStatus(ServerSettings settings)
         {
-            return LocalizationService.Format(
-                LocalizationService.Mark("Connected to TopSpeed Server {0}, port {1}, update checking {2}."),
-                ServerUpdateConfig.CurrentVersion.ToMachineString(),
-                settings.Port,
-                StartupUpdateModes.Normalize(settings.StartupUpdateMode));
+            var release = ServerUpdateConfig.CurrentVersion.ToMachineString();
+            var updates = StartupUpdateModes.Normalize(settings.StartupUpdateMode);
+
+            return Service.ServiceRuntime.IsRunningAsService
+                ? LocalizationService.Format(
+                    LocalizationService.Mark("Attached to the TopSpeed Server service {0}, port {1}, update checking {2}."),
+                    release, settings.Port, updates)
+                : LocalizationService.Format(
+                    LocalizationService.Mark("Attached to TopSpeed Server {0}, port {1}, update checking {2}."),
+                    release, settings.Port, updates);
         }
 
         private static string BuildLogFilePath(string configuredPath)

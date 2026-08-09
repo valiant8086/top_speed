@@ -102,6 +102,16 @@ namespace TopSpeed.Server.Control
                 return ControlClientOutcome.Refused;
             }
 
+            // Named only now, because a window that was refused a session is attached to nothing
+            // and should not say otherwise. The port comes from the settings the server it just
+            // reached is running on, which is the one thing this window knows about that server
+            // without asking it.
+            var port = Service.ServiceIdentity.ReadConfiguredPort(directory);
+            ConsoleTitle.Set(port > 0
+                ? LocalizationService.Format(
+                    LocalizationService.Mark("{0}, port {1}, attached"), ConsoleTitle.Product, port)
+                : ConsoleTitle.Product);
+
             // Everything the server prints arrives on its own thread so that typing and output
             // do not have to take turns.
             var pumping = true;
@@ -180,7 +190,7 @@ namespace TopSpeed.Server.Control
                     if (string.Equals(input.Trim(), "exit", StringComparison.OrdinalIgnoreCase))
                     {
                         WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                            "Disconnected. The server is still running.")));
+                            "Detached. The server is still running.")));
                         break;
                     }
 

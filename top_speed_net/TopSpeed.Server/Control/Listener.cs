@@ -259,15 +259,15 @@ namespace TopSpeed.Server.Control
                 if (since.HasValue)
                 {
                     return LocalizationService.Format(
-                        LocalizationService.Mark("Another window on this machine has been attached to this server since {0}. Use that window, or close it to free the connection."),
+                        LocalizationService.Mark("Another window on this machine has been attached to this server since {0}. Use that window, or close it to free the session."),
                         since.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
                 }
 
                 return LocalizationService.Translate(LocalizationService.Mark(
-                    "Another window on this machine is attached to this server. Use that window, or close it to free the connection."));
+                    "Another window on this machine is attached to this server. Use that window, or close it to free the session."));
             }
 
-            return LocalizationService.Translate(LocalizationService.Mark("The server refused the connection."));
+            return LocalizationService.Translate(LocalizationService.Mark("The server refused to attach this window."));
         }
     }
 }

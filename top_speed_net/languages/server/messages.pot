@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 16:33-0400\n"
+"POT-Creation-Date: 2026-08-09 19:20-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,7 +191,7 @@ msgstr ""
 #, csharp-format
 msgid ""
 "Another window on this machine has been attached to this server since {0}. "
-"Use that window, or close it to free the connection."
+"Use that window, or close it to free the session."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Client.cs
@@ -203,7 +203,18 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
 msgid ""
 "Another window on this machine is attached to this server. Use that window, "
-"or close it to free the connection."
+"or close it to free the session."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+#, csharp-format
+msgid "Attached to TopSpeed Server {0}, port {1}, update checking {2}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+#, csharp-format
+msgid ""
+"Attached to the TopSpeed Server service {0}, port {1}, update checking {2}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -346,11 +357,6 @@ msgstr ""
 msgid "Configured port: {0}."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-#, csharp-format
-msgid "Connected to TopSpeed Server {0}, port {1}, update checking {2}."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 #, csharp-format
 msgid "Connection closed by server. Reason: {0}."
@@ -473,7 +479,7 @@ msgid "Custom vehicles"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Client.cs
-msgid "Disconnected. The server is still running."
+msgid "Detached. The server is still running."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1744,9 +1750,7 @@ msgid "Stopping race: room={0}, active={1}, trackedResults={2}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid ""
-"Stopping the server, then starting the service. This window will connect to "
-"the service once it is up."
+msgid "Stopping this server so the service can take over."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1817,7 +1821,7 @@ msgid "The server program was not found at {0}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
-msgid "The server refused the connection."
+msgid "The server refused to attach this window."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -2365,10 +2369,6 @@ msgid ""
 "Waiting for loadouts: room={0}, ready={1}, skipped={2}, totalHumans={3}."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid "Waiting for the service to be ready..."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
 #, csharp-format
 msgid ""
@@ -2891,6 +2891,16 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Control.cs
 #, csharp-format
 msgid "{0} stopped the current game."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+#, csharp-format
+msgid "{0}, port {1}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+#, csharp-format
+msgid "{0}, port {1}, attached"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs

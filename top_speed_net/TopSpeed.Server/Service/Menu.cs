@@ -229,8 +229,11 @@ namespace TopSpeed.Server.Service
             }
 
             ServiceRuntime.HandingOverToService = true;
-            ConsoleSink.WriteLine(LocalizationService.Mark(
-                "Stopping the server, then starting the service. This window will connect to the service once it is up."));
+
+            // One line, because everything after it says the rest by happening: the server logs
+            // its own shutdown, the manager reports the service running, and the greeting names
+            // what this window ended up attached to.
+            ConsoleSink.WriteLine(LocalizationService.Mark("Stopping this server so the service can take over."));
 
             stopHostingServer();
             return true;
@@ -298,18 +301,20 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// Waits for the new server to be ready and connects to it.
+        /// Waits for the new server to be ready and attaches to it.
         ///
         /// A service reports itself running the moment its process is up, which is before that
         /// process has read its settings and opened anything, so the first few attempts finding
         /// nothing there is the normal course of events rather than a failure. Only the endpoint
         /// answers the question being asked, so it is tried until it does or until long enough
         /// has passed that something is genuinely wrong.
+        ///
+        /// Says nothing while it waits. The wait is a fraction of a second, and the greeting it
+        /// ends on already announces what happened, so anything here would be a line whose only
+        /// news is that the next line is coming.
         /// </summary>
         private static int Reattach(string directory, TimeSpan limit)
         {
-            ConsoleSink.WriteLine(LocalizationService.Mark("Waiting for the service to be ready..."));
-
             var deadline = DateTime.UtcNow + limit;
             while (DateTime.UtcNow < deadline)
             {

@@ -116,6 +116,44 @@ namespace TopSpeed.Server.Control
             // do not have to take turns.
             var pumping = true;
             var serverWentAway = false;
+
+            // Held from the moment a typed line is in hand until the work it asked for is
+            // finished. The window may be ended out from under somebody waiting at an empty
+            // prompt, and never partway through a command: removing a service outlives the
+            // session it was asked through, and a handover means to come back.
+            var gate = new object();
+            var running = false;
+
+            void AnnounceServerGone()
+            {
+                // Not said during a handover: the server stopping is the point of that, and this
+                // window has already been told it is going to the service instead.
+                if (!serverWentAway || Service.ServiceRuntime.HandingOverToService)
+                    return;
+
+                WriteLine(LocalizationService.Translate(LocalizationService.Mark(
+                    "The server has stopped, so this window is no longer attached to anything.")));
+            }
+
+            // Reached when the server goes while nobody is asking this window for anything.
+            //
+            // Waiting for a line cannot be interrupted, so a window in that state has no way to
+            // learn its server has gone: it sits there looking attached and then closes on the
+            // next key pressed, as though that key had done it. Ending it here is the same
+            // ending every other route reaches, at the moment it becomes true rather than at the
+            // moment somebody happens to touch the keyboard.
+            void EndWindowIfWaiting()
+            {
+                lock (gate)
+                {
+                    if (running || Service.ServiceRuntime.HandingOverToService)
+                        return;
+
+                    AnnounceServerGone();
+                    Environment.Exit(0);
+                }
+            }
+
             var reading = new Thread(() =>
             {
                 try
@@ -140,6 +178,7 @@ namespace TopSpeed.Server.Control
                     // silent at that point reads like a crash.
                     serverWentAway = pumping;
                     pumping = false;
+                    EndWindowIfWaiting();
                 }
             })
             {
@@ -156,45 +195,58 @@ namespace TopSpeed.Server.Control
                     if (input == null)
                         break;
 
-                    // Handled here rather than sent on, for the same reason exit is: this is a
-                    // process the owner launched, so it is the one that may ask for the rights
-                    // installing or removing a service needs. The server on the other end is
-                    // very likely the service itself, which cannot ask for anything.
-                    //
-                    // Matched on the first word so that "service stop" is kept here too. Sending
-                    // it on would land it at the service and be refused, which is the same dead
-                    // end by a longer route.
-                    if (IsCommand(input, "service", out var serviceArguments))
-                    {
-                        // The server holding the folder is the one at the other end, so stopping
-                        // it means asking it to, which is exactly what typing shutdown would do.
-                        Service.ServiceConsole.Run(
-                            serviceArguments,
-                            directory,
-                            () => writer.WriteLine("shutdown"));
+                    lock (gate)
+                        running = true;
 
-                        // The folder is changing hands, so there is nothing left here to type at.
-                        // Waiting for the far end to go is what lets this window carry on by
-                        // itself: it is the point at which the server has genuinely released the
-                        // folder, and reaching it by returning to the prompt would mean the
-                        // handover only happened once somebody pressed a key at a dead console.
-                        if (Service.ServiceRuntime.HandingOverToService)
+                    try
+                    {
+                        // Handled here rather than sent on, for the same reason exit is: this is
+                        // a process the owner launched, so it is the one that may ask for the
+                        // rights installing or removing a service needs. The server on the other
+                        // end is very likely the service itself, which cannot ask for anything.
+                        //
+                        // Matched on the first word so that "service stop" is kept here too.
+                        // Sending it on would land it at the service and be refused, which is the
+                        // same dead end by a longer route.
+                        if (IsCommand(input, "service", out var serviceArguments))
                         {
-                            reading.Join(TimeSpan.FromSeconds(60));
+                            // The server holding the folder is the one at the other end, so
+                            // stopping it means asking it to, which is exactly what typing
+                            // shutdown would do.
+                            Service.ServiceConsole.Run(
+                                serviceArguments,
+                                directory,
+                                () => writer.WriteLine("shutdown"));
+
+                            // The folder is changing hands, so there is nothing left here to type
+                            // at. Waiting for the far end to go is what lets this window carry on
+                            // by itself: it is the point at which the server has genuinely
+                            // released the folder, and reaching it by returning to the prompt
+                            // would mean the handover only happened once somebody pressed a key
+                            // at a dead console.
+                            if (Service.ServiceRuntime.HandingOverToService)
+                            {
+                                reading.Join(TimeSpan.FromSeconds(60));
+                                break;
+                            }
+
+                            continue;
+                        }
+
+                        if (string.Equals(input.Trim(), "exit", StringComparison.OrdinalIgnoreCase))
+                        {
+                            WriteLine(LocalizationService.Translate(LocalizationService.Mark(
+                                "Detached. The server is still running.")));
                             break;
                         }
 
-                        continue;
+                        writer.WriteLine(input);
                     }
-
-                    if (string.Equals(input.Trim(), "exit", StringComparison.OrdinalIgnoreCase))
+                    finally
                     {
-                        WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                            "Detached. The server is still running.")));
-                        break;
+                        lock (gate)
+                            running = false;
                     }
-
-                    writer.WriteLine(input);
                 }
             }
             catch (IOException)
@@ -205,14 +257,9 @@ namespace TopSpeed.Server.Control
                 pumping = false;
             }
 
-            // Not said during a handover: the server stopping is the point of that, and this
-            // window has already been told it will be connecting to the service instead.
-            if (serverWentAway && !Service.ServiceRuntime.HandingOverToService)
-            {
-                WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                    "The server has stopped, so this window is no longer attached to anything.")));
-            }
-
+            // Reached when the server went while a command was being carried out, which is the
+            // other way round from the one above and ends the same way.
+            AnnounceServerGone();
             return ControlClientOutcome.SessionEnded;
         }
 

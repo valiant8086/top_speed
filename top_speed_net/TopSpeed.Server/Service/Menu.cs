@@ -201,7 +201,16 @@ namespace TopSpeed.Server.Service
                     || (action == ServiceAction.Start && status.State == ServiceInstallState.Running);
 
                 if (!pointless && stopHostingServer != null && ControlTransport.EndpointExists(directory))
-                    return HandOverToService(directory, stopHostingServer, countPlayers);
+                {
+                    // Only one server may hold a folder, so a service that is running is the
+                    // server this window is talking to. That is the difference between a restart
+                    // and a handover, and the two have different things worth saying.
+                    return HandOverToService(
+                        directory,
+                        stopHostingServer,
+                        countPlayers,
+                        theServiceIsTheServerHere: status.State == ServiceInstallState.Running);
+                }
             }
 
             ServiceCommands.Execute(action, directory, startAutomatically: true);
@@ -220,7 +229,15 @@ namespace TopSpeed.Server.Service
         /// Asking at all is reserved for when somebody would notice, and when this window is in
         /// a position to say so.
         /// </summary>
-        private static bool HandOverToService(string directory, Action stopHostingServer, Func<int>? countPlayers)
+        /// <param name="theServiceIsTheServerHere">
+        /// Whether the server about to be stopped is the service itself, in which case this is a
+        /// restart rather than a handover and nothing is changing hands.
+        /// </param>
+        private static bool HandOverToService(
+            string directory,
+            Action stopHostingServer,
+            Func<int>? countPlayers,
+            bool theServiceIsTheServerHere)
         {
             if (!AgreedToDisconnectPlayers(countPlayers))
             {
@@ -230,10 +247,16 @@ namespace TopSpeed.Server.Service
 
             ServiceRuntime.HandingOverToService = true;
 
-            // One line, because everything after it says the rest by happening: the server logs
-            // its own shutdown, the manager reports the service running, and the greeting names
-            // what this window ended up attached to.
-            ConsoleSink.WriteLine(LocalizationService.Mark("Stopping this server so the service can take over."));
+            // Said only when a server somebody started themselves is about to be stopped, which
+            // is the part nobody asked for and the only part worth explaining. Restarting the
+            // service explains itself: what follows is the server logging its own shutdown, the
+            // manager reporting it running again, and the greeting naming what this window is
+            // attached to, which between them leave nothing for a line here to add.
+            if (!theServiceIsTheServerHere)
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "Stopping this server so the service can take over."));
+            }
 
             stopHostingServer();
             return true;

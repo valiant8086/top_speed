@@ -8,7 +8,10 @@ namespace TopSpeed.Server.Updates
 {
     internal sealed class ServerUpdateConfig
     {
-        private const string RepoOwner = "diamondStar35";
+        // TESTING ONLY. Points update checks at the fork so a beta channel can be exercised
+        // without publishing anything to the real one. This commit must never be merged: revert
+        // it to diamondStar35 before opening a pull request.
+        private const string RepoOwner = "valiant8086";
         private const string RepoName = "top_speed";
         public const string AutoRuntimeAssetTag = "auto";
 

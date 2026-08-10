@@ -124,6 +124,17 @@ namespace TopSpeed.Server.Service
             unit.Append("After=network-online.target\n\n");
             unit.Append("[Service]\n");
             unit.Append("Type=simple\n");
+            // Waits out an update that is still being written before the new server is started
+            // on a folder that is half of each version. Run from WorkingDirectory below, so the
+            // name needs no path and no quoting whatever the folder is called; the doubled
+            // dollars are how a literal one survives systemd reading the line.
+            //
+            // Bounded, because the file is removed by the updater and an updater older than it
+            // never learns to: without a limit one of those would stop the server starting at
+            // all, which is far worse than the minute it costs to give up and start anyway.
+            unit.Append("ExecStartPre=/bin/sh -c 'i=0; while [ -e ")
+                .Append(Updates.UpdateMarker.FileName)
+                .Append(" ] && [ $$i -lt 60 ]; do sleep 1; i=$$((i+1)); done'\n");
             // The argument matters as much as the path. It tells the server something else is
             // managing it, which is what stops the updater from launching a second copy behind
             // this unit's back after an update.
@@ -139,11 +150,11 @@ namespace TopSpeed.Server.Service
             unit.Append("KillMode=process\n");
             // The server exits on its own to apply an update and counts on being brought back.
             unit.Append("Restart=always\n");
-            // Long enough for an update to finish rewriting the folder first. Unlike Windows,
-            // nothing here can start the unit except systemd, since that needs root and the
-            // server deliberately does not have it, so this wait is the only thing keeping a
-            // restart from landing on a folder that is still being replaced.
-            unit.Append("RestartSec=120\n\n");
+            // Short, because what an update needs is now waited for directly above rather than
+            // guessed at here. A server that cannot start at all still stops being retried:
+            // systemd gives up after five attempts this close together, which is the answer
+            // wanted for a server that is broken rather than busy.
+            unit.Append("RestartSec=2\n\n");
             unit.Append("[Install]\n");
             unit.Append("WantedBy=multi-user.target\n");
             return unit.ToString();
@@ -176,20 +187,27 @@ namespace TopSpeed.Server.Service
             plist.Append("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n");
             plist.Append("<plist version=\"1.0\">\n<dict>\n");
             AppendKey(plist, "Label", label);
+            // The same wait systemd runs before the server, which launchd has no separate step
+            // for: it runs one program, so the wait goes in front of the server and hands over
+            // to it. Handing over rather than starting it is what keeps the server the process
+            // launchd is watching, instead of a shell that has outlived its one useful moment.
+            //
             // The argument tells the server it is being managed, so the updater leaves starting
             // it again to launchd rather than launching a copy launchd knows nothing about.
-            plist.Append("  <key>ProgramArguments</key>\n  <array>\n    <string>")
-                .Append(Escape(ServiceIdentity.ExecutablePathFor(directory)))
-                .Append("</string>\n    <string>--service</string>\n  </array>\n");
+            var start = "i=0; while [ -e " + Updates.UpdateMarker.FileName +
+                " ] && [ $i -lt 60 ]; do sleep 1; i=$((i+1)); done; exec \"" +
+                ServiceIdentity.ExecutablePathFor(directory) + "\" --service";
+            plist.Append("  <key>ProgramArguments</key>\n  <array>\n    <string>/bin/sh</string>\n    <string>-c</string>\n    <string>")
+                .Append(Escape(start))
+                .Append("</string>\n  </array>\n");
             AppendKey(plist, "WorkingDirectory", folder);
             AppendKey(plist, "UserName", Environment.UserName);
             plist.Append("  <key>RunAtLoad</key>\n  <true/>\n");
             plist.Append("  <key>KeepAlive</key>\n  <true/>\n");
-            // Left to itself launchd starts the job again about ten seconds after it exits,
-            // which during an update is while the folder is still being replaced. Nothing here
-            // can start the job except launchd, since that needs root, so as on systemd the wait
-            // is the only thing keeping the new server from landing on half of itself.
-            plist.Append("  <key>ThrottleInterval</key>\n  <integer>120</integer>\n");
+            // Launchd's own ten seconds, stated rather than relied on. It used to be raised far
+            // past that to cover an update being written, which the wait in front of the server
+            // now covers directly and only for as long as it actually takes.
+            plist.Append("  <key>ThrottleInterval</key>\n  <integer>10</integer>\n");
             plist.Append("</dict>\n</plist>\n");
             return plist.ToString();
         }

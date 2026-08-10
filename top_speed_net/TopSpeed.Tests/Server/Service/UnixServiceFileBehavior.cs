@@ -32,11 +32,43 @@ namespace TopSpeed.Tests.Server.Service
         }
 
         [Fact]
-        public void The_systemd_unit_waits_before_starting_again()
+        public void The_systemd_unit_comes_back_quickly()
         {
-            // Nothing but systemd can start the unit, since that needs root, so this wait is the
-            // only thing stopping a restart from landing on a folder still being replaced.
-            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("RestartSec=120");
+            // This used to be two minutes, spent guessing at how long an update takes. The wait
+            // for the update is now its own step, so the pause after an ordinary stop is only
+            // what it takes to start again.
+            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("RestartSec=2");
+        }
+
+        [Fact]
+        public void The_systemd_unit_waits_for_an_update_to_finish_writing()
+        {
+            // The reason the pause above can be short: this waits for the update itself rather
+            // than for a length of time somebody guessed, so a restart cannot land on a folder
+            // that is half one version and half the next.
+            var unit = UnixServiceManager.BuildSystemdUnit(Folder);
+
+            unit.Should().Contain("ExecStartPre=");
+            unit.Should().Contain(".updating");
+        }
+
+        [Fact]
+        public void The_systemd_wait_gives_up_rather_than_waiting_forever()
+        {
+            // An updater that dies partway leaves the file behind, and an updater older than the
+            // file never learns to remove it. Unbounded, either of those would mean a server that
+            // never starts again, which is far worse than the minute this costs.
+            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("-lt 60");
+        }
+
+        [Fact]
+        public void The_systemd_wait_escapes_its_dollars_for_systemd()
+        {
+            // systemd expands "$i" itself before the shell ever sees it, so a single dollar here
+            // silently becomes an empty string and the loop compares nothing against 60. Doubling
+            // is what passes one through, and the failure it prevents looks like a unit that
+            // parses cleanly and hangs.
+            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("$$i");
         }
 
         [Fact]
@@ -50,11 +82,15 @@ namespace TopSpeed.Tests.Server.Service
         }
 
         [Fact]
-        public void The_launchd_job_waits_before_starting_again()
+        public void The_launchd_job_states_its_pause_rather_than_stretching_it()
         {
-            // launchd's own default is about ten seconds, which during an update lands while the
-            // folder is still being written. Same reasoning as RestartSec on systemd.
-            UnixServiceManager.BuildLaunchdPlist(Folder).Should().Contain("<key>ThrottleInterval</key>");
+            // This was raised to two minutes to cover an update being written, which the wait in
+            // front of the server now covers for exactly as long as it takes. What is left is
+            // launchd's own default, written down rather than assumed.
+            var plist = UnixServiceManager.BuildLaunchdPlist(Folder);
+
+            plist.Should().Contain("<key>ThrottleInterval</key>");
+            plist.Should().NotContain("<integer>120</integer>");
         }
 
         [Fact]
@@ -66,14 +102,38 @@ namespace TopSpeed.Tests.Server.Service
         }
 
         [Fact]
-        public void The_launchd_job_passes_the_argument_as_its_own_entry()
+        public void The_launchd_job_waits_and_then_hands_over_to_the_server()
         {
-            // Arguments are a list here, not a command line. Appending it to the path would
-            // produce a job that looks right and cannot start.
+            // launchd runs one program, so the wait systemd gets its own step for has to go in
+            // front of the server here. "exec" is what makes the server replace the shell rather
+            // than run under it, which is what keeps the server the process launchd watches and
+            // restarts; without it launchd is watching a shell that has already done its job.
             var plist = UnixServiceManager.BuildLaunchdPlist(Folder);
 
-            plist.Should().Contain("<string>--service</string>");
-            plist.Should().NotContain("TopSpeed.Server --service");
+            plist.Should().Contain(".updating");
+            plist.Should().Contain("exec ");
+            plist.Should().Contain("--service");
+        }
+
+        [Fact]
+        public void The_launchd_job_quotes_the_server_path()
+        {
+            // A command line now, not a list, so a folder with a space in it would otherwise
+            // become two arguments and the job would fail to start on exactly the machines whose
+            // owners are most likely to have one.
+            var plist = UnixServiceManager.BuildLaunchdPlist("/Users/me/Top Speed/server");
+
+            plist.Should().Contain("exec \"");
+            plist.Should().Contain("\" --service");
+        }
+
+        [Fact]
+        public void The_launchd_job_leaves_its_dollars_alone()
+        {
+            // The doubling systemd needs is systemd's own. launchd hands the string to the shell
+            // untouched, so a doubled dollar copied across from the unit would reach the shell
+            // as a literal and the loop would never count.
+            UnixServiceManager.BuildLaunchdPlist(Folder).Should().NotContain("$$");
         }
 
         [Fact]

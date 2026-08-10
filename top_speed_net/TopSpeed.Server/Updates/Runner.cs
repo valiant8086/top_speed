@@ -166,6 +166,8 @@ namespace TopSpeed.Server.Updates
                     // and the folder to ask directly, and asking takes seconds.
                     if (OperatingSystem.IsWindows())
                         startInfo.ArgumentList.Add("--start-service");
+                    else
+                        UpdateMarker.Raise(root);
                 }
 
                 Process.Start(startInfo);
@@ -173,6 +175,10 @@ namespace TopSpeed.Server.Updates
             }
             catch (Exception ex)
             {
+                // Nothing is going to replace anything, so a wait for it to finish would be a
+                // minute spent waiting for an update that never started.
+                UpdateMarker.Clear(root);
+
                 _logger.Warning(LocalizationService.Format(
                     LocalizationService.Mark("Could not launch updater: {0}"),
                     ex.Message));

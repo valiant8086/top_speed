@@ -29,6 +29,7 @@ namespace TopSpeed.Updater
                 Log(enableLog, logPath, "Waited for game process exit.");
                 InstallZip(options, enableLog, logPath);
                 Log(enableLog, logPath, "Zip install complete.");
+                ClearUpdateMarker(options.TargetDir, enableLog, logPath);
 
                 // Checked before --no-restart, which is also passed, so that an older copy of
                 // this program still does the safe thing with a flag it does not know.
@@ -258,6 +259,31 @@ namespace TopSpeed.Updater
         /// The program started is the one just written, which is the point: it is the new
         /// version that registers as running.
         /// </summary>
+        /// <summary>
+        /// Removes the file the server raised before it exited, which is what the systemd and
+        /// launchd units wait on before starting the new server. The folder is whole by the time
+        /// this runs, so the wait has nothing left to wait for.
+        ///
+        /// Failing to remove it is not worth failing an install over: the units give up on it
+        /// after a minute regardless, and the server clears it at startup as well.
+        /// </summary>
+        private static void ClearUpdateMarker(string targetDir, bool enableLog, string logPath)
+        {
+            try
+            {
+                var marker = Path.Combine(Path.GetFullPath(targetDir), ".updating");
+                if (File.Exists(marker))
+                {
+                    File.Delete(marker);
+                    Log(enableLog, logPath, "Cleared update marker.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(enableLog, logPath, "Could not clear update marker: " + ex.Message);
+            }
+        }
+
         private static void StartService(UpdaterOptions options, bool enableLog, string logPath)
         {
             var serverPath = ResolveGamePath(options.TargetDir, options.GameExeName);

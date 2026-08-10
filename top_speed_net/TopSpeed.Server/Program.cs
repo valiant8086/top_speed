@@ -217,6 +217,12 @@ namespace TopSpeed.Server
                 return 1;
             }
 
+            // Holding the claim means no update is in progress: the folder is only handed over
+            // once the server that had it has gone. Anything left here was left by an updater
+            // that did not finish, or by one too old to know to remove it, and leaving it would
+            // make every later start wait out a swap that is long over.
+            Updates.UpdateMarker.Clear(baseDirectory);
+
             using var server = new RaceServer(config, logger);
             using var discovery = new ServerDiscoveryService(server, config, logger);
             using var scheduler = new ServerUpdateScheduler(

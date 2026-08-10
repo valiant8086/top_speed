@@ -16,6 +16,17 @@ namespace TopSpeed.Server
         /// <summary>The product, which is not translated because it is a name.</summary>
         public const string Product = "TopSpeed Server";
 
+        /// <summary>
+        /// Whether this window is ours, worked out once and kept.
+        ///
+        /// Not for speed. The evidence is the title, and the moment we set one the evidence is
+        /// gone: a window renamed to say what it is running no longer carries the name Windows
+        /// gave it, so asking a second time would answer no and every title after the first
+        /// would be refused. Whose window this is was settled when it was created and cannot
+        /// change afterwards, so one answer, taken before we touch anything, is the true one.
+        /// </summary>
+        private static bool? _ours;
+
         public static void Set(string text)
         {
             if (string.IsNullOrWhiteSpace(text) || !OwnsWindow())
@@ -57,9 +68,22 @@ namespace TopSpeed.Server
             if (!OperatingSystem.IsWindows())
                 return false;
 
-            var self = Environment.ProcessPath;
-            return !string.IsNullOrEmpty(self)
-                && string.Equals(CurrentTitle(), self, StringComparison.OrdinalIgnoreCase);
+            _ours ??= NameSaysTheWindowIsOurs(CurrentTitle(), Environment.ProcessPath);
+            return _ours.Value;
+        }
+
+        /// <summary>
+        /// The judgement on its own, apart from where the two facts came from, so that it can be
+        /// shown to be right.
+        ///
+        /// Note what it says about a title this program has already set: not ours. That is not a
+        /// flaw to be worked around but the reason the answer above is asked once and kept, since
+        /// the question is about how the window began and only the first look can still see it.
+        /// </summary>
+        internal static bool NameSaysTheWindowIsOurs(string? currentTitle, string? processPath)
+        {
+            return !string.IsNullOrEmpty(processPath)
+                && string.Equals(currentTitle, processPath, StringComparison.OrdinalIgnoreCase);
         }
 
         [SupportedOSPlatform("windows")]

@@ -29,14 +29,6 @@ namespace TopSpeed.Server.Service
         private volatile bool _managerAskedToStop;
         private volatile bool _managerStartedUs;
 
-        /// <summary>
-        /// Reported to the service manager when the server stops in order to come back, which
-        /// is what applying an update does. A manager only acts on a stop it can see went wrong,
-        /// so a clean exit here would leave an updated server switched off until somebody
-        /// noticed. The particular number carries no meaning beyond not being zero.
-        /// </summary>
-        private const int RestartWantedExitCode = 1;
-
         private WindowsServiceHost(string[] args, string baseDirectory)
         {
             _args = args;
@@ -112,13 +104,15 @@ namespace TopSpeed.Server.Service
                     // is still running. Whether the manager was the one that asked is the right
                     // question because it already knows in that case, and because every self
                     // chosen stop cancels the same token its own request does.
+                    //
+                    // Reported as the clean stop it is. An update used to report failure here so
+                    // that the manager's restart action would bring the server back, but the
+                    // updater starts the service itself now, and the pretence outlived its use in
+                    // a way that did harm: a failure arms a restart timer that keeps running after
+                    // the server is back, and firing it later turns somebody's deliberate stop
+                    // into a service that switches itself on again two minutes afterwards.
                     if (!_managerAskedToStop)
-                    {
-                        if (ServiceRuntime.StoppingToRestart)
-                            ExitCode = RestartWantedExitCode;
-
                         Stop();
-                    }
                 }
             })
             {

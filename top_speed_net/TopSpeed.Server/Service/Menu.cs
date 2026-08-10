@@ -23,14 +23,6 @@ namespace TopSpeed.Server.Service
         public static bool IsRunningAsService { get; set; }
 
         /// <summary>
-        /// Whether the server is stopping in order to be started again, which is what applying
-        /// an update means. A service manager treats a stop as final unless it is told
-        /// otherwise, so this is the difference between a server that updates itself and one
-        /// that stays down until somebody notices.
-        /// </summary>
-        public static bool StoppingToRestart { get; set; }
-
-        /// <summary>
         /// Whether this window is giving the folder up so the service can have it. The server it
         /// was talking to, or running, stops first; once everything is released the service is
         /// started and this window connects to it.

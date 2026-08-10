@@ -149,12 +149,24 @@ namespace TopSpeed.Server.Updates
                 startInfo.ArgumentList.Add("--skip");
                 startInfo.ArgumentList.Add(_config.UpdaterEntryName);
 
-                // A service is started by the service manager and by nothing else. Letting the
-                // updater launch the executable would leave a server running that the manager
-                // has no idea about, sitting on the folder its own service needs, while the
-                // service itself still reads as stopped. The manager brings it back instead.
                 if (Service.ServiceRuntime.IsRunningAsService)
+                {
+                    // A service is started by the service manager and by nothing else. Letting
+                    // the updater launch the executable would leave a server running that the
+                    // manager has no idea about, sitting on the folder its own service needs,
+                    // while the service itself still reads as stopped.
                     startInfo.ArgumentList.Add("--no-restart");
+
+                    // Which leaves who asks the manager, and the platforms answer differently.
+                    // systemd and launchd both start a unit again on their own when its process
+                    // ends, so there the wait is all that is needed and all that is wanted.
+                    // Windows does not: it only restarts a service it believes crashed, so
+                    // without this the comeback is a stop dressed up as a failure and the two
+                    // minute pause before the manager acts on it. The updater has the account
+                    // and the folder to ask directly, and asking takes seconds.
+                    if (OperatingSystem.IsWindows())
+                        startInfo.ArgumentList.Add("--start-service");
+                }
 
                 Process.Start(startInfo);
                 return true;

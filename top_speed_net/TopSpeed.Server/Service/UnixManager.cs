@@ -132,6 +132,11 @@ namespace TopSpeed.Server.Service
             // The account that owns the folder, so the server can still write its settings, its
             // log and its own updates. Nothing new is created and no password exists.
             unit.Append("User=").Append(Environment.UserName).Append('\n');
+            // The updater is left running when the server exits, and by default systemd clears
+            // out everything still in the unit's control group at that moment, which would kill
+            // it partway through replacing the folder. Only the main process is ours to stop;
+            // what it left behind has work to finish.
+            unit.Append("KillMode=process\n");
             // The server exits on its own to apply an update and counts on being brought back.
             unit.Append("Restart=always\n");
             // Long enough for an update to finish rewriting the folder first. Unlike Windows,
@@ -180,6 +185,11 @@ namespace TopSpeed.Server.Service
             AppendKey(plist, "UserName", Environment.UserName);
             plist.Append("  <key>RunAtLoad</key>\n  <true/>\n");
             plist.Append("  <key>KeepAlive</key>\n  <true/>\n");
+            // Left to itself launchd starts the job again about ten seconds after it exits,
+            // which during an update is while the folder is still being replaced. Nothing here
+            // can start the job except launchd, since that needs root, so as on systemd the wait
+            // is the only thing keeping the new server from landing on half of itself.
+            plist.Append("  <key>ThrottleInterval</key>\n  <integer>120</integer>\n");
             plist.Append("</dict>\n</plist>\n");
             return plist.ToString();
         }

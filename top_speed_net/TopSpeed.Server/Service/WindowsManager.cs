@@ -141,7 +141,7 @@ namespace TopSpeed.Server.Service
                     name,
                     RunAsAccount);
 
-                if (!AllowInteractiveUsersToStartAndStop(service))
+                if (!AllowStartingAndStopping(service))
                 {
                     installed += "\n" + LocalizationService.Translate(LocalizationService.Mark(
                         "Starting and stopping it will need administrator rights, because this account could not grant them here."));
@@ -383,8 +383,15 @@ namespace TopSpeed.Server.Service
         /// is not divided by field: it would also rewrite which program runs and which account
         /// runs it, needing no password to name a more privileged one, and it is the reason the
         /// service is not allowed to rewrite its own label either.
+        ///
+        /// The account the service itself runs under is given starting, and only starting. That
+        /// is what lets an update finish in seconds: the updater, which is left behind by the
+        /// stopping server and inherits its account, puts the service back the moment the files
+        /// are in place, instead of the service manager doing it two minutes later on the
+        /// assumption that something crashed. Stopping is not included, because the server stops
+        /// itself and nothing on that side ever needs to ask.
         /// </summary>
-        private static bool AllowInteractiveUsersToStartAndStop(IntPtr service)
+        private static bool AllowStartingAndStopping(IntPtr service)
         {
             try
             {
@@ -410,6 +417,14 @@ namespace TopSpeed.Server.Service
                     AceQualifier.AccessAllowed,
                     StartStopRights,
                     new SecurityIdentifier(WellKnownSidType.InteractiveSid, null),
+                    isCallback: false,
+                    opaque: null));
+
+                acl.InsertAce(acl.Count, new CommonAce(
+                    AceFlags.None,
+                    AceQualifier.AccessAllowed,
+                    SelfStartRights,
+                    new SecurityIdentifier(WellKnownSidType.LocalServiceSid, null),
                     isCallback: false,
                     opaque: null));
                 descriptor.DiscretionaryAcl = acl;
@@ -544,15 +559,17 @@ namespace TopSpeed.Server.Service
         private const int SERVICE_CONFIG_FAILURE_ACTIONS_FLAG = 4;
 
         /// <summary>
-        /// Long enough for an update to finish rewriting the folder before the manager starts
-        /// the server again.
+        /// How long the manager waits before starting a server that stopped without being asked
+        /// to. This is the safety net, not the way an update comes back: the updater puts the
+        /// service back itself as soon as the files are in place, so by the time this elapses
+        /// there is normally a server running and starting one again does nothing.
         ///
-        /// The updater waits for the old server to go, unpacks over the top of it, and leaves
-        /// the starting to the manager. Starting too early is the one outcome worth engineering
-        /// against: the new server locks its own files, the updater's remaining writes fail, and
-        /// what is left is a folder holding two versions rather than a clean failure. A realistic
-        /// unpack is seconds, so two minutes is roughly ten times over, and the cost of being
-        /// generous is only a slower comeback from a crash.
+        /// It stays long because of what it catches. An updater that was killed, or one too old
+        /// to know how to start a service, leaves the folder rewritten and nothing running, and
+        /// this is what notices. Starting too early is the worse mistake in that situation: the
+        /// new server locks its own files, the updater's remaining writes fail, and the folder
+        /// ends up holding two versions rather than failing cleanly. A realistic unpack is
+        /// seconds, so two minutes is roughly ten times over.
         /// </summary>
         private const int RestartDelayMilliseconds = 120000;
         private const int SC_ACTION_RESTART = 1;
@@ -564,6 +581,13 @@ namespace TopSpeed.Server.Service
         /// anything that changes the registration.
         /// </summary>
         private const int StartStopRights = SERVICE_QUERY_STATUS | SERVICE_START | SERVICE_STOP | READ_CONTROL;
+
+        /// <summary>
+        /// What the service's own account gets: enough to put itself back after an update, and
+        /// no more. Stopping is left out because the server stops itself and never has to ask,
+        /// and an account that cannot stop the service cannot use this to interrupt one.
+        /// </summary>
+        private const int SelfStartRights = SERVICE_QUERY_STATUS | SERVICE_START | READ_CONTROL;
 
         private const int SERVICE_QUERY_STATUS = 0x0004;
         private const int SERVICE_START = 0x0010;

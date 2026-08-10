@@ -40,6 +40,24 @@ namespace TopSpeed.Tests.Server.Service
         }
 
         [Fact]
+        public void The_systemd_unit_lets_the_updater_outlive_the_server()
+        {
+            // The updater is deliberately still running when the server exits, and the default
+            // kill mode clears out the whole control group at that moment. Without this it is
+            // killed partway through replacing the folder, which is the one failure that leaves
+            // an installation in pieces rather than merely stopped.
+            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("KillMode=process");
+        }
+
+        [Fact]
+        public void The_launchd_job_waits_before_starting_again()
+        {
+            // launchd's own default is about ten seconds, which during an update lands while the
+            // folder is still being written. Same reasoning as RestartSec on systemd.
+            UnixServiceManager.BuildLaunchdPlist(Folder).Should().Contain("<key>ThrottleInterval</key>");
+        }
+
+        [Fact]
         public void The_systemd_unit_waits_for_a_usable_network()
         {
             // "network" alone is satisfied before an address exists, which a server that binds

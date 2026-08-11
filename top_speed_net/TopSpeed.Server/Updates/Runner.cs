@@ -65,14 +65,6 @@ namespace TopSpeed.Server.Updates
             }
         }
 
-        /// <summary>Asks whether to download. False means standard input went away.</summary>
-        public bool TryConfirmDownload(out bool shouldDownload)
-        {
-            return TryPromptYesNo(
-                LocalizationService.Mark("Would you like to download the update? (y/n)"),
-                out shouldDownload);
-        }
-
         /// <summary>
         /// Downloads the update and hands off to the updater, which waits for this process to
         /// exit before swapping any files. Progress is only drawn when somebody asked for the
@@ -202,36 +194,6 @@ namespace TopSpeed.Server.Updates
 
             Array.Sort(matches, StringComparer.OrdinalIgnoreCase);
             return matches[0];
-        }
-
-        private static bool TryPromptYesNo(string prompt, out bool value)
-        {
-            value = false;
-            while (true)
-            {
-                if (!ConsoleSink.WriteLine(prompt))
-                    return false;
-
-                if (!CommandSessions.TryReadLine(out var line))
-                    return false;
-
-                var text = line.Trim();
-                if (text.Equals("y", StringComparison.OrdinalIgnoreCase) ||
-                    text.Equals("yes", StringComparison.OrdinalIgnoreCase))
-                {
-                    value = true;
-                    return true;
-                }
-
-                if (text.Equals("n", StringComparison.OrdinalIgnoreCase) ||
-                    text.Equals("no", StringComparison.OrdinalIgnoreCase))
-                {
-                    value = false;
-                    return true;
-                }
-
-                ConsoleSink.WriteLine(LocalizationService.Mark("Invalid input. Enter y or n."));
-            }
         }
 
         private void RenderProgress(ServerDownloadProgress progress)

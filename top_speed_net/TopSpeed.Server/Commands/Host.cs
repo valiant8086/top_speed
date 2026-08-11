@@ -205,7 +205,38 @@ namespace TopSpeed.Server.Commands
                 return;
             }
 
-            RunInteractiveCheck();
+            // Already seen and not yet asked for, which is where both a typed check and a notify
+            // leave things. Typing it again is the asking.
+            if (status.State == UpdateSchedulerState.Offered)
+            {
+                ApproveOffered();
+                return;
+            }
+
+            RunCheck(installImmediately: false);
+        }
+
+        /// <summary>
+        /// Takes the offered version and either installs it, if nobody is connected, or leaves it
+        /// to go in when the last player leaves.
+        /// </summary>
+        private void ApproveOffered()
+        {
+            if (!_scheduler.TryApproveOffered(out var approved) || approved == null)
+                return;
+
+            var connected = _server.GetPlayersSnapshot().Length;
+            if (connected > 0)
+            {
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Update {0} is scheduled and will install once the {1} connected players disconnect. Type \"update --force\" to install it now."),
+                    approved.VersionText,
+                    connected);
+                return;
+            }
+
+            if (_scheduler.TryForceNow(out var readyNow) && readyNow != null)
+                _scheduler.InstallNow(readyNow);
         }
 
         private void ExecuteForcedUpdate()
@@ -224,10 +255,16 @@ namespace TopSpeed.Server.Commands
                 return;
             }
 
-            RunInteractiveCheck();
+            // Nothing found yet, so forcing means find it and then keep going. Every stage this
+            // would otherwise stop at is a stage --force is defined as not stopping at.
+            RunCheck(installImmediately: true);
         }
 
-        private void RunInteractiveCheck()
+        /// <summary>
+        /// Checks, and stops at what was asked for: a plain check reports and holds the version
+        /// for a second command, while a forced one carries straight on into the install.
+        /// </summary>
+        private void RunCheck(bool installImmediately)
         {
             if (!_scheduler.TryBeginCheck())
             {
@@ -266,33 +303,26 @@ namespace TopSpeed.Server.Commands
                     return;
             }
 
-            if (_scheduler.ApplyCheckResult(result, interactive: true) != CheckFollowUp.PromptToInstall ||
+            if (_scheduler.ApplyCheckResult(result, interactive: true) != CheckFollowUp.ShowChanges ||
                 result.Update == null)
                 return;
 
             _updater.WriteChangelog(result.Update);
-            if (!_updater.TryConfirmDownload(out var shouldDownload))
+
+            if (installImmediately)
             {
-                DisableCommands(LocalizationService.Mark("Standard input is not available. Update download was skipped."));
+                if (_scheduler.TryForceNow(out var readyNow) && readyNow != null)
+                {
+                    ConsoleSink.WriteLine(LocalizationService.Mark("Installing the update now. Connected players will be disconnected."));
+                    _scheduler.InstallNow(readyNow);
+                }
+
                 return;
             }
 
-            if (!shouldDownload)
-                return;
-
-            var connected = _server.GetPlayersSnapshot().Length;
-            if (connected > 0)
-            {
-                _scheduler.ArmInstall(result.Update);
-                ConsoleSink.WriteLineFormat(
-                    LocalizationService.Mark("Update install requested, but {0} players are connected. The update will install automatically once everyone disconnects. Type \"update --force\" to install it now."),
-                    connected);
-                return;
-            }
-
-            _scheduler.ArmInstall(result.Update);
-            if (_scheduler.TryForceNow(out var readyNow) && readyNow != null)
-                _scheduler.InstallNow(readyNow);
+            // Last, after the changes, because it is the part worth remembering and the changes
+            // can run to a screenful before it.
+            ConsoleSink.WriteLine(LocalizationService.Mark("To update once no players are connected, type update. To update immediately, type update --force."));
         }
 
         private void ExecuteOptions()

@@ -15,6 +15,13 @@ namespace TopSpeed.Server.Updates
         /// <summary>A newer version is named by the manifest but its download is not there yet.</summary>
         AwaitingPublication,
 
+        /// <summary>
+        /// A version has been found and said out loud, and nobody has asked for it yet. What
+        /// separates it from an approved one is only that: it is what "off" becomes the moment
+        /// somebody types update, and what "notify" is from the announcement onwards.
+        /// </summary>
+        Offered,
+
         /// <summary>An update is approved and waiting for the last player to disconnect.</summary>
         PendingInstall
     }
@@ -23,7 +30,7 @@ namespace TopSpeed.Server.Updates
     internal enum CheckFollowUp
     {
         None,
-        PromptToInstall
+        ShowChanges
     }
 
     internal readonly struct UpdateSchedulerStatus
@@ -119,7 +126,7 @@ namespace TopSpeed.Server.Updates
                 return new UpdateSchedulerStatus
                 {
                     State = _state,
-                    VersionText = _state == UpdateSchedulerState.PendingInstall
+                    VersionText = _state is UpdateSchedulerState.PendingInstall or UpdateSchedulerState.Offered
                         ? _pending?.VersionText ?? string.Empty
                         : _awaitingVersion,
                     CompletedAttempts = _attempts,
@@ -190,7 +197,11 @@ namespace TopSpeed.Server.Updates
                         ResetCycle();
                         if (interactive)
                         {
-                            followUp = CheckFollowUp.PromptToInstall;
+                            // Held rather than installed. The caller prints the changes and says
+                            // what to type, and typing it again is what approves it.
+                            _state = UpdateSchedulerState.Offered;
+                            _pending = result.Update;
+                            followUp = CheckFollowUp.ShowChanges;
                             ArmDaily();
                         }
                         else if (_mode == StartupUpdateMode.Auto)
@@ -206,9 +217,14 @@ namespace TopSpeed.Server.Updates
                         }
                         else
                         {
+                            // Notify. Saying so is the whole of this mode, and having said it,
+                            // the version is held exactly as a typed check would hold it: from
+                            // here on there is nothing left to tell notify and off apart.
+                            _state = UpdateSchedulerState.Offered;
+                            _pending = result.Update;
                             ArmDaily();
                             announcement = LocalizationService.Format(
-                                LocalizationService.Mark("Version {0} is available. Type update to install it."),
+                                LocalizationService.Mark("Version {0} is available. To update once no players are connected, type update. To update immediately, type update --force."),
                                 result.Update.VersionText);
                         }
 
@@ -222,21 +238,26 @@ namespace TopSpeed.Server.Updates
             return followUp;
         }
 
-        /// <summary>Approves an update found by an interactive check.</summary>
-        public void ArmInstall(ServerUpdateInfo update)
+        /// <summary>
+        /// Approves the version already offered, which is what typing update a second time
+        /// means. Returns it so the caller can say whether it is going in now or waiting for the
+        /// server to empty; false means nothing was on offer to approve.
+        /// </summary>
+        public bool TryApproveOffered(out ServerUpdateInfo? approved)
         {
-            if (update == null)
-                return;
-
+            approved = null;
             lock (_gate)
             {
+                if (_state != UpdateSchedulerState.Offered || _pending == null)
+                    return false;
+
                 _state = UpdateSchedulerState.PendingInstall;
-                _pending = update;
                 _installRetryAfterUtc = DateTime.MinValue;
-                ArmDaily();
+                approved = _pending;
             }
 
             _wake.Set();
+            return true;
         }
 
         /// <summary>
@@ -251,9 +272,13 @@ namespace TopSpeed.Server.Updates
                 if (_installing)
                     return false;
 
-                if (_state == UpdateSchedulerState.PendingInstall && _pending != null)
+                // An offered version counts here as much as an approved one. Forcing means run
+                // this to the end from wherever it has got to, so the approval it has not had
+                // yet is simply the next thing it stops needing.
+                if (_state is UpdateSchedulerState.PendingInstall or UpdateSchedulerState.Offered && _pending != null)
                 {
                     installNow = _pending;
+                    _state = UpdateSchedulerState.PendingInstall;
                     _installing = true;
                     return true;
                 }
@@ -285,14 +310,15 @@ namespace TopSpeed.Server.Updates
 
         private void RunLoop()
         {
-            // Mode Off never schedules anything; it only answers manual update commands.
-            if (_mode == StartupUpdateMode.Off)
-                return;
-
+            // Off used to end this thread outright, on the grounds that it schedules nothing.
+            // It does now have something to do: an update somebody typed for is approved the
+            // same way in every mode, and waiting for the server to empty is this thread's job.
+            // Without it, off promised an install that nothing was left alive to perform. It
+            // still starts nothing of its own; it sleeps until asked.
             while (!_stop)
             {
                 var wait = ComputeWait();
-                if (wait > TimeSpan.Zero)
+                if (wait == Timeout.InfiniteTimeSpan || wait > TimeSpan.Zero)
                     _wake.WaitOne(wait);
 
                 if (_stop)
@@ -319,6 +345,12 @@ namespace TopSpeed.Server.Updates
                 // is a local counter rather than a request, so polling it often costs nothing.
                 if (_state == UpdateSchedulerState.PendingInstall)
                     return PlayerPollInterval;
+
+                // Off looks for nothing by itself, so there is no next time to sleep until.
+                // Approving an update wakes this directly, and the state above takes it from
+                // there; sleeping without end in the meantime is what makes off cost nothing.
+                if (_mode == StartupUpdateMode.Off && _state != UpdateSchedulerState.AwaitingPublication)
+                    return Timeout.InfiniteTimeSpan;
 
                 var remaining = _nextDueUtc - DateTime.UtcNow;
                 return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
@@ -363,6 +395,11 @@ namespace TopSpeed.Server.Updates
             }
 
             if (!due)
+                return;
+
+            // Off goes looking only for a download it has already been asked to wait for. A
+            // version it has never been asked about is not its business.
+            if (_mode == StartupUpdateMode.Off && state != UpdateSchedulerState.AwaitingPublication)
                 return;
 
             RunScheduledCheck();

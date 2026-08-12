@@ -10,14 +10,17 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
 - Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.
 
-## 2026.8.9.2
+## 2026.8.9.3
 ### Server Changes
 - Approving an update is no longer a yes or no question. Typing "update" shows what has changed and says what to type next; typing "update" again approves it, and the install then waits for the last player to leave as before. Nothing installs because of a single mistyped word, and the server no longer stops answering commands while it waits for an answer. "notify" works the same way: it says a version is available, and approving it is still the second thing you type.
 - "update --force" now runs an update through to the end from wherever it has got to. At a server with nothing pending it checks, downloads and installs in one go, rather than stopping to be approved first.
-- A service update is no longer reported to Windows as a crash. The server used to say its stop had gone wrong so that the service manager would restart it, which also armed a restart that could fire later and switch a service back on minutes after somebody had deliberately stopped it. The updater asks the manager directly instead, so a stop that was meant stays stopped.
-- On Linux and macOS an update no longer costs two minutes of downtime. The unit used to pause for long enough to cover any update before starting the server again; it now waits for the update itself and starts as soon as it is done, which is a couple of seconds.
 - Running the server program while an update is being installed now says so and stops, instead of finding no server, starting a second one, and taking the folder the updater is still writing into. What it suggests depends on what is being updated: after a service update, run it again in a moment to attach; after an update to a server you started yourself, leave it alone, because the updater opens that one again itself.
 - The server now reports when a previous update did not finish, so a folder holding parts of two versions says so at startup rather than behaving oddly later. Installing the update again puts it right.
+
+## 2026.8.9.2
+### Server Changes
+- A service update is no longer reported to Windows as a crash. The server used to say its stop had gone wrong so that the service manager would restart it, which also armed a restart that could fire later and switch a service back on minutes after somebody had deliberately stopped it. The updater asks the manager directly instead, so a stop that was meant stays stopped.
+- On Linux and macOS an update no longer costs two minutes of downtime. The unit used to pause for long enough to cover any update before starting the server again; it now waits for the update itself and starts as soon as it is done, which is a couple of seconds.
 - An update to a server that has a console attached to it closes that window. The update itself is unaffected and the server comes back on its own; run the program again once it is done to attach to the updated server.
 
 ## 2026.8.9.1

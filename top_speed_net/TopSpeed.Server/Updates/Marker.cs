@@ -1,25 +1,34 @@
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace TopSpeed.Server.Updates
 {
     /// <summary>
-    /// A file that exists only while an update is being written into the folder.
+    /// A file that exists only while an update is being written into the folder, holding the
+    /// process id of the updater doing the writing.
     ///
-    /// systemd and launchd start the server again themselves once it exits, and neither can be
-    /// told to wait for something that is not a process. Their units run a short wait ahead of
-    /// the server, and this is what that wait watches: while the file is there the folder may be
-    /// half of one version and half of another, and a server started on that loads whichever
-    /// halves were in place at the moment it began.
+    /// It answers two questions. systemd and launchd cannot be told to wait for something that
+    /// is not a process, so their units wait for this file to go away before starting the server
+    /// on a folder that may still be half of each version. And a person who runs the program
+    /// during an update, expecting to attach, reads it and leaves rather than locking the files
+    /// out from under the updater.
     ///
-    /// Removed from three places, because the wait costs a minute if it is left behind and the
-    /// updater is the one part of the folder an update never replaces: a folder installed before
-    /// this existed keeps an updater that has never heard of it. Clearing it at startup as well
-    /// means that costs one slow start once rather than every start forever.
+    /// The id is what makes the second use safe. Existence alone cannot tell an update in
+    /// progress from one whose updater died, and refusing to start on a file nobody will ever
+    /// remove would wedge the folder for good.
     /// </summary>
     internal static class UpdateMarker
     {
         public const string FileName = ".updating";
+
+        /// <summary>
+        /// Longer than any unpack and shorter than anybody's patience. Past it the file is
+        /// treated as abandoned however alive the process looks, so that an updater which hung
+        /// rather than died costs a wait rather than a folder that can never be started again.
+        /// </summary>
+        private static readonly TimeSpan AssumeAbandonedAfter = TimeSpan.FromMinutes(5);
 
         public static string PathIn(string directory)
         {
@@ -27,18 +36,91 @@ namespace TopSpeed.Server.Updates
         }
 
         /// <summary>
-        /// Raised before the server hands off, rather than by the updater once it is running.
-        /// The manager starts counting from the moment the server exits, and an updater that has
-        /// not reached its first line yet would not have raised anything to find.
+        /// Raised as the updater is started, rather than by the updater itself, so that it is
+        /// already there when the server exits. A manager starts counting from that moment, and
+        /// an updater that has not reached its first line yet would have nothing to show for it.
         /// </summary>
-        public static void Raise(string directory)
+        public static void Raise(string directory, int updaterProcessId)
         {
-            Attempt(() => File.WriteAllText(PathIn(directory), string.Empty));
+            Attempt(() => File.WriteAllText(
+                PathIn(directory),
+                updaterProcessId.ToString(CultureInfo.InvariantCulture)));
         }
 
-        public static void Clear(string directory)
+        /// <summary>Removes it, reporting whether there was one to remove.</summary>
+        public static bool Clear(string directory)
         {
-            Attempt(() => File.Delete(PathIn(directory)));
+            var path = PathIn(directory);
+            var existed = false;
+            Attempt(() =>
+            {
+                existed = File.Exists(path);
+                File.Delete(path);
+            });
+
+            return existed;
+        }
+
+        /// <summary>
+        /// Whether an update is being written right now, as opposed to having been abandoned
+        /// partway. Only ever answered yes for a file that is recent and whose updater is still
+        /// there to finish the job.
+        /// </summary>
+        public static bool UpdateIsUnderWay(string directory)
+        {
+            var path = PathIn(directory);
+
+            try
+            {
+                if (!File.Exists(path))
+                    return false;
+
+                if (DateTime.UtcNow - File.GetLastWriteTimeUtc(path) > AssumeAbandonedAfter)
+                    return false;
+
+                if (!int.TryParse(File.ReadAllText(path).Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
+                    return false;
+
+                return UpdaterIsRunning(pid);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The name is checked as well as the number because process ids are handed out again
+        /// once they are free, and a stranger wearing the same one would otherwise keep a folder
+        /// shut for as long as it happened to run.
+        /// </summary>
+        private static bool UpdaterIsRunning(int processId)
+        {
+            if (processId <= 0)
+                return false;
+
+            try
+            {
+                using var process = Process.GetProcessById(processId);
+                return !process.HasExited
+                    && process.ProcessName.StartsWith("Updater", StringComparison.OrdinalIgnoreCase);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

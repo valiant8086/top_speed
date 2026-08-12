@@ -158,11 +158,19 @@ namespace TopSpeed.Server.Updates
                     // and the folder to ask directly, and asking takes seconds.
                     if (OperatingSystem.IsWindows())
                         startInfo.ArgumentList.Add("--start-service");
-                    else
-                        UpdateMarker.Raise(root);
                 }
 
-                Process.Start(startInfo);
+                var updater = Process.Start(startInfo);
+
+                // Raised for anything that looks in the folder from here on: the units on Linux
+                // and macOS wait for it before starting the server again, and a person who runs
+                // the program during an update reads it and leaves rather than locking the very
+                // files being replaced. Written after starting, because the id is the point and
+                // it is not known before; the server has its whole shutdown still to do, so this
+                // is long since on disk by the time anything can act on the server being gone.
+                if (updater != null)
+                    UpdateMarker.Raise(root, updater.Id);
+
                 return true;
             }
             catch (Exception ex)

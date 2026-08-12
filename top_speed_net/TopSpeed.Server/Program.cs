@@ -54,6 +54,22 @@ namespace TopSpeed.Server
                 return ServiceCommands.Execute(serviceAction, baseDirectory, startAutomatically: true);
             }
 
+            // Somebody running the program in the middle of an update means to attach, and there
+            // is nothing to attach to: the server it wants is stopped so that its files can be
+            // replaced. Left alone this copy would find no server, start a second one, and take
+            // the folder the updater is still writing into and the service is about to want.
+            //
+            // Leaving is all it can usefully do, and quickly. Its files are locked from the
+            // moment the process starts, well before any of this runs, so every moment it stays
+            // is a moment the updater may spend failing to replace one of them. Not applied to a
+            // service, which is the process coming back afterwards and must never refuse.
+            if (!ServiceRuntime.IsRunningAsService && Updates.UpdateMarker.UpdateIsUnderWay(baseDirectory))
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "An update is being installed. Run the server again in a moment to attach to it."));
+                return 1;
+            }
+
             // Before anything is bound, find out whether this folder already has a server. If
             // it does, this copy becomes a console onto that one rather than a second server
             // quietly claiming the same ports.
@@ -221,7 +237,15 @@ namespace TopSpeed.Server
             // once the server that had it has gone. Anything left here was left by an updater
             // that did not finish, or by one too old to know to remove it, and leaving it would
             // make every later start wait out a swap that is long over.
-            Updates.UpdateMarker.Clear(baseDirectory);
+            //
+            // Worth saying rather than quietly tidying. The updater removes this the moment it
+            // finishes, so finding one means the last update stopped partway and the folder may
+            // hold some of each version, which is worth knowing before something behaves oddly.
+            if (Updates.UpdateMarker.Clear(baseDirectory))
+            {
+                logger.Warning(LocalizationService.Mark(
+                    "An update did not finish, so this folder may hold parts of two versions. Installing the update again will put it right."));
+            }
 
             using var server = new RaceServer(config, logger);
             using var discovery = new ServerDiscoveryService(server, config, logger);

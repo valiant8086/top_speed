@@ -648,6 +648,13 @@ namespace TopSpeed.Server.Commands
 
         private void EditLogFile()
         {
+            // Said before the prompt, because it is advice about what to type. Nothing checks the
+            // answer against it: a server that is never installed as a service may keep its log
+            // wherever its owner likes, and the one place that always works is worth knowing
+            // before choosing rather than being refused afterwards.
+            ConsoleSink.WriteLine(LocalizationService.Mark(
+                "A log kept inside the server's own folder is recommended. A server installed as a service runs as a limited account that can write there and nowhere else, so a log anywhere outside that folder would go unwritten."));
+
             if (!CommandInput.TryPromptText(
                     LocalizationService.Mark("Enter a log file name or path, or leave blank to turn logging off:"),
                     260,

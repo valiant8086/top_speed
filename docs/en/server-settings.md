@@ -65,6 +65,13 @@ to disk.
 - A bare file name or a relative path is written next to the server program.
 - An absolute path is used exactly as written.
 
+**Keep the log inside the server's own folder.** A server installed as a service runs as a
+limited system account that is given write access to that folder and to nowhere else, so a path
+anywhere outside it produces no log at all. The catch is that the same path works perfectly when
+you run the server yourself, so it can look as though logging is broken only sometimes. Nothing
+stops you setting one; it simply will not be written when the server runs as a service. The
+server guide explains why the service runs under that account.
+
 A log configured here records everything and appends, so it survives restarts and is still
 readable later. This matters if you run the server with its window hidden, since it is the
 only place messages remain after the fact.

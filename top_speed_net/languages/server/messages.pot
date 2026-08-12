@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 21:56-0400\n"
+"POT-Creation-Date: 2026-08-12 10:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -124,6 +124,13 @@ msgstr ""
 msgid "A control session attached."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"A log kept inside the server's own folder is recommended. A server installed "
+"as a service runs as a limited account that can write there and nowhere "
+"else, so a log anywhere outside that folder would go unwritten."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "A multiplayer race is not currently active."
 msgstr ""
@@ -188,6 +195,24 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "An update check is already running. Try again in a moment."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid ""
+"An update did not finish, so this folder may hold parts of two versions. "
+"Installing the update again will put it right."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid ""
+"An update is being installed. Run the server again in a moment to attach to "
+"it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid ""
+"An update is being installed. The server will open again by itself when it "
+"is done."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
@@ -812,10 +837,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
 msgid "Invalid input. Enter a valid number."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
-msgid "Invalid input. Enter y or n."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Policy/PolicyValidation.cs
@@ -1741,10 +1762,6 @@ msgstr ""
 msgid "Standard input is no longer available. Server commands are disabled."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Standard input is not available. Update download was skipped."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
 msgid ""
 "Starting and stopping it will need administrator rights, because this "
@@ -2007,6 +2024,12 @@ msgid ""
 "  sudo systemctl stop {0}"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"To update once no players are connected, type update. To update immediately, "
+"type update --force."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Load/Sections.cs
 #, csharp-format
 msgid "Top-level key '{0}' is not supported."
@@ -2247,14 +2270,6 @@ msgid ""
 "again."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-#, csharp-format
-msgid ""
-"Update install requested, but {0} players are connected. The update will "
-"install automatically once everyone disconnects. Type \"update --force\" to "
-"install it now."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid "Update scheduler failed: {0}"
@@ -2339,7 +2354,7 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
-msgid "Version {0} is available. Type update to install it."
+msgid "Version {0} is available. Type update to see what has changed."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
@@ -2398,10 +2413,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Rules.cs
 msgid "Weather transition seconds must be finite and non-negative."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
-msgid "Would you like to download the update? (y/n)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs

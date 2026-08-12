@@ -84,6 +84,18 @@ options above do the same thing without opening a console.
 `NT AUTHORITY\LocalService`, not as you and not as an administrator, and is set to start with
 the machine.
 
+That account is chosen for two reasons. Windows will only run a service as a named person if it
+is handed that person's password to store and reuse, and nothing here will ever ask you for one.
+And a program listening for players from the internet is the last thing that should be carrying
+your account: as `LocalService` it cannot read your documents or act as you on the network, so a
+server that is broken into does not take you with it.
+
+Installing grants that account permission to write **inside the server folder**, which is what
+lets the server update itself in place. It is given nothing outside that folder. So anything the
+server needs to write has to live inside it, and the log is where this usually shows up: a path
+somewhere else, such as your Documents folder, works when you run the server yourself and
+produces nothing at all once the same folder is running as a service.
+
 ### Linux and macOS
 
 Nothing is installed for you and no root is obtained. `service install` writes the systemd

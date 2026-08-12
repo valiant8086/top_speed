@@ -4,6 +4,9 @@ This page covers the dedicated server's configuration file and the settings you 
 likely to change. Everything here can also be reached from the server console by typing
 `options`.
 
+For starting the server, attaching a console to one already running, the full list of command
+line options and installing the server as a system service, see the server guide.
+
 The server keeps its configuration in `settings.json`, saved beside the server program.
 It is created with defaults the first time the server runs.
 
@@ -25,14 +28,19 @@ the next time the server starts.
 
 Type `update` to check on demand. This works in every mode, including `off`.
 
-If a new version is found you are shown its changes and asked whether to download it. When
-players are connected, the install waits until the last of them disconnects rather than
-interrupting a race, and the server tells you so. Typing `update` again while an install is
-waiting reports what is scheduled; it never starts a second one or forces the first.
+Approving an update is always the second thing you type, so nothing installs because of one
+mistyped word:
 
-Type `update --force` when you do not want to wait. If an install is scheduled it happens
-immediately and connected players are disconnected. If the server is instead waiting to
-re-check a download, that check happens straight away.
+1. `update` shows what has changed and tells you what to type next.
+2. `update` again approves it. When players are connected the install waits until the last of
+   them disconnects rather than interrupting a race, and the server says so. When nobody is
+   connected it installs immediately.
+3. `update` after that reports what is scheduled; it never starts a second one.
+
+Type `update --force` when you do not want to wait. It runs the update through to the end
+from wherever it has got to: at a server with nothing pending it checks, downloads and
+installs in one go, and any connected players are disconnected. If the server is instead
+waiting to re-check a download, that check happens straight away.
 
 In `auto` mode the same waiting applies: the server holds the update until it is empty.
 Because a restart leaves the server empty, restarting is usually the quickest way to get a
@@ -74,7 +82,8 @@ Options given on the command line take precedence over `settings.json`:
 | `--log-level <levels>` | Comma separated: `error`, `warning`, `info`, `debug`, or `all`. |
 | `--log <levels>` | Alias for `--log-level`. |
 
-Passing any command line option also mirrors the log to the console.
+Passing any command line option also mirrors the log to the console. The server guide has the
+full list of options, including the ones for installing and controlling the service.
 
 ## Other settings
 

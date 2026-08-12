@@ -63,10 +63,15 @@ namespace TopSpeed.Server
             // moment the process starts, well before any of this runs, so every moment it stays
             // is a moment the updater may spend failing to replace one of them. Not applied to a
             // service, which is the process coming back afterwards and must never refuse.
-            if (!ServiceRuntime.IsRunningAsService && Updates.UpdateMarker.UpdateIsUnderWay(baseDirectory))
+            if (!ServiceRuntime.IsRunningAsService &&
+                Updates.UpdateMarker.UpdateIsUnderWay(baseDirectory, out var windowComesBackByItself))
             {
-                ConsoleSink.WriteLine(LocalizationService.Mark(
-                    "An update is being installed. Run the server again in a moment to attach to it."));
+                // Different advice for the two, because following the wrong one causes the very
+                // collision this is here to prevent: a server the updater is about to open again
+                // does not want a second one started by hand first.
+                ConsoleSink.WriteLine(windowComesBackByItself
+                    ? LocalizationService.Mark("An update is being installed. The server will open again by itself when it is done.")
+                    : LocalizationService.Mark("An update is being installed. Run the server again in a moment to attach to it."));
                 return 1;
             }
 

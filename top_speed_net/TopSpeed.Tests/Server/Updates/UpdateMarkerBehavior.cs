@@ -43,7 +43,7 @@ namespace TopSpeed.Tests.Server.Updates
         [Fact]
         public void No_marker_means_nothing_is_under_way()
         {
-            UpdateMarker.UpdateIsUnderWay(_folder).Should().BeFalse();
+            UpdateMarker.UpdateIsUnderWay(_folder, out _).Should().BeFalse();
         }
 
         [Fact]
@@ -53,7 +53,7 @@ namespace TopSpeed.Tests.Server.Updates
             // nothing is ever going to come back and finish.
             WriteMarker(FindAnUnusedProcessId().ToString());
 
-            UpdateMarker.UpdateIsUnderWay(_folder).Should().BeFalse();
+            UpdateMarker.UpdateIsUnderWay(_folder, out _).Should().BeFalse();
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace TopSpeed.Tests.Server.Updates
             // number belongs to, a stranger inheriting it would keep the folder shut.
             WriteMarker(Process.GetCurrentProcess().Id.ToString());
 
-            UpdateMarker.UpdateIsUnderWay(_folder).Should().BeFalse();
+            UpdateMarker.UpdateIsUnderWay(_folder, out _).Should().BeFalse();
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace TopSpeed.Tests.Server.Updates
             WriteMarker(Process.GetCurrentProcess().Id.ToString());
             File.SetLastWriteTimeUtc(UpdateMarker.PathIn(_folder), DateTime.UtcNow.AddHours(-1));
 
-            UpdateMarker.UpdateIsUnderWay(_folder).Should().BeFalse();
+            UpdateMarker.UpdateIsUnderWay(_folder, out _).Should().BeFalse();
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace TopSpeed.Tests.Server.Updates
             // Truncated by a crash partway through writing it, or written by something older.
             WriteMarker("   ");
 
-            UpdateMarker.UpdateIsUnderWay(_folder).Should().BeFalse();
+            UpdateMarker.UpdateIsUnderWay(_folder, out _).Should().BeFalse();
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace TopSpeed.Tests.Server.Updates
             // so it has to tell the two apart rather than always tidying quietly.
             UpdateMarker.Clear(_folder).Should().BeFalse();
 
-            UpdateMarker.Raise(_folder, 1234);
+            UpdateMarker.Raise(_folder, 1234, windowComesBackByItself: false);
             UpdateMarker.Clear(_folder).Should().BeTrue();
             File.Exists(UpdateMarker.PathIn(_folder)).Should().BeFalse();
         }
@@ -101,9 +101,33 @@ namespace TopSpeed.Tests.Server.Updates
         [Fact]
         public void What_is_raised_is_the_id_that_can_be_looked_up_later()
         {
-            UpdateMarker.Raise(_folder, 4321);
+            UpdateMarker.Raise(_folder, 4321, windowComesBackByItself: false);
 
-            File.ReadAllText(UpdateMarker.PathIn(_folder)).Trim().Should().Be("4321");
+            File.ReadAllLines(UpdateMarker.PathIn(_folder))[0].Trim().Should().Be("4321");
+        }
+
+        [Fact]
+        public void A_service_update_is_written_without_the_window_note()
+        {
+            // Nothing opens a window at the end of a service update, so somebody who wants a
+            // console has to ask for one. Saying otherwise would leave them waiting for a window
+            // that is never coming.
+            UpdateMarker.Raise(_folder, 4321, windowComesBackByItself: false);
+
+            File.ReadAllText(UpdateMarker.PathIn(_folder)).Should().NotContain("window-returns");
+        }
+
+        [Fact]
+        public void An_interactive_update_is_written_with_the_window_note()
+        {
+            // The updater opens this one again itself, so the advice has to be the opposite:
+            // leave it alone. Starting a second server by hand first is the collision the whole
+            // check exists to avoid.
+            UpdateMarker.Raise(_folder, 4321, windowComesBackByItself: true);
+
+            var lines = File.ReadAllLines(UpdateMarker.PathIn(_folder));
+            lines[0].Trim().Should().Be("4321");
+            lines[1].Trim().Should().Be("window-returns");
         }
 
         /// <summary>

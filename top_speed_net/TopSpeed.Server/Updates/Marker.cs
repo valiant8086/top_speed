@@ -35,16 +35,26 @@ namespace TopSpeed.Server.Updates
             return Path.Combine(directory, FileName);
         }
 
+        /// <summary>Written on the second line when the updater will open a window itself.</summary>
+        private const string WindowReturnsTag = "window-returns";
+
         /// <summary>
         /// Raised as the updater is started, rather than by the updater itself, so that it is
         /// already there when the server exits. A manager starts counting from that moment, and
         /// an updater that has not reached its first line yet would have nothing to show for it.
+        ///
+        /// What comes back afterwards is recorded because only the server knows it. An update to
+        /// a server somebody started themselves ends with the updater opening it again, and an
+        /// update to a service ends with a service nobody can see. Advice to run the program
+        /// again is right for one and collides with the other.
         /// </summary>
-        public static void Raise(string directory, int updaterProcessId)
+        public static void Raise(string directory, int updaterProcessId, bool windowComesBackByItself)
         {
-            Attempt(() => File.WriteAllText(
-                PathIn(directory),
-                updaterProcessId.ToString(CultureInfo.InvariantCulture)));
+            var contents = updaterProcessId.ToString(CultureInfo.InvariantCulture);
+            if (windowComesBackByItself)
+                contents += "\n" + WindowReturnsTag;
+
+            Attempt(() => File.WriteAllText(PathIn(directory), contents));
         }
 
         /// <summary>Removes it, reporting whether there was one to remove.</summary>
@@ -65,9 +75,15 @@ namespace TopSpeed.Server.Updates
         /// Whether an update is being written right now, as opposed to having been abandoned
         /// partway. Only ever answered yes for a file that is recent and whose updater is still
         /// there to finish the job.
+        ///
+        /// <paramref name="windowComesBackByItself"/> says whether the update ends with the
+        /// updater opening the server again, which decides whether somebody should be told to
+        /// run it again or to leave it alone. False when the file does not say, which is a file
+        /// written before this was recorded and cannot also be recent and running.
         /// </summary>
-        public static bool UpdateIsUnderWay(string directory)
+        public static bool UpdateIsUnderWay(string directory, out bool windowComesBackByItself)
         {
+            windowComesBackByItself = false;
             var path = PathIn(directory);
 
             try
@@ -78,10 +94,17 @@ namespace TopSpeed.Server.Updates
                 if (DateTime.UtcNow - File.GetLastWriteTimeUtc(path) > AssumeAbandonedAfter)
                     return false;
 
-                if (!int.TryParse(File.ReadAllText(path).Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
+                var lines = File.ReadAllLines(path);
+                if (lines.Length == 0 ||
+                    !int.TryParse(lines[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
                     return false;
 
-                return UpdaterIsRunning(pid);
+                if (!UpdaterIsRunning(pid))
+                    return false;
+
+                windowComesBackByItself = lines.Length > 1
+                    && string.Equals(lines[1].Trim(), WindowReturnsTag, StringComparison.Ordinal);
+                return true;
             }
             catch (IOException)
             {

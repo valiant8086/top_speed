@@ -168,8 +168,11 @@ namespace TopSpeed.Server.Updates
                 // files being replaced. Written after starting, because the id is the point and
                 // it is not known before; the server has its whole shutdown still to do, so this
                 // is long since on disk by the time anything can act on the server being gone.
+                // A server somebody started themselves is opened again by the updater when it
+                // finishes; a service comes back with no window at all. Recorded here because
+                // this is the only place that knows which of the two just happened.
                 if (updater != null)
-                    UpdateMarker.Raise(root, updater.Id);
+                    UpdateMarker.Raise(root, updater.Id, !Service.ServiceRuntime.IsRunningAsService);
 
                 return true;
             }

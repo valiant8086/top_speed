@@ -1,6 +1,6 @@
 {
   "version": "2026.8.3.1",
-  "serverVersion": "2026.8.9.3",
+  "serverVersion": "2026.8.9.4",
   "changes": [
     "Custom vehicles now work in multiplayer races. A room host turns them on with the new \"Custom vehicles\" game rule, and when another driver picks a vehicle you do not have, your game fetches it from the server by itself. Vehicles are matched by what is inside them rather than by their name, so one you already have is never downloaded, renaming or moving a vehicle does not cause it to download again, and a vehicle you do download arrives only once however many races you use it in. If a vehicle cannot be downloaded or cannot be loaded, the race still starts and you are told which vehicle was unavailable and who was using it.",
     "After a multiplayer race that used a downloaded vehicle, you can save it into your own Vehicles folder and then use it offline in time trial and single race. If you already have a vehicle saved under that name, you can keep both, replace yours with the downloaded one, or keep yours and discard the download. A \"Prompt to keep downloaded custom vehicles\" checkbox under Options, Server settings turns the offer off if you would rather nothing were saved.",
@@ -12,6 +12,7 @@
     "Added more Spanish, Armenian, Brazilian Portuguese, Vietnamese and Chinese translations."
   ],
   "serverChanges": [
+    "This version exists so that 2026.8.9.3 has something to update to. Nothing in the server has changed since then, so what is listed below is what you already have. Everything after this line arrived in 2026.8.9.3 or earlier.",
     "Running the server program again from a folder that already has a server now opens a console onto the one that is running, instead of starting a second server that quietly claims the same ports. Everything the running server prints appears in the new window, commands typed there are answered by it, and typing exit leaves the server running. Only one window at a time may hold the console, and a second one is told which window already has it.",
     "The server can now be installed as a system service, so it starts with the machine and keeps running when nobody is logged in. Type \"service\" for a menu, or add the verb to skip it: service install, uninstall, start, stop, restart or status. Each folder gets its own service worked out from where the server lives, so two servers on one machine can both be installed without naming either.",
     "On Linux and macOS, installing writes the systemd unit or launchd job next to the server and prints the two commands that install it, rather than trying to obtain root for itself. The file can be read in full before anything is agreed to.",

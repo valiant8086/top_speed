@@ -16,9 +16,9 @@ namespace TopSpeed.Server.Updates
         AwaitingPublication,
 
         /// <summary>
-        /// A version has been found and said out loud, and nobody has asked for it yet. What
-        /// separates it from an approved one is only that: it is what "off" becomes the moment
-        /// somebody types update, and what "notify" is from the announcement onwards.
+        /// A version has been found and its changes shown, and nobody has asked for it yet.
+        /// Only a typed check leaves things here, in every mode: notify says a version exists
+        /// but stops short of this, so that approving is always the second thing typed.
         /// </summary>
         Offered,
 
@@ -217,14 +217,14 @@ namespace TopSpeed.Server.Updates
                         }
                         else
                         {
-                            // Notify. Saying so is the whole of this mode, and having said it,
-                            // the version is held exactly as a typed check would hold it: from
-                            // here on there is nothing left to tell notify and off apart.
-                            _state = UpdateSchedulerState.Offered;
-                            _pending = result.Update;
+                            // Notify, which says so and nothing more. Deliberately not held as
+                            // offered: an update found this way goes through the same two steps
+                            // as one nobody was told about, so that saying yes is always the
+                            // second time and never the first, and the changes are always read
+                            // before rather than skipped past. What notify buys is the sentence.
                             ArmDaily();
                             announcement = LocalizationService.Format(
-                                LocalizationService.Mark("Version {0} is available. To update once no players are connected, type update. To update immediately, type update --force."),
+                                LocalizationService.Mark("Version {0} is available. Type update to see what has changed."),
                                 result.Update.VersionText);
                         }
 

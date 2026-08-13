@@ -194,6 +194,16 @@ namespace TopSpeed.Server.Updates
                         break;
 
                     case ServerUpdateCheckOutcome.UpdateAvailable when result.Update != null:
+                        // An install already approved and waiting for the server to empty is not
+                        // an offer to be made again. The only question a check can answer about it
+                        // is whether the version it is waiting for is still the one being offered,
+                        // which is the same question asked when the moment to install arrives.
+                        if (!interactive && _state == UpdateSchedulerState.PendingInstall && _pending != null)
+                        {
+                            announcement = KeepOrDropPendingInstall(result.Update);
+                            break;
+                        }
+
                         ResetCycle();
                         if (interactive)
                         {
@@ -346,11 +356,17 @@ namespace TopSpeed.Server.Updates
                 if (_state == UpdateSchedulerState.PendingInstall)
                     return PlayerPollInterval;
 
-                // Off looks for nothing by itself, so there is no next time to sleep until.
-                // Approving an update wakes this directly, and the state above takes it from
-                // there; sleeping without end in the meantime is what makes off cost nothing.
-                if (_mode == StartupUpdateMode.Off && _state != UpdateSchedulerState.AwaitingPublication)
+                // Off looks for nothing by itself, so there is usually no next time to sleep
+                // until. Approving an update wakes this directly, and the state above takes it
+                // from there; sleeping without end in the meantime is what makes off cost nothing.
+                // An offer is the exception, because it goes stale on the same clock as everything
+                // else and something has to be awake to notice.
+                if (_mode == StartupUpdateMode.Off
+                    && _state != UpdateSchedulerState.AwaitingPublication
+                    && _state != UpdateSchedulerState.Offered)
+                {
                     return Timeout.InfiniteTimeSpan;
+                }
 
                 var remaining = _nextDueUtc - DateTime.UtcNow;
                 return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
@@ -400,7 +416,22 @@ namespace TopSpeed.Server.Updates
             // Off goes looking only for a download it has already been asked to wait for. A
             // version it has never been asked about is not its business.
             if (_mode == StartupUpdateMode.Off && state != UpdateSchedulerState.AwaitingPublication)
+            {
+                // An offer keeps for as long as a check would have taken to come round again, so
+                // that typing update after leaving it overnight reads the changes afresh instead
+                // of approving something last looked at yesterday. Letting it lapse asks nobody
+                // anything, which is the whole of what off promises.
+                if (state == UpdateSchedulerState.Offered)
+                {
+                    lock (_gate)
+                    {
+                        ResetCycle();
+                        ArmDaily();
+                    }
+                }
+
                 return;
+            }
 
             RunScheduledCheck();
         }
@@ -477,35 +508,11 @@ namespace TopSpeed.Server.Updates
         /// </summary>
         private ServerUpdateInfo? ApproveForInstall(ServerUpdateInfo found)
         {
-            string? announcement = null;
+            string? announcement;
 
             lock (_gate)
             {
-                var pendingVersion = _pending?.VersionText ?? string.Empty;
-                var sameVersion = string.Equals(pendingVersion, found.VersionText, StringComparison.OrdinalIgnoreCase);
-                if (sameVersion)
-                {
-                    _pending = found;
-                    return found;
-                }
-
-                if (_mode == StartupUpdateMode.Auto)
-                {
-                    _pending = found;
-                    announcement = LocalizationService.Format(
-                        LocalizationService.Mark("Version {0} is no longer offered. Installing version {1} instead."),
-                        pendingVersion,
-                        found.VersionText);
-                }
-                else
-                {
-                    ResetCycle();
-                    ArmDaily();
-                    announcement = LocalizationService.Format(
-                        LocalizationService.Mark("Version {0} could not be installed because it is no longer offered. Version {1} is available instead. Type update to install it."),
-                        pendingVersion,
-                        found.VersionText);
-                }
+                announcement = KeepOrDropPendingInstall(found);
             }
 
             if (announcement != null)
@@ -515,6 +522,45 @@ namespace TopSpeed.Server.Updates
             {
                 return _state == UpdateSchedulerState.PendingInstall ? _pending : null;
             }
+        }
+
+        /// <summary>
+        /// Decides what becomes of an approved install when a check says what is on offer now, and
+        /// returns what to say about it, or null when there is nothing worth saying.
+        ///
+        /// The same version, freshly described, leaves the approval standing: waiting for a server
+        /// to empty is not a reason to ask for it again. A different one cannot go on in its place
+        /// without saying so, because what was approved was a version whose changes somebody read.
+        /// Auto takes the newest, which is what it is set to do, and names both. Off and notify
+        /// drop it instead, leaving the new one to be approved in its own right.
+        ///
+        /// Callers hold the gate.
+        /// </summary>
+        private string? KeepOrDropPendingInstall(ServerUpdateInfo found)
+        {
+            var pendingVersion = _pending?.VersionText ?? string.Empty;
+            ArmDaily();
+
+            if (string.Equals(pendingVersion, found.VersionText, StringComparison.OrdinalIgnoreCase))
+            {
+                _pending = found;
+                return null;
+            }
+
+            if (_mode == StartupUpdateMode.Auto)
+            {
+                _pending = found;
+                return LocalizationService.Format(
+                    LocalizationService.Mark("Version {0} is no longer offered. Installing version {1} instead."),
+                    pendingVersion,
+                    found.VersionText);
+            }
+
+            ResetCycle();
+            return LocalizationService.Format(
+                LocalizationService.Mark("Version {0} could not be installed because it is no longer offered. Version {1} is available instead. Type update to install it."),
+                pendingVersion,
+                found.VersionText);
         }
 
         private void PerformInstall(ServerUpdateInfo update, bool showProgress)

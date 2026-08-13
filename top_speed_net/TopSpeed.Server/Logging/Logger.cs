@@ -33,9 +33,16 @@ namespace TopSpeed.Server.Logging
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath) ?? ".");
 
-                // Opened so that other programs may read it while the server is running. The
-                // default refuses them, which meant the log of a server running unattended,
-                // exactly the one worth reading, could not be opened until the server stopped.
+                // Held open for as long as the server runs, and shared, so that the log of a
+                // server running unattended can be read while it runs rather than only afterwards.
+                //
+                // Windows settles sharing in both directions, so this reaches only a reader that
+                // permits a writer. Notepad and most log viewers do; an editor asking for the file
+                // in the plain way is refused until the server stops. Closing the file between
+                // messages would admit every reader and has been measured at about seventy times
+                // the cost per message, nearly all of it spent opening the file again, so the
+                // reader that cannot be served is the one left unserved.
+                //
                 // Sharing is limited to reading: a second writer would interleave lines into
                 // nonsense, and this stays the one thing writing here.
                 var stream = new FileStream(

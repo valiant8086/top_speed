@@ -285,7 +285,7 @@ namespace TopSpeed.Server.Updates
                             {
                                 _saidTheInstallDidNotTake = true;
                                 announcement = LocalizationService.Format(
-                                    LocalizationService.Mark("Version {0} was installed here, but this server is still version {1}. It will not be installed again by itself, because it would come back the same way. Type \"update --force\" to try it anyway."),
+                                    LocalizationService.Mark("Version {0} was installed here, but this server is still version {1}. To prevent infinite download looping, it will not be installed again. Type \"update --force\" to try it anyway."),
                                     result.Update.VersionText,
                                     ServerUpdateConfig.CurrentVersion.ToString());
                             }

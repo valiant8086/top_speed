@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 16:43-0400\n"
+"POT-Creation-Date: 2026-08-13 19:12-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -76,24 +76,12 @@ msgstr ""
 msgid "  TopSpeed.Server [options]"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-#, csharp-format
-msgid "\"{0}\" is not something the service command understands."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "(empty)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "(off)"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/WindowsServiceHost.cs
-msgid ""
-"--service is how a service manager starts this program, and does nothing "
-"typed by hand. Use --install-service to install this folder's server, then --"
-"start-service to start it."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
@@ -120,18 +108,8 @@ msgstr ""
 msgid "5. Restart"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Control/Listener.cs
-msgid "A control session attached."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "A multiplayer race is not currently active."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid ""
-"A name or relative path is written next to the server program; an absolute "
-"path is used as written."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
@@ -208,27 +186,13 @@ msgid ""
 "is done."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "Another instance is already attached to this service."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "Another server is already running from this folder."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Control/Listener.cs
-#, csharp-format
-msgid ""
-"Another window on this machine has been attached to this server since {0}. "
-"Use that window, or close it to free the session."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Control/Client.cs
-msgid ""
-"Another window on this machine is already attached to this server. Use that "
-"window, or close it to free the connection."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Control/Listener.cs
-msgid ""
-"Another window on this machine is attached to this server. Use that window, "
-"or close it to free the session."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -238,8 +202,7 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 #, csharp-format
-msgid ""
-"Attached to the TopSpeed Server service {0}, port {1}, update checking {2}."
+msgid "Attached to service {0}, port {1}, update checking {2}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -370,9 +333,8 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid ""
-"Choose which levels are logged. These are the same levels --log-level takes, "
-"and error, warning and info is the usual choice; debug adds detail meant for "
-"diagnosing problems."
+"Choose which levels are logged. Error, warning and info is the default; "
+"debug adds detail meant for diagnosing problems."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -382,11 +344,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Command failed. Check server logs for details."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-#, csharp-format
-msgid "Configured port: {0}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
@@ -455,6 +412,10 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
 #, csharp-format
 msgid "Control connection failed: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "Control session attached to server."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
@@ -989,12 +950,6 @@ msgstr ""
 msgid "Kawasaki Ninja ZX-10R"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid ""
-"Keep the log inside the server's folder. On Windows a server installed as a "
-"service can write nowhere else."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Readers/FloatCsv.cs
 #, csharp-format
 msgid "Key '{0}' contains a non-float value '{1}'."
@@ -1235,6 +1190,13 @@ msgstr ""
 msgid "Not installed as a service."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Note that if this runs as a service on Windows it cannot log outside the "
+"server folder. A name or relative path goes next to the server program; an "
+"absolute path is used as written."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Host/Rules.cs
 msgid "One-on-one rooms always allow a maximum of 2 players."
 msgstr ""
@@ -1461,23 +1423,11 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
 #, csharp-format
-msgid "Removed service \"{0}\". The server folder was left alone."
+msgid "Removed service \"{0}\"."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Restart required for this change."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid ""
-"Restart required for this change. The --log-file and log level command line "
-"options override this setting. See the server documentation for details."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid ""
-"Restart required for this change. The log level command line options "
-"override this setting."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
@@ -1548,7 +1498,7 @@ msgid ""
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "Running as a service (this folder only):"
+msgid "Running as a service:"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
@@ -1724,6 +1674,10 @@ msgstr ""
 msgid "Shutdown the server."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Shutting down this interactive server."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Packages/LocalPackages.cs
 #, csharp-format
 msgid "Skipping server track package '{0}': {1}"
@@ -1787,10 +1741,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
 #, csharp-format
 msgid "Stopping race: room={0}, active={1}, trackedResults={2}."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid "Stopping this server so the service can take over."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1880,7 +1830,7 @@ msgid "The service did not stop in time."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
-msgid "The service has been removed. The server folder was left alone."
+msgid "The service has been removed."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -1894,7 +1844,7 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
 "The service is running, but this window could not attach to it. Run the "
-"server program from this folder again to attach."
+"server program from this folder again to retry."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -1951,6 +1901,12 @@ msgstr ""
 msgid "This needs administrator rights."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid ""
+"This server already has a running instance in another interactive console "
+"window. Use that window to control it."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
 #, csharp-format
@@ -1968,17 +1924,18 @@ msgstr ""
 msgid "This server is full."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Control/Listener.cs
-msgid ""
-"This server is running in its own console window on this machine. Use that "
-"window to control it."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
 "This server is the service, so it cannot install or control itself. Run the "
 "server program from its own folder and use its service menu, which can ask "
 "for the rights this needs."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+#, csharp-format
+msgid ""
+"This will drop {0} connected players until the service comes online. "
+"Proceed? (y/n)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
@@ -2043,7 +2000,7 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Identity.cs
 #, csharp-format
-msgid "TopSpeed multiplayer race server running from {0}."
+msgid "TopSpeed multiplayer race server located at {0}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -2282,12 +2239,6 @@ msgstr ""
 msgid "Updater not found: {0}"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid ""
-"Use: service, or service with one of install, uninstall, start, stop, "
-"restart, status."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
 msgid "Value cannot be empty."
 msgstr ""
@@ -2370,9 +2321,9 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid ""
-"Version {0} was installed here, but this server is still version {1}. It "
-"will not be installed again by itself, because it would come back the same "
-"way. Type \"update --force\" to try it anyway."
+"Version {0} was installed here, but this server is still version {1}. To "
+"prevent infinite download looping, it will not be installed again. Type "
+"\"update --force\" to try it anyway."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -2536,7 +2487,9 @@ msgid ""
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "auto: install updates when no players are connected"
+msgid ""
+"auto: install updates silently without confirmation as soon as no players "
+"are connected"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Policy/PolicyValidation.cs
@@ -2655,7 +2608,7 @@ msgid "normal"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "notify: say when an update is available"
+msgid "notify: write a message to console when an update is available"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
@@ -2841,13 +2794,6 @@ msgstr ""
 #, csharp-format
 msgid ""
 "{0} payload mismatch: room={1}, connectionPlayer={2}/{3}, payload={4}/{5}."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-#, csharp-format
-msgid ""
-"{0} players are connected and will be disconnected. Stop the server and "
-"start the service? (y/n)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs

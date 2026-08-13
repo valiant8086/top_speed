@@ -56,20 +56,14 @@ namespace TopSpeed.Server.Service
         /// </param>
         public static void Run(string arguments, string directory, Action? stopHostingServer, Func<int>? countPlayers = null)
         {
+            // A word this does not know is treated as though none had been given, because the menu
+            // both says what the choices are and lets one be made. Naming the mistake and listing
+            // the verbs would be two sentences to reach the same place, and somebody who typed a
+            // verb meant to act rather than to read.
             var verb = (arguments ?? string.Empty).Trim();
-            if (verb.Length == 0)
+            if (verb.Length == 0 || !TryParseVerb(verb, out var action))
             {
                 ShowMenu(directory, stopHostingServer, countPlayers);
-                return;
-            }
-
-            if (!TryParseVerb(verb, out var action))
-            {
-                ConsoleSink.WriteLineFormat(
-                    LocalizationService.Mark("\"{0}\" is not something the service command understands."),
-                    verb);
-                ConsoleSink.WriteLine(LocalizationService.Mark(
-                    "Use: service, or service with one of install, uninstall, start, stop, restart, status."));
                 return;
             }
 
@@ -112,12 +106,6 @@ namespace TopSpeed.Server.Service
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("Service:"));
                 ConsoleSink.WriteLine(ServiceCommands.Describe(manager.Query(directory), directory));
-
-                // Read each time round rather than registered once, so it is right after
-                // somebody changes it.
-                var port = ServiceIdentity.ReadConfiguredPort(directory);
-                if (port > 0)
-                    ConsoleSink.WriteLineFormat(LocalizationService.Mark("Configured port: {0}."), port);
 
                 ConsoleSink.WriteLine(LocalizationService.Mark("1. Install"));
                 ConsoleSink.WriteLine(LocalizationService.Mark("2. Uninstall"));
@@ -247,7 +235,7 @@ namespace TopSpeed.Server.Service
             if (!theServiceIsTheServerHere)
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark(
-                    "Stopping this server so the service can take over."));
+                    "Shutting down this interactive server."));
             }
 
             stopHostingServer();
@@ -269,7 +257,7 @@ namespace TopSpeed.Server.Service
                 return true;
 
             return Confirm(LocalizationService.Format(
-                LocalizationService.Mark("{0} players are connected and will be disconnected. Stop the server and start the service? (y/n)"),
+                LocalizationService.Mark("This will drop {0} connected players until the service comes online. Proceed? (y/n)"),
                 players));
         }
 
@@ -353,7 +341,7 @@ namespace TopSpeed.Server.Service
                 // window missed out, so the remedy is to attach again rather than to start
                 // anything.
                 ConsoleSink.WriteLine(LocalizationService.Mark(
-                    "The service is running, but this window could not attach to it. Run the server program from this folder again to attach."));
+                    "The service is running, but this window could not attach to it. Run the server program from this folder again to retry."));
                 return 1;
             }
 

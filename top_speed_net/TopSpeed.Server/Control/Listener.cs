@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Net.Sockets;
@@ -222,7 +221,7 @@ namespace TopSpeed.Server.Control
                 for (var i = 0; i < recent.Length; i++)
                     session.WriteLine(recent[i]);
 
-                _logger.Info(LocalizationService.Mark("A control session attached."));
+                _logger.Info(LocalizationService.Mark("Control session attached to server."));
 
                 // The command host is already looping on CommandSessions, so simply holding the
                 // session open is what serves this client. Wait for it to go away.
@@ -250,21 +249,16 @@ namespace TopSpeed.Server.Control
             if (refusal == AttachRefusal.ConsoleHoldsSession)
             {
                 return LocalizationService.Translate(LocalizationService.Mark(
-                    "This server is running in its own console window on this machine. Use that window to control it."));
+                    "This server already has a running instance in another interactive console window. Use that window to control it."));
             }
 
+            // One sentence whether or not the moment it attached is known. Saying since when was
+            // the only reason there were two, and it answers a question nobody asks: what is
+            // wanted is the window, and the time it started does not help find it.
             if (refusal == AttachRefusal.AlreadyAttached)
             {
-                var since = CommandSessions.AttachedSinceUtc;
-                if (since.HasValue)
-                {
-                    return LocalizationService.Format(
-                        LocalizationService.Mark("Another window on this machine has been attached to this server since {0}. Use that window, or close it to free the session."),
-                        since.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
-                }
-
                 return LocalizationService.Translate(LocalizationService.Mark(
-                    "Another window on this machine is attached to this server. Use that window, or close it to free the session."));
+                    "Another instance is already attached to this service."));
             }
 
             return LocalizationService.Translate(LocalizationService.Mark("The server refused to attach this window."));

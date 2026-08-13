@@ -33,7 +33,6 @@ namespace TopSpeed.Server.Commands
 
         private static ICommandSession _console = new HeadlessCommandSession();
         private static ICommandSession? _attached;
-        private static DateTime _attachedSinceUtc;
         private static volatile bool _stopping;
 
         /// <summary>Whether the server's own console is able to take commands.</summary>
@@ -90,19 +89,8 @@ namespace TopSpeed.Server.Commands
                 }
 
                 _attached = session;
-                _attachedSinceUtc = DateTime.UtcNow;
                 SessionAvailable.Set();
                 return true;
-            }
-        }
-
-        /// <summary>When the current session attached, so a refusal can say how long ago.</summary>
-        public static DateTime? AttachedSinceUtc
-        {
-            get
-            {
-                lock (Gate)
-                    return _attached == null ? null : _attachedSinceUtc;
             }
         }
 

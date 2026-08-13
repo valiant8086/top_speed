@@ -43,7 +43,7 @@ namespace TopSpeed.Server.Control
 
                 case ControlConnectResult.Busy:
                     WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                        "Another window on this machine is already attached to this server. Use that window, or close it to free the connection.")));
+                        "Another instance is already attached to this service.")));
                     return ControlClientOutcome.Refused;
 
                 case ControlConnectResult.Failed:

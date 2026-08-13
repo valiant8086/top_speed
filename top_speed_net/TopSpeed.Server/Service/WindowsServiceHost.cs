@@ -53,35 +53,13 @@ namespace TopSpeed.Server.Service
 
             // Coming back without ever having been started means no service manager was
             // listening, which is what happens when somebody types the flag themselves. Windows
-            // says so first, in its own words, and its advice is to install the service and use
-            // net start; this says the same thing in the words this program answers to.
+            // has already said so in its own words, and saying it again here in ours was one
+            // more sentence to translate for the rarest way there is to start this program.
             //
             // Known by what happened rather than by guessing whether the process looks
             // interactive, for the same reason the flag exists at all: one is evidence and the
             // other is a hunch that is wrong for scheduled tasks and wrappers.
-            if (!host._managerStartedUs)
-            {
-                // Straight to the console rather than through the session layer, which this
-                // flag has already set to the one that says nothing, on the understanding that
-                // a service has nobody to say it to. That understanding is what has just turned
-                // out to be wrong.
-                Say(LocalizationService.Translate(LocalizationService.Mark(
-                    "--service is how a service manager starts this program, and does nothing typed by hand. Use --install-service to install this folder's server, then --start-service to start it.")));
-                return 1;
-            }
-
-            return host._exitCode;
-        }
-
-        private static void Say(string text)
-        {
-            try
-            {
-                Console.WriteLine(text);
-            }
-            catch (System.IO.IOException)
-            {
-            }
+            return host._managerStartedUs ? host._exitCode : 1;
         }
 
         protected override void OnStart(string[] args)

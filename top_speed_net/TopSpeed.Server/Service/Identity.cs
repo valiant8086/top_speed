@@ -47,7 +47,7 @@ namespace TopSpeed.Server.Service
         public static string DescriptionFor(string directory)
         {
             return LocalizationService.Format(
-                LocalizationService.Mark("TopSpeed multiplayer race server running from {0}."),
+                LocalizationService.Mark("TopSpeed multiplayer race server located at {0}."),
                 DisplayPath(directory));
         }
 

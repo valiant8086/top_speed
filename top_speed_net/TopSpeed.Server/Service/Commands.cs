@@ -137,7 +137,7 @@ namespace TopSpeed.Server.Service
             if (action == ServiceAction.Uninstall)
             {
                 return LocalizationService.Translate(LocalizationService.Mark(
-                    "The service has been removed. The server folder was left alone."));
+                    "The service has been removed."));
             }
 
             return Describe(status, directory);

@@ -211,7 +211,7 @@ namespace TopSpeed.Server.Service
                     return ServiceActionResult.Failed(LastErrorMessage());
 
                 return ServiceActionResult.Ok(LocalizationService.Format(
-                    LocalizationService.Mark("Removed service \"{0}\". The server folder was left alone."),
+                    LocalizationService.Mark("Removed service \"{0}\"."),
                     name));
             }
             finally

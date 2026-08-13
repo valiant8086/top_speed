@@ -607,8 +607,8 @@ namespace TopSpeed.Server.Commands
         {
             return StartupUpdateModes.Parse(mode) switch
             {
-                StartupUpdateMode.Notify => LocalizationService.Mark("notify: say when an update is available"),
-                StartupUpdateMode.Auto => LocalizationService.Mark("auto: install updates when no players are connected"),
+                StartupUpdateMode.Notify => LocalizationService.Mark("notify: write a message to console when an update is available"),
+                StartupUpdateMode.Auto => LocalizationService.Mark("auto: install updates silently without confirmation as soon as no players are connected"),
                 _ => LocalizationService.Mark("off: never check")
             };
         }
@@ -654,7 +654,7 @@ namespace TopSpeed.Server.Commands
             // only there is anywhere else refused; the advice holds everywhere because a log
             // beside the server is one that moves and backs up with it.
             ConsoleSink.WriteLine(LocalizationService.Mark(
-                "Keep the log inside the server's folder. On Windows a server installed as a service can write nowhere else."));
+                "Note that if this runs as a service on Windows it cannot log outside the server folder. A name or relative path goes next to the server program; an absolute path is used as written."));
 
             if (!CommandInput.TryPromptText(
                     LocalizationService.Mark("Enter a log file name or path, or leave blank to turn logging off:"),
@@ -669,9 +669,7 @@ namespace TopSpeed.Server.Commands
             _settings.LogFile = logFile;
             SaveSettings();
             ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Log file"), FormatLogFile(_settings.LogFile)));
-            if (!string.IsNullOrWhiteSpace(logFile))
-                ConsoleSink.WriteLine(LocalizationService.Mark("A name or relative path is written next to the server program; an absolute path is used as written."));
-            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change. The --log-file and log level command line options override this setting. See the server documentation for details."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change."));
         }
 
         private void EditLogLevel()
@@ -683,7 +681,7 @@ namespace TopSpeed.Server.Commands
             options.Add(LocalizationService.Translate(LocalizationService.Mark("Back")));
 
             if (!CommandInput.TryPromptMenuChoice(
-                    LocalizationService.Mark("Choose which levels are logged. These are the same levels --log-level takes, and error, warning and info is the usual choice; debug adds detail meant for diagnosing problems."),
+                    LocalizationService.Mark("Choose which levels are logged. Error, warning and info is the default; debug adds detail meant for diagnosing problems."),
                     options,
                     out var choiceIndex,
                     backOptionIndex: options.Count - 1))
@@ -698,7 +696,7 @@ namespace TopSpeed.Server.Commands
             _settings.LogLevel = LogLevels.Normalize(presets[choiceIndex]);
             SaveSettings();
             ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Log level"), LogLevels.Normalize(_settings.LogLevel)));
-            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change. The log level command line options override this setting."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change."));
         }
 
         private void ToggleBlockRepeatedLettersInName()

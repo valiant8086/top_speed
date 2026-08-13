@@ -47,7 +47,7 @@ namespace TopSpeed.Server
             ConsoleSink.WriteLine(LocalizationService.Mark("  --log-file <path>       Output log file path (e.g. log.txt)."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  -h, --help              Show this help."));
             ConsoleSink.WriteLine(string.Empty);
-            ConsoleSink.WriteLine(LocalizationService.Mark("Running as a service (this folder only):"));
+            ConsoleSink.WriteLine(LocalizationService.Mark("Running as a service:"));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --service-status        Say whether this folder is installed as a service."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --install-service       Install this folder's server as a service."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --uninstall-service     Remove it again. The folder is left alone."));
@@ -197,7 +197,7 @@ namespace TopSpeed.Server
 
             return Service.ServiceRuntime.IsRunningAsService
                 ? LocalizationService.Format(
-                    LocalizationService.Mark("Attached to the TopSpeed Server service {0}, port {1}, update checking {2}."),
+                    LocalizationService.Mark("Attached to service {0}, port {1}, update checking {2}."),
                     release, settings.Port, updates)
                 : LocalizationService.Format(
                     LocalizationService.Mark("Attached to TopSpeed Server {0}, port {1}, update checking {2}."),

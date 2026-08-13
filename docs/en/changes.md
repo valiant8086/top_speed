@@ -10,6 +10,15 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
 - Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.
 
+## 2026.8.9.5
+### Server Changes
+- An update that installs but comes back reporting the old version is no longer installed again and again. The server records which version it handed over, notices it is still the older one, says so once, and leaves that version alone until a newer one appears. A later version installs as usual and "update --force" installs the refused one anyway.
+- The server no longer checks for updates again in the first few minutes after installing one, having asked that same question on its way into the install.
+- An update approved while players are connected is no longer forgotten if a daily check happens before the last of them leaves. The approval now survives a check that finds the same version, and is dropped with a message only when the version it was for is no longer the one being offered.
+- An update offered but never approved now expires, so typing update the next day shows the changes again rather than installing on one keystroke.
+- The Windows service now starts with the machine instead of two minutes after it. It was installed as a delayed start, which also ran it at background priority until it finished starting.
+- Setting a log file now says to keep it inside the server's folder. A service can only write there, so a log anywhere else works when you run the server yourself and silently produces nothing when the same folder runs as a service.
+
 ## 2026.8.9.3
 ### Server Changes
 - Approving an update is no longer a yes or no question. Typing "update" shows what has changed and says what to type next; typing "update" again approves it, and the install then waits for the last player to leave as before. Nothing installs because of a single mistyped word, and the server no longer stops answering commands while it waits for an answer. "notify" works the same way: it says a version is available, and approving it is still the second thing you type.

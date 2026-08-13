@@ -152,13 +152,13 @@ namespace TopSpeed.Server
                     ? null
                     : BuildLogFilePath(settings.LogFile);
 
-            // Levels come from the command line when it says anything at all. A log file turned
-            // on in settings.json has no levels to go with it, so it records everything.
-            var levels = consoleLoggingEnabled
-                ? ParseLogLevels(args)
-                : logFile != null
-                    ? LogLevel.All
-                    : LogLevel.None;
+            // The command line decides how much is logged when it names levels, the setting when
+            // it does not, and the usual three when neither says. Naming them on the command line
+            // is a thing said about this run; the setting is what a server installed as a service
+            // has to be told through, since nobody is there to pass it anything.
+            var levels = consoleLoggingEnabled || logFile != null
+                ? ParseLogLevels(args) ?? LogLevels.Parse(settings.LogLevel) ?? LogLevels.Default
+                : LogLevel.None;
             var loggingEnabled = levels != LogLevel.None;
             using var logger = new Logger(
                 levels,
@@ -176,7 +176,7 @@ namespace TopSpeed.Server
             {
                 logger.Raw(LocalizationService.Format(
                     LocalizationService.Mark("Logging enabled. Levels: {0}. File: {1}."),
-                    FormatLogLevels(levels),
+                    LogLevels.Format(levels),
                     string.IsNullOrWhiteSpace(logFile)
                         ? LocalizationService.Translate(LocalizationService.Mark("none"))
                         : logFile));

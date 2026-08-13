@@ -362,6 +362,7 @@ namespace TopSpeed.Server.Commands
                     new OptionItem("server_architecture", LocalizationService.Mark("Server architecture"), OptionValueType.Choice, EditRuntimeArchitecture, CurrentRuntimeAssetLabel),
                     new OptionItem("startup_update_mode", LocalizationService.Mark("Update checking"), OptionValueType.Choice, EditStartupUpdateMode, CurrentStartupUpdateModeLabel),
                     new OptionItem("log_file", LocalizationService.Mark("Log file"), OptionValueType.Text, EditLogFile, () => FormatLogFile(_settings.LogFile)),
+                    new OptionItem("log_level", LocalizationService.Mark("Log level"), OptionValueType.Choice, EditLogLevel, () => LogLevels.Normalize(_settings.LogLevel)),
                     // No service entry here on purpose. Everything in this menu is a setting of
                     // this server, kept in its settings file. Installing or starting a service
                     // is an instruction to the host system about how the server gets launched,
@@ -671,6 +672,33 @@ namespace TopSpeed.Server.Commands
             if (!string.IsNullOrWhiteSpace(logFile))
                 ConsoleSink.WriteLine(LocalizationService.Mark("A name or relative path is written next to the server program; an absolute path is used as written."));
             ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change. The --log-file and log level command line options override this setting. See the server documentation for details."));
+        }
+
+        private void EditLogLevel()
+        {
+            var presets = LogLevels.Presets;
+            var options = new List<string>(presets.Length + 1);
+            for (var i = 0; i < presets.Length; i++)
+                options.Add(LogLevels.Normalize(presets[i]));
+            options.Add(LocalizationService.Translate(LocalizationService.Mark("Back")));
+
+            if (!CommandInput.TryPromptMenuChoice(
+                    LocalizationService.Mark("Choose which levels are logged. These are the same levels --log-level takes, and error, warning and info is the usual choice; debug adds detail meant for diagnosing problems."),
+                    options,
+                    out var choiceIndex,
+                    backOptionIndex: options.Count - 1))
+            {
+                DisableCommands(LocalizationService.Mark("Standard input is no longer available. Server commands are disabled."));
+                return;
+            }
+
+            if (choiceIndex < 0 || choiceIndex >= presets.Length)
+                return;
+
+            _settings.LogLevel = LogLevels.Normalize(presets[choiceIndex]);
+            SaveSettings();
+            ConsoleSink.WriteLine(BuildOptionLine(LocalizationService.Mark("Log level"), LogLevels.Normalize(_settings.LogLevel)));
+            ConsoleSink.WriteLine(LocalizationService.Mark("Restart required for this change. The log level command line options override this setting."));
         }
 
         private void ToggleBlockRepeatedLettersInName()

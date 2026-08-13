@@ -123,7 +123,15 @@ namespace TopSpeed.Server.Updates
                 return null;
 
             if (DateTime.UtcNow - whenUtc < UpdateInstallRecord.CheckAgainNoSoonerThan)
+            {
                 _nextDueUtc = DateTime.UtcNow + UpdateRetrySchedule.DailyInterval;
+
+                // The only trace this leaves otherwise is a check that does not happen, which
+                // reads exactly like a check that happened and found nothing.
+                _logger.Debug(LocalizationService.Format(
+                    LocalizationService.Mark("Version {0} was installed here moments ago, so the next update check waits for the daily one."),
+                    handedOver.ToString()));
+            }
 
             if (ServerUpdateConfig.CurrentVersion.CompareTo(handedOver) >= 0)
             {
@@ -207,6 +215,17 @@ namespace TopSpeed.Server.Updates
 
             string? announcement = null;
             var followUp = CheckFollowUp.None;
+
+            // Every check ends here, and this is the only line one leaves when it finds nothing.
+            // Silence is right for a question asked daily and answered "no" and wrong for anyone
+            // trying to see whether it was asked at all, so the answer goes in at the level kept
+            // for exactly that, where a running server does not have to carry it.
+            _logger.Debug(LocalizationService.Format(
+                LocalizationService.Mark("Update check finished: {0}. Version: {1}."),
+                result.Outcome.ToString(),
+                string.IsNullOrWhiteSpace(result.VersionText)
+                    ? LocalizationService.Translate(LocalizationService.Mark("none"))
+                    : result.VersionText));
 
             lock (_gate)
             {
@@ -627,10 +646,6 @@ namespace TopSpeed.Server.Updates
                 _installing = true;
             }
 
-            _logger.Info(LocalizationService.Format(
-                LocalizationService.Mark("Installing server update {0}."),
-                update.VersionText));
-
             if (!_updater.Install(update, showProgress))
             {
                 // Leave the update armed. The server is empty when an unattended install runs,
@@ -650,7 +665,7 @@ namespace TopSpeed.Server.Updates
             UpdateInstallRecord.Write(_directory, update.VersionText);
 
             Announce(LocalizationService.Format(
-                LocalizationService.Mark("Update {0} is ready to install. The server is shutting down to apply it."),
+                LocalizationService.Mark("Installing server update {0}. The server is shutting down to apply it."),
                 update.VersionText));
 
             _requestShutdown();

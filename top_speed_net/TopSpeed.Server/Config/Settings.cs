@@ -29,6 +29,13 @@ namespace TopSpeed.Server.Config
         public string LogFile { get; set; } = string.Empty;
 
         /// <summary>
+        /// How much is written, as the comma separated levels the --log-level option takes:
+        /// "error", "warning", "info", "debug", or "all". Blank means the normal three, which
+        /// is also what a settings file predating this option is given.
+        /// </summary>
+        public string LogLevel { get; set; } = string.Empty;
+
+        /// <summary>
         /// Superseded by <see cref="StartupUpdateMode"/>. Only read, so that existing
         /// settings files keep their choice; cleared once migrated so it stops being written.
         /// </summary>

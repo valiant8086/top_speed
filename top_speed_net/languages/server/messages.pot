@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 03:56-0400\n"
+"POT-Creation-Date: 2026-08-13 14:03-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -373,6 +373,13 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Choose when the server checks for updates:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Choose which levels are logged. These are the same levels --log-level takes, "
+"and error, warning and info is the usual choice; debug adds detail meant for "
+"diagnosing problems."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -804,7 +811,7 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
-msgid "Installing server update {0}."
+msgid "Installing server update {0}. The server is shutting down to apply it."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1100,6 +1107,10 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Log file"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Log level"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
@@ -1462,6 +1473,12 @@ msgstr ""
 msgid ""
 "Restart required for this change. The --log-file and log level command line "
 "options override this setting. See the server documentation for details."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Restart required for this change. The log level command line options "
+"override this setting."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
@@ -2254,6 +2271,11 @@ msgstr ""
 msgid "Update check failed: {0}"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Update check finished: {0}. Version: {1}."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Updates/Service.cs
 msgid "Update check timed out."
 msgstr ""
@@ -2278,12 +2300,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid "Update {0} is not published yet. Attempt {1} of {2}."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
-#, csharp-format
-msgid ""
-"Update {0} is ready to install. The server is shutting down to apply it."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -2374,6 +2390,13 @@ msgstr ""
 msgid ""
 "Version {0} is waiting for its download to be published. The next check is "
 "in about {1} minutes. Type \"update --force\" to check now."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} was installed here moments ago, so the next update check waits "
+"for the daily one."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
@@ -2546,10 +2569,6 @@ msgstr ""
 msgid "[room]: {0} says: {1}"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "all"
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Admin.cs
 #, csharp-format
 msgid ""
@@ -2585,10 +2604,6 @@ msgstr ""
 msgid "custom vehicles"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "debug"
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Bots/Setup.cs
 msgid "easy"
 msgstr ""
@@ -2600,10 +2615,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Parse/Powertrain.cs
 #, csharp-format
 msgid "engine_displacement_l must be between {0} and {1} liters."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "error"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Parse/Powertrain.cs
@@ -2632,10 +2643,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Validation/Core.cs
 msgid ""
 "high_speed_steer_full_kph must be greater than high_speed_steer_start_kph."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "info"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Transmission/Modes.cs
@@ -2683,8 +2690,8 @@ msgid "no"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Lifecycle.cs
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
 #: top_speed_net/TopSpeed.Server/Program.cs
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 msgid "none"
 msgstr ""
 
@@ -2782,10 +2789,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Handshake/Protocol.cs
 msgid "unknown"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "warning"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs

@@ -75,6 +75,7 @@ namespace TopSpeed.Server.Config
             settings.StartupUpdateMode = ResolveStartupUpdateMode(settings);
             settings.CheckForUpdatesOnStartup = null;
             settings.LogFile = (settings.LogFile ?? string.Empty).Trim();
+            settings.LogLevel = LogLevels.Normalize(settings.LogLevel);
             return settings;
         }
 

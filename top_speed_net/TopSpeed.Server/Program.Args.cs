@@ -12,40 +12,13 @@ namespace TopSpeed.Server
 {
     internal static partial class Program
     {
-        private static LogLevel ParseLogLevels(string[] args)
+        /// <summary>
+        /// Null when the command line names no levels, which is what leaves the setting to
+        /// decide rather than this quietly deciding for it.
+        /// </summary>
+        private static LogLevel? ParseLogLevels(string[] args)
         {
-            var value = GetFirstArgumentValue(args, "--log-level", "--log");
-            if (string.IsNullOrWhiteSpace(value))
-                return LogLevel.Error | LogLevel.Warning | LogLevel.Info;
-
-            var levels = LogLevel.None;
-            var parts = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var part in parts)
-            {
-                var token = part.Trim().ToLowerInvariant();
-                switch (token)
-                {
-                    case "error":
-                        levels |= LogLevel.Error;
-                        break;
-                    case "warning":
-                        levels |= LogLevel.Warning;
-                        break;
-                    case "info":
-                        levels |= LogLevel.Info;
-                        break;
-                    case "debug":
-                        levels |= LogLevel.Debug;
-                        break;
-                    case "all":
-                        levels = LogLevel.All;
-                        break;
-                }
-            }
-
-            return levels == LogLevel.None
-                ? LogLevel.Error | LogLevel.Warning | LogLevel.Info
-                : levels;
+            return LogLevels.Parse(GetFirstArgumentValue(args, "--log-level", "--log"));
         }
 
         private static bool IsHelpRequested(string[] args)
@@ -117,27 +90,6 @@ namespace TopSpeed.Server
             return false;
         }
 
-
-        private static string FormatLogLevels(LogLevel levels)
-        {
-            if (levels == LogLevel.None)
-                return LocalizationService.Translate(LocalizationService.Mark("none"));
-            if (levels == LogLevel.All)
-                return LocalizationService.Translate(LocalizationService.Mark("all"));
-
-            var parts = new System.Collections.Generic.List<string>();
-            if ((levels & LogLevel.Error) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("error")));
-            if ((levels & LogLevel.Warning) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("warning")));
-            if ((levels & LogLevel.Info) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("info")));
-            if ((levels & LogLevel.Debug) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("debug")));
-            return parts.Count == 0
-                ? LocalizationService.Translate(LocalizationService.Mark("none"))
-                : string.Join(",", parts);
-        }
 
         private static string? GetArgumentValue(string[] args, string key)
         {

@@ -72,12 +72,29 @@ you run the server yourself, so it can look as though logging is broken only som
 stops you setting one; it simply will not be written when the server runs as a service. The
 server guide explains why the service runs under that account.
 
-A log configured here records everything and appends, so it survives restarts and is still
-readable later. This matters if you run the server with its window hidden, since it is the
-only place messages remain after the fact.
+A log configured here appends, so it survives restarts and is still readable later. This
+matters if you run the server with its window hidden, since it is the only place messages
+remain after the fact.
 
-In the console this is the "Log file" entry under `options`, and a change takes effect the
-next time the server starts.
+`LogLevel` decides how much goes in, as a comma separated list of `error`, `warning`, `info`,
+`debug`, or `all`. Blank means `error,warning,info`, which is what a server logs unless you
+say otherwise. In the console the "Log level" entry under `options` offers three:
+
+| Choice | What it is for |
+| --- | --- |
+| `error,warning` | A server you want to hear from only when something is wrong. |
+| `error,warning,info` | The default. Races, players, updates. |
+| `all` | Adds `debug`, which is verbose and mostly per-race. |
+
+These are the words `--log-level` takes, and they are written and shown the same everywhere:
+in the settings file, in the menu, and on the command line. Any combination can be written into
+the setting; the menu offers the three worth having a menu for.
+
+`debug` is where the server records the things it does that normally go unsaid, and the update
+check is the clearest example: a check that finds nothing says nothing at the other levels, so
+with `all` you can see the check happen and see what it decided. Expect a busy log during races.
+
+Both the "Log file" and "Log level" entries take effect the next time the server starts.
 
 ### Command line overrides
 

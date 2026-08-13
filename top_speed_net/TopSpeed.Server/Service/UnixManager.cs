@@ -50,34 +50,58 @@ namespace TopSpeed.Server.Service
             }
         }
 
+        /// <summary>
+        /// Commands as they are to be typed, indented under whatever sentence introduces them.
+        ///
+        /// They are built here and handed to a message rather than written inside one. A program
+        /// name is not a word: sudo, systemctl and launchctl are spelled the same in every
+        /// language, and there is no translation of /etc/systemd/system. Carrying them into a
+        /// translated string is what would let one come back rewritten, in a form nobody here
+        /// could check and only a stranger's machine would refuse.
+        ///
+        /// Keeping them out is what lets each message be one sentence for both systems, since the
+        /// sentences never differed; only the commands under them did.
+        /// </summary>
+        private static string Commands(params string[] lines)
+        {
+            return "  " + string.Join("\n  ", lines);
+        }
+
         public ServiceActionResult Uninstall(string directory)
         {
             var name = UnitNameFor(directory);
-            var text = OperatingSystem.IsMacOS()
-                ? LocalizationService.Format(
-                    LocalizationService.Mark("To remove the service, run:\n  sudo launchctl bootout system/{0}\n  sudo rm /Library/LaunchDaemons/{0}.plist"),
-                    name)
-                : LocalizationService.Format(
-                    LocalizationService.Mark("To remove the service, run:\n  sudo systemctl disable --now {0}\n  sudo rm /etc/systemd/system/{0}\n  sudo systemctl daemon-reload"),
-                    name);
+            var commands = OperatingSystem.IsMacOS()
+                ? Commands(
+                    $"sudo launchctl bootout system/{name}",
+                    $"sudo rm /Library/LaunchDaemons/{name}.plist")
+                : Commands(
+                    $"sudo systemctl disable --now {name}",
+                    $"sudo rm /etc/systemd/system/{name}",
+                    "sudo systemctl daemon-reload");
 
-            return ServiceActionResult.Ok(text);
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("To remove the service, run:\n{0}"),
+                commands));
         }
 
         public ServiceActionResult Start(string directory)
         {
             var name = UnitNameFor(directory);
-            return ServiceActionResult.Ok(OperatingSystem.IsMacOS()
-                ? LocalizationService.Format(LocalizationService.Mark("To start it, run:\n  sudo launchctl kickstart -k system/{0}"), name)
-                : LocalizationService.Format(LocalizationService.Mark("To start it, run:\n  sudo systemctl start {0}"), name));
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("To start it, run:\n{0}"),
+                Commands(OperatingSystem.IsMacOS()
+                    ? $"sudo launchctl kickstart -k system/{name}"
+                    : $"sudo systemctl start {name}")));
         }
 
         public ServiceActionResult Stop(string directory)
         {
             var name = UnitNameFor(directory);
-            return ServiceActionResult.Ok(OperatingSystem.IsMacOS()
-                ? LocalizationService.Format(LocalizationService.Mark("To stop it, run:\n  sudo launchctl bootout system/{0}"), name)
-                : LocalizationService.Format(LocalizationService.Mark("To stop it, run:\n  sudo systemctl stop {0}"), name));
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("To stop it, run:\n{0}"),
+                Commands(OperatingSystem.IsMacOS()
+                    ? $"sudo launchctl bootout system/{name}"
+                    : $"sudo systemctl stop {name}")));
         }
 
         /// <summary>
@@ -88,9 +112,24 @@ namespace TopSpeed.Server.Service
         public ServiceActionResult Restart(string directory)
         {
             var name = UnitNameFor(directory);
-            return ServiceActionResult.Ok(OperatingSystem.IsMacOS()
-                ? LocalizationService.Format(LocalizationService.Mark("To restart it, run:\n  sudo launchctl kickstart -k system/{0}"), name)
-                : LocalizationService.Format(LocalizationService.Mark("To restart it, run:\n  sudo systemctl restart {0}"), name));
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("To restart it, run:\n{0}"),
+                Commands(OperatingSystem.IsMacOS()
+                    ? $"sudo launchctl kickstart -k system/{name}"
+                    : $"sudo systemctl restart {name}")));
+        }
+
+        /// <summary>
+        /// What to say once the unit or the job has been written. One message for both systems,
+        /// which is only possible because what differs between them is entirely in the commands.
+        /// </summary>
+        private static ServiceActionResult Wrote(string path, string install, string status)
+        {
+            return ServiceActionResult.Ok(LocalizationService.Format(
+                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n{1}\n\nAfter that it starts with the machine. To see how it is doing:\n{2}"),
+                path,
+                install,
+                status));
         }
 
         private static ServiceActionResult WriteSystemd(string directory)
@@ -101,10 +140,12 @@ namespace TopSpeed.Server.Service
 
             File.WriteAllText(path, BuildSystemdUnit(directory));
 
-            return ServiceActionResult.Ok(LocalizationService.Format(
-                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n  sudo cp {0} /etc/systemd/system/{1}\n  sudo systemctl enable --now {1}\n\nAfter that it starts with the machine. To see how it is doing:\n  systemctl status {1}"),
+            return Wrote(
                 path,
-                name));
+                Commands(
+                    $"sudo cp {path} /etc/systemd/system/{name}",
+                    $"sudo systemctl enable --now {name}"),
+                Commands($"systemctl status {name}"));
         }
 
         /// <summary>
@@ -167,10 +208,12 @@ namespace TopSpeed.Server.Service
 
             File.WriteAllText(path, BuildLaunchdPlist(directory));
 
-            return ServiceActionResult.Ok(LocalizationService.Format(
-                LocalizationService.Mark("Wrote {0}.\n\nCheck it, then install it by running:\n  sudo cp {0} /Library/LaunchDaemons/{1}.plist\n  sudo launchctl bootstrap system /Library/LaunchDaemons/{1}.plist\n\nAfter that it starts with the machine."),
+            return Wrote(
                 path,
-                label));
+                Commands(
+                    $"sudo cp {path} /Library/LaunchDaemons/{label}.plist",
+                    $"sudo launchctl bootstrap system /Library/LaunchDaemons/{label}.plist"),
+                Commands($"sudo launchctl print system/{label}"));
         }
 
         /// <summary>

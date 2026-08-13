@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 14:37-0400\n"
+"POT-Creation-Date: 2026-08-13 16:43-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1985,59 +1985,28 @@ msgstr ""
 #, csharp-format
 msgid ""
 "To remove the service, run:\n"
-"  sudo launchctl bootout system/{0}\n"
-"  sudo rm /Library/LaunchDaemons/{0}.plist"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To remove the service, run:\n"
-"  sudo systemctl disable --now {0}\n"
-"  sudo rm /etc/systemd/system/{0}\n"
-"  sudo systemctl daemon-reload"
+"{0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #, csharp-format
 msgid ""
 "To restart it, run:\n"
-"  sudo launchctl kickstart -k system/{0}"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To restart it, run:\n"
-"  sudo systemctl restart {0}"
+"{0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #, csharp-format
 msgid ""
 "To start it, run:\n"
-"  sudo launchctl kickstart -k system/{0}"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To start it, run:\n"
-"  sudo systemctl start {0}"
+"{0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #, csharp-format
 msgid ""
 "To stop it, run:\n"
-"  sudo launchctl bootout system/{0}"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To stop it, run:\n"
-"  sudo systemctl stop {0}"
+"{0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -2451,23 +2420,10 @@ msgid ""
 "Wrote {0}.\n"
 "\n"
 "Check it, then install it by running:\n"
-"  sudo cp {0} /Library/LaunchDaemons/{1}.plist\n"
-"  sudo launchctl bootstrap system /Library/LaunchDaemons/{1}.plist\n"
-"\n"
-"After that it starts with the machine."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"Wrote {0}.\n"
-"\n"
-"Check it, then install it by running:\n"
-"  sudo cp {0} /etc/systemd/system/{1}\n"
-"  sudo systemctl enable --now {1}\n"
+"{1}\n"
 "\n"
 "After that it starts with the machine. To see how it is doing:\n"
-"  systemctl status {1}"
+"{2}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs

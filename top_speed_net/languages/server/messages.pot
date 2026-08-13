@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 14:03-0400\n"
+"POT-Creation-Date: 2026-08-13 14:37-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -122,13 +122,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
 msgid "A control session attached."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid ""
-"A log kept inside the server's own folder is recommended. A server installed "
-"as a service runs as a limited account that can write there and nowhere "
-"else, so a log anywhere outside that folder would go unwritten."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
@@ -994,6 +987,12 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs
 msgid "Kawasaki Ninja ZX-10R"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Keep the log inside the server's folder. On Windows a server installed as a "
+"service can write nowhere else."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Readers/FloatCsv.cs

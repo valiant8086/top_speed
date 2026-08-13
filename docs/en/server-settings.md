@@ -65,12 +65,16 @@ to disk.
 - A bare file name or a relative path is written next to the server program.
 - An absolute path is used exactly as written.
 
-**Keep the log inside the server's own folder.** A server installed as a service runs as a
-limited system account that is given write access to that folder and to nowhere else, so a path
-anywhere outside it produces no log at all. The catch is that the same path works perfectly when
-you run the server yourself, so it can look as though logging is broken only sometimes. Nothing
-stops you setting one; it simply will not be written when the server runs as a service. The
-server guide explains why the service runs under that account.
+**Keep the log inside the server's own folder.** On Windows this is a requirement once the
+server is installed as a service: it runs as a limited system account given write access to that
+folder and to nowhere else, so a path anywhere outside it produces no log at all. The catch is
+that the same path works perfectly when you run the server yourself, so it can look as though
+logging is broken only sometimes. Nothing stops you setting one; it simply will not be written.
+The server guide explains why the service runs under that account.
+
+On Linux and macOS the systemd unit and the launchd job both run as the user who installed them,
+so a log anywhere that user can write works as it always did. Keeping it beside the server is
+still worth doing, since the log then moves and backs up with the folder it belongs to.
 
 A log configured here appends, so it survives restarts and is still readable later. This
 matters if you run the server with its window hidden, since it is the only place messages

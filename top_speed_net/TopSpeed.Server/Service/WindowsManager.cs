@@ -129,8 +129,6 @@ namespace TopSpeed.Server.Service
 
                 SetDescription(service, ServiceIdentity.DescriptionFor(directory));
                 SetRestartOnFailure(service);
-                if (startAutomatically)
-                    SetDelayedStart(service);
 
                 var granted = GrantServiceAccountAccess(directory);
                 if (granted != null)
@@ -498,16 +496,6 @@ namespace TopSpeed.Server.Service
             ChangeServiceConfig2W(service, SERVICE_CONFIG_FAILURE_ACTIONS_FLAG, ref flag);
         }
 
-        /// <summary>
-        /// Starts shortly after boot rather than during it. A race server has nothing useful to
-        /// do until the network is up, and starting late costs nobody anything.
-        /// </summary>
-        private static void SetDelayedStart(IntPtr service)
-        {
-            var info = new SERVICE_DELAYED_AUTO_START_INFO { fDelayedAutostart = true };
-            ChangeServiceConfig2W(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, ref info);
-        }
-
         public static bool IsElevated()
         {
             try
@@ -555,7 +543,6 @@ namespace TopSpeed.Server.Service
         private const int SERVICE_ERROR_NORMAL = 0x00000001;
         private const int SERVICE_CONFIG_DESCRIPTION = 1;
         private const int SERVICE_CONFIG_FAILURE_ACTIONS = 2;
-        private const int SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
         private const int SERVICE_CONFIG_FAILURE_ACTIONS_FLAG = 4;
 
         /// <summary>
@@ -601,13 +588,6 @@ namespace TopSpeed.Server.Service
         private struct SERVICE_DESCRIPTION
         {
             public IntPtr lpDescription;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct SERVICE_DELAYED_AUTO_START_INFO
-        {
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool fDelayedAutostart;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -687,10 +667,6 @@ namespace TopSpeed.Server.Service
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_FAILURE_ACTIONS info);
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool ChangeServiceConfig2W(IntPtr service, int infoLevel, ref SERVICE_DELAYED_AUTO_START_INFO info);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

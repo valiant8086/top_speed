@@ -263,7 +263,8 @@ namespace TopSpeed.Server
                 {
                     server.ShutdownByHost(LocalizationService.Mark("The server is shutting down to install an update."));
                     cts.Cancel();
-                });
+                },
+                baseDirectory);
             using var commandHost = new CommandHost(server, settings, store, logger, cts, updater, scheduler);
             Console.CancelKeyPress += (_, e) =>
             {

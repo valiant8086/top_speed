@@ -160,9 +160,19 @@ What it suggests depends on what is being updated. After a service update you ar
 it again in a moment to attach. After an update to a server you started yourself, you are told
 to leave it alone, because the updater opens that one again itself.
 
-### A file called .updating
+### Files the update keeps
 
 While an update is being written, a file named `.updating` sits in the folder. It disappears
 when the update finishes. If the server ever reports that an update did not finish, that file
 outlived the program writing it, which means the folder may hold parts of two versions.
 Running the update again puts it right.
+
+A file named `.last-update` records which version was most recently handed to the updater, and
+when. It does two things. It stops the server checking for updates again in the first few
+minutes after an install, since it asked that question on its way in. And it lets the server
+notice a version that was installed here but never arrived: if it comes back still reporting the
+older version, the build is not doing what its name says, so the server says so once and stops
+installing that version by itself rather than fetching the same build every day.
+
+That is not an off switch. A newer version installs as usual, `update --force` installs the
+refused one anyway, and deleting the file forgets the whole thing.

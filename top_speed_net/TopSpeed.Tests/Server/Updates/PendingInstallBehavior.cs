@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using FluentAssertions;
 using TopSpeed.Server.Logging;
 using TopSpeed.Server.Network;
@@ -16,6 +18,14 @@ namespace TopSpeed.Tests.Server.Updates
     [Trait("Category", "Behavior")]
     public class PendingInstallBehavior
     {
+        /// <summary>A folder of its own, so no test reads a record another one left behind.</summary>
+        private static string NewFolder()
+        {
+            var folder = Path.Combine(Path.GetTempPath(), "ts-sched-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+            return folder;
+        }
+
         private static ServerUpdateScheduler NewScheduler(StartupUpdateMode mode)
         {
             var logger = new Logger(LogLevel.None, null, writeToConsole: false);
@@ -24,7 +34,8 @@ namespace TopSpeed.Tests.Server.Updates
                 new ServerUpdateRunner(ServerUpdateConfig.Default, logger),
                 logger,
                 mode,
-                () => { });
+                () => { },
+                NewFolder());
         }
 
         private static ServerUpdateCheckResult Available(string version)
@@ -36,6 +47,7 @@ namespace TopSpeed.Tests.Server.Updates
                 Update = new ServerUpdateInfo
                 {
                     VersionText = version,
+                    Version = ServerVersion.TryParse(version, out var parsed) ? parsed : default,
                     DownloadUrl = "https://example.invalid/" + version + ".zip",
                     AssetSizeBytes = 1024
                 }

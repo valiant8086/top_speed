@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-12 10:37-0400\n"
+"POT-Creation-Date: 2026-08-13 03:56-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2374,6 +2374,14 @@ msgstr ""
 msgid ""
 "Version {0} is waiting for its download to be published. The next check is "
 "in about {1} minutes. Type \"update --force\" to check now."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} was installed here, but this server is still version {1}. It "
+"will not be installed again by itself, because it would come back the same "
+"way. Type \"update --force\" to try it anyway."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs

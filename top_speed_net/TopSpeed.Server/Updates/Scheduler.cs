@@ -59,6 +59,15 @@ namespace TopSpeed.Server.Updates
         private readonly Logger _logger;
         private readonly Action _requestShutdown;
         private readonly StartupUpdateMode _mode;
+        private readonly string _directory;
+
+        /// <summary>
+        /// A version handed to the updater here which the server did not come back as, so an
+        /// install of it is known to change nothing. Null when the last one worked or there was
+        /// none. Said once rather than daily.
+        /// </summary>
+        private readonly ServerVersion? _versionThatDidNotTake;
+        private bool _saidTheInstallDidNotTake;
 
         private readonly object _gate = new object();
         private readonly AutoResetEvent _wake = new AutoResetEvent(false);
@@ -85,13 +94,44 @@ namespace TopSpeed.Server.Updates
             ServerUpdateRunner updater,
             Logger logger,
             StartupUpdateMode mode,
-            Action requestShutdown)
+            Action requestShutdown,
+            string directory)
         {
             _server = server ?? throw new ArgumentNullException(nameof(server));
             _updater = updater ?? throw new ArgumentNullException(nameof(updater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _requestShutdown = requestShutdown ?? throw new ArgumentNullException(nameof(requestShutdown));
             _mode = mode;
+            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
+            _versionThatDidNotTake = ReadLastHandoff();
+        }
+
+        /// <summary>
+        /// Works out what is left of the last install this folder handed over, which is the only
+        /// thing about it that outlives the process the install ended.
+        ///
+        /// Coming back soon after one moves the first check to the daily cycle whichever way the
+        /// install went, because the newest version was fetched moments ago and asking again on
+        /// the way back is how a server that restarts asks twice for one answer.
+        ///
+        /// Coming back as something older than what was handed over means the install did not
+        /// take, and that version is worth remembering as one not to attempt by itself again.
+        /// </summary>
+        private ServerVersion? ReadLastHandoff()
+        {
+            if (!UpdateInstallRecord.TryRead(_directory, out var handedOver, out var whenUtc))
+                return null;
+
+            if (DateTime.UtcNow - whenUtc < UpdateInstallRecord.CheckAgainNoSoonerThan)
+                _nextDueUtc = DateTime.UtcNow + UpdateRetrySchedule.DailyInterval;
+
+            if (ServerUpdateConfig.CurrentVersion.CompareTo(handedOver) >= 0)
+            {
+                UpdateInstallRecord.Clear(_directory);
+                return null;
+            }
+
+            return handedOver;
         }
 
         public StartupUpdateMode Mode => _mode;
@@ -213,6 +253,23 @@ namespace TopSpeed.Server.Updates
                             _pending = result.Update;
                             followUp = CheckFollowUp.ShowChanges;
                             ArmDaily();
+                        }
+                        else if (_mode == StartupUpdateMode.Auto && AlreadyTriedAndFailed(result.Update))
+                        {
+                            // Installed here once already, after which the server came back older
+                            // than it. Doing it again by itself would end the same way and cost a
+                            // download and a restart every day for as long as it stayed offered.
+                            // A different version installs as usual, and forcing this one still
+                            // works, so nothing is switched off; one known answer is not re-asked.
+                            ArmDaily();
+                            if (!_saidTheInstallDidNotTake)
+                            {
+                                _saidTheInstallDidNotTake = true;
+                                announcement = LocalizationService.Format(
+                                    LocalizationService.Mark("Version {0} was installed here, but this server is still version {1}. It will not be installed again by itself, because it would come back the same way. Type \"update --force\" to try it anyway."),
+                                    result.Update.VersionText,
+                                    ServerUpdateConfig.CurrentVersion.ToString());
+                            }
                         }
                         else if (_mode == StartupUpdateMode.Auto)
                         {
@@ -587,11 +644,26 @@ namespace TopSpeed.Server.Updates
                 return;
             }
 
+            // Recorded here and nowhere earlier: the asset is downloaded, its size checked and the
+            // updater running, so this is the first moment the version can honestly be called one
+            // that was tried. A download that never arrived is a version still worth attempting.
+            UpdateInstallRecord.Write(_directory, update.VersionText);
+
             Announce(LocalizationService.Format(
                 LocalizationService.Mark("Update {0} is ready to install. The server is shutting down to apply it."),
                 update.VersionText));
 
             _requestShutdown();
+        }
+
+        /// <summary>
+        /// Whether this is the version an install already handed over here without the server ever
+        /// coming back as it. Callers hold the gate.
+        /// </summary>
+        private bool AlreadyTriedAndFailed(ServerUpdateInfo found)
+        {
+            return _versionThatDidNotTake.HasValue
+                && _versionThatDidNotTake.Value.CompareTo(found.Version) == 0;
         }
 
         // Callers hold _gate.

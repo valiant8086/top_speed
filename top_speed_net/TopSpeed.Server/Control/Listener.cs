@@ -261,7 +261,7 @@ namespace TopSpeed.Server.Control
                     "Another instance is already attached to this service."));
             }
 
-            return LocalizationService.Translate(LocalizationService.Mark("The server refused to attach this window."));
+            return LocalizationService.Translate(LocalizationService.Mark("The server refused to attach this instance."));
         }
     }
 }

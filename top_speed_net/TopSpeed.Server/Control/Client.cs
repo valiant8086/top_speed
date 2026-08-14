@@ -132,7 +132,7 @@ namespace TopSpeed.Server.Control
                     return;
 
                 WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                    "The server has stopped, so this window is no longer attached to anything.")));
+                    "The server has stopped, so this instance is no longer attached to anything.")));
             }
 
             // Reached when the server goes while nobody is asking this window for anything.

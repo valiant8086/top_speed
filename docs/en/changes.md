@@ -10,6 +10,15 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
 - Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.
 
+## 2026.8.9.6
+### Server Changes
+- A new "Log level" setting decides how much goes into the log, using the same words as the --log-level option: error, warning, info, debug, or all. A server installed as a service could not be told to record debug detail before, and a log turned on in settings.json recorded everything whether you wanted it or not. It now records errors, warnings and activity unless you say otherwise.
+- The update check leaves a line in the log at debug level saying what it found, and says when it skipped a check because one was installed moments ago. A check that found nothing used to say nothing, so a check that happened and a check that never ran looked identical.
+- The instructions for installing the service on Linux and macOS are now one message for both, and macOS is also told how to check on the service afterwards. The commands inside them are no longer part of what gets translated, so a translation cannot change what you are told to type.
+- The advice about where to keep the log claimed a Windows rule on every system. On Linux and macOS the service runs as the user who installed it and can write wherever that user can; only on Windows must the log live inside the server's folder.
+- Wording throughout the service and update messages is shorter, and says "instance" rather than "window" where it means another copy of the program. The message shown when a server will not accept control now names the account that owns it instead of suggesting administrator rights, which were never the answer on Linux or macOS and are not needed by anyone sitting at a Windows machine.
+- The service menu no longer repeats the port, which is already announced on attaching, and a word the service command does not understand opens the menu rather than reporting the mistake and then listing the same choices.
+
 ## 2026.8.9.5
 ### Server Changes
 - An update that installs but comes back reporting the old version is no longer installed again and again. The server records which version it handed over, notices it is still the older one, says so once, and leaves that version alone until a newer one appears. A later version installs as usual and "update --force" installs the refused one anyway.

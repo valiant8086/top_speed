@@ -37,8 +37,13 @@ namespace TopSpeed.Server.Control
                 case ControlConnectResult.AccessDenied:
                     // Distinguished from "nothing there" so the caller never has to elevate
                     // speculatively just to find out whether a server exists.
+                    //
+                    // Nobody at the keyboard reaches this on Windows, where every interactive
+                    // logon is allowed: what does is a network logon, a scheduled task or another
+                    // service. On Linux and macOS the socket belongs to one user and means it.
+                    // The account is what the two have in common, and it is the whole remedy.
                     WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                        "A server is already running from this folder, but this account is not allowed to control it. Run as an administrator to attach to it.")));
+                        "A server is already running from this folder under a different account, and this one is not allowed to control it. Use the account that started it.")));
                     return ControlClientOutcome.Refused;
 
                 case ControlConnectResult.Busy:

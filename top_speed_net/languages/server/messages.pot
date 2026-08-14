@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 20:07-0400\n"
+"POT-Creation-Date: 2026-08-13 20:20-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -130,8 +130,8 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Control/Client.cs
 msgid ""
-"A server is already running from this folder, but this account is not "
-"allowed to control it. Run as an administrator to attach to it."
+"A server is already running from this folder under a different account, and "
+"this one is not allowed to control it. Use the account that started it."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs

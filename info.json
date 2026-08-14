@@ -1,6 +1,6 @@
 {
   "version": "2026.8.3.1",
-  "serverVersion": "2026.8.9.8",
+  "serverVersion": "2026.8.9.9",
   "changes": [
     "Custom vehicles now work in multiplayer races. A room host turns them on with the new \"Custom vehicles\" game rule, and when another driver picks a vehicle you do not have, your game fetches it from the server by itself. Vehicles are matched by what is inside them rather than by their name, so one you already have is never downloaded, renaming or moving a vehicle does not cause it to download again, and a vehicle you do download arrives only once however many races you use it in. If a vehicle cannot be downloaded or cannot be loaded, the race still starts and you are told which vehicle was unavailable and who was using it.",
     "After a multiplayer race that used a downloaded vehicle, you can save it into your own Vehicles folder and then use it offline in time trial and single race. If you already have a vehicle saved under that name, you can keep both, replace yours with the downloaded one, or keep yours and discard the download. A \"Prompt to keep downloaded custom vehicles\" checkbox under Options, Server settings turns the offer off if you would rather nothing were saved.",
@@ -12,10 +12,10 @@
     "Added more Spanish, Armenian, Brazilian Portuguese, Vietnamese and Chinese translations."
   ],
   "serverChanges": [
-    "Installing the server as a service on Linux and macOS no longer means retyping commands. Run it with sudo and --install-service and it does the whole job, registering the service to run as your account rather than root.",
-    "Without sudo, or from the service menu, it writes the service description and a short script that installs it. Read them if you like, then run the script: it asks for your password once and does the rest.",
-    "Every path in those scripts is quoted, so a folder whose name contains a space no longer produces a command that fails.",
-    "On Linux and macOS the server writes a way to start itself without a terminal: Start Server.command on macOS, and a shell script plus a desktop entry on Linux.",
-    "Typing service start or service restart inside a server on Linux or macOS no longer stops that server and leaves nothing running."
+    "Installing the server as a service on Linux and macOS is now one command. Run it with sudo and --install-service and it does the whole job, registering the service to run as your account rather than root. Uninstall, start, stop and restart work the same way, and run without sudo they tell you the command to use, with the full path already filled in.",
+    "The server now refuses to run as root on Linux and macOS. A server started that way left files in its folder that your own account could not replace, which showed up much later as an update that would not install.",
+    "Fixed a second server started from a folder that already had one running taking over the folder instead of attaching to the server already there. Both then served the same port, the first could no longer be reached or shut down, and closing the newer one left the older one still answering.",
+    "The server no longer writes a desktop entry on Linux. No desktop environment will run one until you mark it trusted by hand, and that mark cannot be shipped with the file, so it failed silently rather than starting anything. The start-server.sh script, and Start Server.command on macOS, are unchanged.",
+    "Installing or removing the service on Linux and macOS no longer writes scripts to run afterwards. Running a script the server had just written was exactly as much work as running the server again with sudo, so there is now one way to do it and the server names the command."
   ]
 }

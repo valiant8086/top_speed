@@ -1,6 +1,6 @@
 {
   "version": "2026.8.3.1",
-  "serverVersion": "2026.8.9.7",
+  "serverVersion": "2026.8.9.8",
   "changes": [
     "Custom vehicles now work in multiplayer races. A room host turns them on with the new \"Custom vehicles\" game rule, and when another driver picks a vehicle you do not have, your game fetches it from the server by itself. Vehicles are matched by what is inside them rather than by their name, so one you already have is never downloaded, renaming or moving a vehicle does not cause it to download again, and a vehicle you do download arrives only once however many races you use it in. If a vehicle cannot be downloaded or cannot be loaded, the race still starts and you are told which vehicle was unavailable and who was using it.",
     "After a multiplayer race that used a downloaded vehicle, you can save it into your own Vehicles folder and then use it offline in time trial and single race. If you already have a vehicle saved under that name, you can keep both, replace yours with the downloaded one, or keep yours and discard the download. A \"Prompt to keep downloaded custom vehicles\" checkbox under Options, Server settings turns the offer off if you would rather nothing were saved.",
@@ -12,6 +12,10 @@
     "Added more Spanish, Armenian, Brazilian Portuguese, Vietnamese and Chinese translations."
   ],
   "serverChanges": [
-    "Nothing has changed. This version exists only so that a server can be offered an update whose download is deliberately missing, to see what it does about it."
+    "Installing the server as a service on Linux and macOS no longer means retyping commands. Run it with sudo and --install-service and it does the whole job, registering the service to run as your account rather than root.",
+    "Without sudo, or from the service menu, it writes the service description and a short script that installs it. Read them if you like, then run the script: it asks for your password once and does the rest.",
+    "Every path in those scripts is quoted, so a folder whose name contains a space no longer produces a command that fails.",
+    "On Linux and macOS the server writes a way to start itself without a terminal: Start Server.command on macOS, and a shell script plus a desktop entry on Linux.",
+    "Typing service start or service restart inside a server on Linux or macOS no longer stops that server and leaves nothing running."
   ]
 }

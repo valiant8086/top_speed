@@ -9,6 +9,13 @@ setting does, see the server settings page.
 Run `TopSpeed.Server`. It creates `settings.json` beside itself on the first run and starts
 listening straight away.
 
+On Linux and macOS it also writes a way to start itself without a terminal, since pressing
+enter on a program with no extension does something different in every file manager. On macOS
+that is `Start Server.command`, which Finder runs in Terminal. On Linux it is `start-server.sh`
+and `Start TopSpeed Server.desktop`; the desktop entry is the one every desktop understands,
+though GNOME asks you to allow it once before it will run it. Both are written only if they are
+not already there, so one you have edited or deleted stays that way.
+
 The console prints what the server is doing and takes commands. Type `help` for the list.
 
 | Command | What it does |

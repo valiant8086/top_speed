@@ -197,6 +197,12 @@ namespace TopSpeed.Server
             ApplyArgumentOverrides(settings, args, logger);
             store.Save(settings, logger);
 
+            // Only for a server somebody started themselves. A service has a manager to start it
+            // and nobody watching, so a way to start it by hand would be a file with no use and
+            // one more thing in the folder.
+            if (!ServiceRuntime.IsRunningAsService)
+                Service.Launchers.WriteIfMissing(baseDirectory);
+
             // Named here because both halves are only true here: the port has stopped changing,
             // and the language is loaded.
             ConsoleTitle.Set(LocalizationService.Format(

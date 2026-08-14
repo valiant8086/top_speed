@@ -98,18 +98,43 @@ produces nothing at all once the same folder is running as a service.
 
 ### Linux and macOS
 
-Nothing is installed for you and no root is obtained. `service install` writes the systemd
-unit or launchd job **next to the server** and prints the two commands that install it, so
-you can read the file in full before agreeing to anything:
+There are two ways round, and which one you get depends on whether you used `sudo`.
+
+**With sudo**, the whole thing is done for you:
 
 ```
-sudo cp <folder>/<name>.service /etc/systemd/system/<name>.service
-sudo systemctl enable --now <name>.service
+sudo ./TopSpeed.Server --install-service
 ```
 
-Removing it prints the matching pair. `service status` cannot answer on these systems, since
-the server never runs the service manager itself; use `systemctl status <name>` or
-`launchctl print system/<name>`.
+That writes the systemd unit or launchd job where the system keeps them, loads it, and reports
+what it registered. It works out which account the service should run as from `SUDO_USER`, so
+the server runs as **you** and not as root — which matters, because a server running as root
+would leave files in its own folder that your account could not replace when it updates. For
+that reason it refuses to install when it cannot tell who you are, such as when you are logged
+in as root rather than using `sudo`.
+
+**Without sudo** — which includes `service install` typed inside a running server — nothing is
+installed and no password is asked for. Instead two files are written next to the server: the
+unit or job itself, and a short script that installs it. Read either or both, then run the
+script:
+
+```
+./install-service.sh
+```
+
+On macOS the script is called `install-service.command`, which Finder will run in Terminal if
+you open it. The script asks for your password once and does the rest. Every path inside it is
+already filled in and quoted, so a folder name with a space in it works.
+
+`service uninstall` follows the same rule: with `sudo` it removes the service, and without it
+writes `uninstall-service.sh` (or `.command`). That script clears away the service, the unit
+file and itself, leaving the server folder as it was.
+
+`service status` cannot answer on these systems, since the server never runs the service
+manager to ask; use `systemctl status <name>` or `sudo launchctl print system/<name>`.
+
+`service start`, `stop` and `restart` behave the same way: with `sudo` they act, and without
+they tell you the one command to run.
 
 ### Where it cannot be installed
 

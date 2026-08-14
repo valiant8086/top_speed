@@ -6,6 +6,12 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 
 
 ## Unreleased
+### Server Changes
+- Installing the server as a service on Linux and macOS no longer means reading commands off the screen and retyping them. Run the program with `sudo` and the `--install-service` option and it does the whole thing itself, working out from `SUDO_USER` which account the service should run as so that it never runs as root. Run it without `sudo`, or type `service install` inside a running server, and it writes the unit or job beside the server along with a short script that installs it: read them if you like, then run the script, which asks for your password once and does the rest.
+- The commands written into those scripts have every path quoted. A folder whose name contains a space produced a command that failed with an error about directories, which said nothing about the real cause.
+- On macOS the script is named so Finder will run it, and both scripts say what they are doing as they go. The removal script clears away the service, the file describing it and itself.
+- Typing `service start` or `service restart` inside a server running on Linux or macOS no longer stops that server. It used to treat the request as a handover, stop the server, print a command nobody had run, wait a minute for a service that was never started, and then report that nothing was running.
+
 ### Game Changes
 - When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
 - Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.

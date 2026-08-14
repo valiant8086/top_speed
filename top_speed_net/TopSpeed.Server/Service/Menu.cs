@@ -177,7 +177,14 @@ namespace TopSpeed.Server.Service
                 // Asked before anything is offered, because stopping a server is only worth
                 // discussing when there is a service to hand the folder to and it is not already
                 // holding it. Both of these answer in one line and neither is worth a question.
+                //
+                // Unsupported belongs with them, and did not use to. It is what systemd and
+                // launchd report, since neither is asked, and a handover cannot be carried out
+                // against an answer of "I do not know": this would stop the running server, print
+                // a command nobody had run, wait a minute for a service that was never started,
+                // and report that nothing is running. Which was true, and its own doing.
                 var pointless = status.State == ServiceInstallState.NotInstalled
+                    || status.State == ServiceInstallState.Unsupported
                     || (action == ServiceAction.Start && status.State == ServiceInstallState.Running);
 
                 if (!pointless && stopHostingServer != null && ControlTransport.EndpointExists(directory))

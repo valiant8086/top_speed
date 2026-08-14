@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 00:44-0400\n"
+"POT-Creation-Date: 2026-08-14 04:04-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -743,6 +743,11 @@ msgstr ""
 msgid "Installed as service \"{0}\", running as {1}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid "Installed the service {0}, running as {1}. It starts with the machine."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
 msgid ""
 "Installing a service on this system is done by hand. Choose install to have "
@@ -1410,6 +1415,11 @@ msgstr ""
 msgid "Removed service \"{0}\"."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid "Removed the service {0}. The server folder was left alone."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Restart required for this change."
 msgstr ""
@@ -1837,10 +1847,12 @@ msgid ""
 "server program from this folder again to retry."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
 msgid "The service is running."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
 msgid "The service is stopped."
 msgstr ""
@@ -1887,6 +1899,14 @@ msgstr ""
 msgid "This game room is unavailable because it is full."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+msgid ""
+"This has to know which account the service will run as, and it cannot be "
+"root: a server running as root leaves files behind that its own owner cannot "
+"replace when it updates. Run it with sudo from the account that owns the "
+"server folder rather than logged in as root."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
 msgid "This needs administrator rights."
 msgstr ""
@@ -1926,13 +1946,6 @@ msgstr ""
 msgid ""
 "This will drop {0} connected players until the service comes online. "
 "Proceed? (y/n)"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To remove the service, run:\n"
-"{0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
@@ -2346,13 +2359,15 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #, csharp-format
 msgid ""
-"Wrote {0}.\n"
-"\n"
-"Check it, then install it by running:\n"
-"{1}\n"
-"\n"
-"After that it starts with the machine. To see how it is doing:\n"
-"{2}"
+"Wrote {0}, which describes the service, and {1}, which installs it. Read "
+"them if you like, then run {1}. It asks for your password and does the rest."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid ""
+"Wrote {0}, which removes the service. Read it if you like, then run it. It "
+"asks for your password, and clears itself away afterwards."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs

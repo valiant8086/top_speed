@@ -29,6 +29,20 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
+        /// The account a service installed from here should run as.
+        ///
+        /// Normally whoever is running this, and under sudo emphatically not: there the process
+        /// is root, and a registration naming root would give the server more than it needs and
+        /// leave root owned files in a folder its owner has to be able to replace. Sudo says who
+        /// asked, which is the account that owns the folder and the one meant all along.
+        /// </summary>
+        public static string OwningUserName()
+        {
+            var invoker = Environment.GetEnvironmentVariable("SUDO_USER");
+            return string.IsNullOrWhiteSpace(invoker) ? Environment.UserName : invoker.Trim();
+        }
+
+        /// <summary>
         /// What appears in the service manager's list.
         ///
         /// The folder alone, because that is the one thing about an installation which cannot

@@ -753,8 +753,9 @@ namespace TopSpeed.Server.Updates
             if (_attempts == 2)
             {
                 return LocalizationService.Format(
-                    LocalizationService.Mark("Version {0} is still not published. The server will keep checking hourly and will say so if it gives up."),
-                    version);
+                    LocalizationService.Mark("Version {0} is still not published. Trying again in {1} minutes."),
+                    version,
+                    (int)Math.Round(delay.TotalMinutes));
             }
 
             return null;

@@ -11,10 +11,13 @@ listening straight away.
 
 On Linux and macOS it also writes a way to start itself without a terminal, since pressing
 enter on a program with no extension does something different in every file manager. On macOS
-that is `Start Server.command`, which Finder runs in Terminal. On Linux it is `start-server.sh`
-and `Start TopSpeed Server.desktop`; the desktop entry is the one every desktop understands,
-though GNOME asks you to allow it once before it will run it. Both are written only if they are
-not already there, so one you have edited or deleted stays that way.
+that is `Start Server.command`, which Finder runs in Terminal. On Linux it is `start-server.sh`,
+which most file managers offer to run in a terminal from its context menu. Each is written only
+if it is not already there, so one you have edited or deleted stays that way.
+
+The server needs a terminal. Started without one it reaches the end of its input straight away
+and stops, which looks like nothing having happened at all, so launching the program file
+itself from a file manager is not a way round this.
 
 The console prints what the server is doing and takes commands. Type `help` for the list.
 
@@ -105,9 +108,7 @@ produces nothing at all once the same folder is running as a service.
 
 ### Linux and macOS
 
-There are two ways round, and which one you get depends on whether you used `sudo`.
-
-**With sudo**, the whole thing is done for you:
+Here the service is reached with `sudo` and in no other way:
 
 ```
 sudo ./TopSpeed.Server --install-service
@@ -115,33 +116,26 @@ sudo ./TopSpeed.Server --install-service
 
 That writes the systemd unit or launchd job where the system keeps them, loads it, and reports
 what it registered. It works out which account the service should run as from `SUDO_USER`, so
-the server runs as **you** and not as root — which matters, because a server running as root
-would leave files in its own folder that your account could not replace when it updates. For
-that reason it refuses to install when it cannot tell who you are, such as when you are logged
-in as root rather than using `sudo`.
+the server runs as **you** and not as root. That matters: a server running as root leaves files
+in its own folder that your account cannot replace when it updates. For the same reason it
+refuses to install when it cannot tell who you are, such as when you are logged in as root
+rather than using `sudo`.
 
-**Without sudo** — which includes `service install` typed inside a running server — nothing is
-installed and no password is asked for. Instead two files are written next to the server: the
-unit or job itself, and a short script that installs it. Read either or both, then run the
-script:
+`--uninstall-service`, `--start-service`, `--stop-service` and `--restart-service` work the same
+way. Run any of them without `sudo` and nothing happens except that you are told the command to
+run, with the full path already filled in so you can paste it from wherever you are.
 
-```
-./install-service.sh
-```
+The `service` command and its menu do nothing on these systems for that reason, and say the same
+thing. Everything in the menu needs root, which the server cannot obtain while it is running.
 
-On macOS the script is called `install-service.command`, which Finder will run in Terminal if
-you open it. The script asks for your password once and does the rest. Every path inside it is
-already filled in and quoted, so a folder name with a space in it works.
+**Do not run the server itself with `sudo`.** It is refused, and the refusal is the point: a
+server started as root writes its settings, its log, its control socket and its own updates into
+the folder as root, and your account can then no longer replace them. Nothing complains at the
+time. It surfaces later as an update that cannot be applied.
 
-`service uninstall` follows the same rule: with `sudo` it removes the service, and without it
-writes `uninstall-service.sh` (or `.command`). That script clears away the service, the unit
-file and itself, leaving the server folder as it was.
-
-`service status` cannot answer on these systems, since the server never runs the service
-manager to ask; use `systemctl status <name>` or `sudo launchctl print system/<name>`.
-
-`service start`, `stop` and `restart` behave the same way: with `sudo` they act, and without
-they tell you the one command to run.
+`service status` cannot answer here either, since the server never runs the service manager to
+ask; use `systemctl status <name>` or `sudo launchctl print system/<name>`, with the name the
+install reported.
 
 ### Where it cannot be installed
 
@@ -152,9 +146,11 @@ folder somewhere you created yourself and install from there.
 
 ### Starting or restarting from an attached window
 
-If you are attached to a running server and ask for `service start` or `service restart`, the
-folder is handed over rather than the request being refused. The running server stops, the
-service starts, and the same window attaches to the service, so you do not lose the console.
+On Windows, if you are attached to a running server and ask for `service start` or
+`service restart`, the folder is handed over rather than the request being refused. The running
+server stops, the service starts, and the same window attaches to the service, so you do not
+lose the console. This does not arise on Linux or macOS, where the service is controlled from
+outside the server rather than from inside it.
 
 ## Updating
 

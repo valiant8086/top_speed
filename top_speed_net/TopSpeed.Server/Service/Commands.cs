@@ -143,6 +143,29 @@ namespace TopSpeed.Server.Service
             return Describe(status, directory);
         }
 
+        /// <summary>
+        /// The one thing there is to say on a system where the service can only be reached with
+        /// root: what to run, spelled out ready to be copied.
+        ///
+        /// It serves three moments — a service command typed without sudo, the service menu, and
+        /// the refusal when the server itself is started as root — because all three are the same
+        /// person about to have the same trouble, and one sentence they recognise the second time
+        /// is worth more than three that each say it differently.
+        ///
+        /// The command is built here rather than written inside the sentence. sudo is spelled the
+        /// same in every language and a path has no translation, so carrying either into a
+        /// translated string is how one comes back rewritten in a form only a stranger's machine
+        /// would refuse. The path is absolute and quoted so it can be pasted from anywhere.
+        /// </summary>
+        public static string RootNeeded(string directory, ServiceAction action)
+        {
+            var command = "  sudo \"" + ServiceIdentity.ExecutablePathFor(directory) + "\" " + FlagFor(action);
+
+            return LocalizationService.Format(
+                LocalizationService.Mark("Installing, removing or controlling the service needs root. Run it with sudo:\n{0}\nThe server itself does not need sudo and should not be given it: run as root it leaves files in this folder that your own account cannot replace when it updates."),
+                command);
+        }
+
         public static string FlagFor(ServiceAction action)
         {
             return action switch
@@ -160,9 +183,12 @@ namespace TopSpeed.Server.Service
         {
             switch (status.State)
             {
+                // Asking would mean running systemctl or launchctl, whose answer is only ever
+                // wanted by a person, who can run it themselves and read more than this could
+                // repeat back. Saying so is more use than guessing.
                 case ServiceInstallState.Unsupported:
                     return LocalizationService.Translate(LocalizationService.Mark(
-                        "Installing a service on this system is done by hand. Choose install to have the file written and the commands shown."));
+                        "Whether this folder is installed as a service is answered by the system rather than by the server: run systemctl status on Linux, or launchctl print on macOS, with the name the install reported."));
 
                 case ServiceInstallState.NotInstalled:
                     return LocalizationService.Translate(LocalizationService.Mark("Not installed as a service."));

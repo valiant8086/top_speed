@@ -54,6 +54,25 @@ namespace TopSpeed.Server
                 return ServiceCommands.Execute(serviceAction, baseDirectory, startAutomatically: true);
             }
 
+            // Root is for installing the service and nothing else, and by here that has already
+            // been dealt with and returned. A server itself running as root writes its settings,
+            // its log, its control socket and its updates into this folder owned by root, which
+            // the account that owns the folder then cannot replace. Nothing announces that at the
+            // time; it surfaces later as an update that cannot be applied, by which point nobody
+            // connects it to how the server was started.
+            //
+            // Not applied on Windows, where an elevated console is how the service command asks
+            // for its rights, and not applied to a service, whose unit may have been edited to
+            // run as root by somebody who meant it. Refusing there would leave a machine whose
+            // server no longer starts at boot.
+            if (!OperatingSystem.IsWindows() &&
+                !ServiceRuntime.IsRunningAsService &&
+                Environment.IsPrivilegedProcess)
+            {
+                ConsoleSink.WriteLine(Service.ServiceCommands.RootNeeded(baseDirectory, Service.ServiceAction.Install));
+                return 1;
+            }
+
             // Somebody running the program in the middle of an update means to attach, and there
             // is nothing to attach to: the server it wants is stopped so that its files can be
             // replaced. Left alone this copy would find no server, start a second one, and take

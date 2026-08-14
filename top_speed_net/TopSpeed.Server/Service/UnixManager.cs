@@ -4,22 +4,19 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using TopSpeed.Localization;
-using TopSpeed.Server.Control;
 
 namespace TopSpeed.Server.Service
 {
     /// <summary>
-    /// Installs this folder's server with systemd or launchd, two ways round.
+    /// Installs this folder's server with systemd or launchd, when it is run as root and not
+    /// otherwise.
     ///
-    /// Run with root already in hand, it does the whole thing: writes the unit where the system
-    /// keeps them and tells the manager to load it. Run without, it cannot, and writing a file
-    /// into a directory only root owns is not something to fail at halfway. So it writes the unit
-    /// beside the server along with a short script that installs it, and says to read them and
-    /// run the script. The script asks for the password itself, which means one prompt and
-    /// nothing to retype: every path in it is already there, spelled correctly and quoted.
-    ///
-    /// Both routes end in the same place. Which one somebody wants is answered by whether they
-    /// typed sudo, rather than by anything this has to ask.
+    /// There is one way to do this and it is sudo. An earlier version had a second: without root
+    /// it wrote the unit beside the server along with a script that installed it, so nothing had
+    /// to be retyped. That was removed, because running a script it had just written is exactly
+    /// as much work as running the server again with a flag, and it cost two files appearing in
+    /// the folder, a naming rule for them, their own quoting, and five sentences explaining which
+    /// to read and which to run. Everything unprivileged now does is name the command.
     /// </summary>
     internal sealed class UnixServiceManager : IServiceManager
     {
@@ -39,11 +36,12 @@ namespace TopSpeed.Server.Service
                     location ?? string.Empty));
             }
 
+            if (!Environment.IsPrivilegedProcess)
+                return ServiceActionResult.Failed(ServiceCommands.RootNeeded(directory, ServiceAction.Install));
+
             try
             {
-                return Environment.IsPrivilegedProcess
-                    ? InstallNow(directory)
-                    : WriteInstaller(directory);
+                return InstallNow(directory);
             }
             catch (IOException ex)
             {
@@ -57,11 +55,12 @@ namespace TopSpeed.Server.Service
 
         public ServiceActionResult Uninstall(string directory)
         {
+            if (!Environment.IsPrivilegedProcess)
+                return ServiceActionResult.Failed(ServiceCommands.RootNeeded(directory, ServiceAction.Uninstall));
+
             try
             {
-                return Environment.IsPrivilegedProcess
-                    ? UninstallNow(directory)
-                    : WriteRemover(directory);
+                return UninstallNow(directory);
             }
             catch (IOException ex)
             {
@@ -77,7 +76,7 @@ namespace TopSpeed.Server.Service
         {
             return OneCommand(
                 directory,
-                LocalizationService.Mark("To start it, run:\n{0}"),
+                ServiceAction.Start,
                 LocalizationService.Mark("The service is running."),
                 OperatingSystem.IsMacOS()
                     ? new[] { "kickstart", "-k", "system/" + UnitNameFor(directory) }
@@ -88,7 +87,7 @@ namespace TopSpeed.Server.Service
         {
             return OneCommand(
                 directory,
-                LocalizationService.Mark("To stop it, run:\n{0}"),
+                ServiceAction.Stop,
                 LocalizationService.Mark("The service is stopped."),
                 OperatingSystem.IsMacOS()
                     ? new[] { "bootout", "system/" + UnitNameFor(directory) }
@@ -104,7 +103,7 @@ namespace TopSpeed.Server.Service
         {
             return OneCommand(
                 directory,
-                LocalizationService.Mark("To restart it, run:\n{0}"),
+                ServiceAction.Restart,
                 LocalizationService.Mark("The service is running."),
                 OperatingSystem.IsMacOS()
                     ? new[] { "kickstart", "-k", "system/" + UnitNameFor(directory) }
@@ -112,22 +111,21 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// Runs one manager command when root is already held, and otherwise says what to type.
-        /// These are the three that need no file written, so there is nothing to read first and
-        /// a script would be a file to run instead of a line to run, which is not an improvement.
+        /// Runs one manager command when root is already held, and otherwise says what to run to
+        /// get here with it.
+        ///
+        /// What it names is this program and its own flag, rather than the systemctl or launchctl
+        /// line underneath. Those differ per system and per action, and knowing them is the thing
+        /// somebody came to the service command to avoid.
         /// </summary>
         private static ServiceActionResult OneCommand(
             string directory,
-            string instruction,
+            ServiceAction action,
             string doneMessage,
             string[] arguments)
         {
             if (!Environment.IsPrivilegedProcess)
-            {
-                return ServiceActionResult.Ok(LocalizationService.Format(
-                    instruction,
-                    Commands(Sudo(ManagerProgram(), arguments))));
-            }
+                return ServiceActionResult.Failed(ServiceCommands.RootNeeded(directory, action));
 
             return Run(ManagerProgram(), arguments, out var output)
                 ? ServiceActionResult.Ok(LocalizationService.Translate(doneMessage))
@@ -186,105 +184,6 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// The unit beside the server, and a script that installs it. Named so that the one to
-        /// run is obvious from its name alone, and marked runnable here, since the thing that
-        /// most often goes wrong with a shipped script is that it arrived without that.
-        /// </summary>
-        private ServiceActionResult WriteInstaller(string directory)
-        {
-            var folder = ServiceIdentity.DisplayPath(directory);
-            var name = UnitNameFor(directory);
-            var unitPath = Path.Combine(folder, UnitFileName(name));
-            var systemPath = SystemUnitPath(name);
-
-            File.WriteAllText(unitPath, UnitTextFor(directory, ServiceIdentity.OwningUserName()));
-
-            var steps = new StringBuilder();
-            steps.Append(Line(Sudo("cp", new[] { unitPath, systemPath })));
-            foreach (var command in LoadCommands(name, systemPath))
-                steps.Append(Line(Sudo(ManagerProgram(), command)));
-
-            var scriptPath = Path.Combine(folder, ScriptName("install-service"));
-            WriteScript(
-                scriptPath,
-                "Installing this folder's TopSpeed server as a system service.",
-                steps.ToString(),
-                "Done. The server will start with the machine from now on.",
-                stopOnError: true);
-
-            return ServiceActionResult.Ok(LocalizationService.Format(
-                LocalizationService.Mark("Wrote {0}, which describes the service, and {1}, which installs it. Read them if you like, then run {1}. It asks for your password and does the rest."),
-                unitPath,
-                scriptPath));
-        }
-
-        private ServiceActionResult WriteRemover(string directory)
-        {
-            var folder = ServiceIdentity.DisplayPath(directory);
-            var name = UnitNameFor(directory);
-            var systemPath = SystemUnitPath(name);
-
-            var steps = new StringBuilder();
-            foreach (var command in UnloadCommands(name))
-                steps.Append(Line(Sudo(ManagerProgram(), command) + " || true"));
-            steps.Append(Line(Sudo("rm", new[] { "-f", systemPath })));
-            foreach (var command in ReloadCommands())
-                steps.Append(Line(Sudo(ManagerProgram(), command)));
-
-            // Everything this folder gained by being installed goes with it, this script last of
-            // all. A remover that outlives what it removed is a way to remove it again, and the
-            // unit beside the server is worth no more than the registration it made.
-            var scriptPath = Path.Combine(folder, ScriptName("uninstall-service"));
-            steps.Append(Line("rm -f " + Quote(Path.Combine(folder, UnitFileName(name)))));
-            steps.Append(Line("rm -f " + Quote(Path.Combine(folder, ScriptName("install-service")))));
-            steps.Append(Line("rm -f \"$0\""));
-
-            WriteScript(
-                scriptPath,
-                "Removing this folder's TopSpeed server from the system's services.",
-                steps.ToString(),
-                "Done. The service is gone and the server folder was left alone.",
-                stopOnError: false);
-
-            return ServiceActionResult.Ok(LocalizationService.Format(
-                LocalizationService.Mark("Wrote {0}, which removes the service. Read it if you like, then run it. It asks for your password, and clears itself away afterwards."),
-                scriptPath));
-        }
-
-        /// <summary>
-        /// A script that says what it is doing as it goes. Both commands in it are silent when
-        /// they work, so without this it would run for a few seconds and finish without a word,
-        /// which reads as nothing having happened.
-        /// </summary>
-        private static void WriteScript(string path, string purpose, string steps, string ending, bool stopOnError)
-        {
-            var script = new StringBuilder();
-            script.Append("#!/bin/sh\n");
-            script.Append("# ").Append(purpose).Append('\n');
-            script.Append("# Written by the TopSpeed server. Nothing happens until you run it.\n\n");
-            // Installing stops at the first thing that fails, because every step after one is
-            // about a file that was not copied. Removing does not: each step is a different
-            // thing to be rid of, and one already gone is no reason to keep the rest.
-            if (stopOnError)
-                script.Append("set -e\n\n");
-            script.Append("echo \"").Append(purpose).Append("\"\n");
-            script.Append(steps);
-            script.Append("echo \"").Append(ending).Append("\"\n");
-
-            File.WriteAllText(path, script.ToString());
-
-            if (!OperatingSystem.IsWindows())
-                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
-                    | UnixFileMode.GroupRead | UnixFileMode.GroupExecute
-                    | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-        }
-
-        private static string Line(string command)
-        {
-            return command + "\n";
-        }
-
-        /// <summary>
         /// The account the service is to run as, which is never root.
         ///
         /// A server running as root writes root owned files into a folder whose owner then cannot
@@ -317,20 +216,6 @@ namespace TopSpeed.Server.Service
                 : "/etc/systemd/system/" + name;
         }
 
-        private static string UnitFileName(string name)
-        {
-            return OperatingSystem.IsMacOS() ? name + ".plist" : name;
-        }
-
-        private static string ScriptName(string stem)
-        {
-            // launchd's platform gives a double clickable extension and systemd's does not, which
-            // is the whole of the difference: Finder runs a .command in Terminal, and no Linux
-            // file manager agrees on how to run anything, so there it is a shell script named
-            // like one.
-            return OperatingSystem.IsMacOS() ? stem + ".command" : stem + ".sh";
-        }
-
         private static string[][] LoadCommands(string name, string systemPath)
         {
             return OperatingSystem.IsMacOS()
@@ -357,49 +242,6 @@ namespace TopSpeed.Server.Service
             return OperatingSystem.IsMacOS()
                 ? BuildLaunchdPlist(directory, owner)
                 : BuildSystemdUnit(directory, owner);
-        }
-
-        /// <summary>
-        /// A command as it would be typed, with every path quoted.
-        ///
-        /// Quoted without asking whether it needs to be. A folder with a space in its name is
-        /// ordinary on a Mac and made this command silently wrong, in a way whose error message
-        /// says nothing about spaces: cp is handed three arguments and complains that the last is
-        /// not a directory.
-        /// </summary>
-        private static string Sudo(string program, string[] arguments)
-        {
-            var line = new StringBuilder("sudo ").Append(program);
-            foreach (var argument in arguments)
-                line.Append(' ').Append(NeedsQuoting(argument) ? Quote(argument) : argument);
-
-            return line.ToString();
-        }
-
-        private static bool NeedsQuoting(string argument)
-        {
-            // Anything naming a place, and nothing naming an option or a subcommand. Quoting a
-            // verb would be harmless, and leaving a path unquoted is what went wrong.
-            return argument.Contains('/', StringComparison.Ordinal) || argument.Contains(' ', StringComparison.Ordinal);
-        }
-
-        private static string Quote(string value)
-        {
-            return "\"" + value.Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
-        }
-
-        /// <summary>
-        /// Commands as they are to be typed, indented under whatever sentence introduces them.
-        ///
-        /// They are built here and handed to a message rather than written inside one. A program
-        /// name is not a word: sudo, systemctl and launchctl are spelled the same in every
-        /// language, and there is no translation of /etc/systemd/system. Carrying them into a
-        /// translated string is what would let one come back rewritten, in a form nobody here
-        /// could check and only a stranger's machine would refuse.
-        /// </summary>
-        private static string Commands(params string[] lines)
-        {
-            return "  " + string.Join("\n  ", lines);
         }
 
         private static bool Run(string program, string[] arguments, out string output)

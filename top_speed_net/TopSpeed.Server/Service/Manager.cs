@@ -69,10 +69,11 @@ namespace TopSpeed.Server.Service
     /// <summary>
     /// Installing and controlling this folder's server as a service of the host system.
     ///
-    /// One implementation drives the Windows service manager directly. The others write the
-    /// unit or job file the system expects and say what to run, because there is no equivalent
-    /// of a consent prompt on those systems and a program that tries to elevate itself is worse
-    /// than one that tells you exactly what it wants done.
+    /// One implementation drives the Windows service manager directly, asking for consent when
+    /// it needs rights it does not have. The other writes the unit or job file the system
+    /// expects, and can only do so when it is already running as root: those systems have no
+    /// equivalent of a consent prompt, and a program that tries to elevate itself is worse than
+    /// one that names the command to run.
     /// </summary>
     internal interface IServiceManager
     {

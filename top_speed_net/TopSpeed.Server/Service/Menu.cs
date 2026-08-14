@@ -60,6 +60,16 @@ namespace TopSpeed.Server.Service
             // both says what the choices are and lets one be made. Naming the mistake and listing
             // the verbs would be two sentences to reach the same place, and somebody who typed a
             // verb meant to act rather than to read.
+            // Nothing on these systems can be done from here. Install, uninstall, start, stop and
+            // restart all need root, which this process cannot acquire while it is running, and
+            // status cannot be answered without running the service manager. A menu whose every
+            // branch says the same sentence should say it instead of offering the choice.
+            if (!OperatingSystem.IsWindows())
+            {
+                ConsoleSink.WriteLine(ServiceCommands.RootNeeded(directory, ServiceAction.Install));
+                return;
+            }
+
             var verb = (arguments ?? string.Empty).Trim();
             if (verb.Length == 0 || !TryParseVerb(verb, out var action))
             {

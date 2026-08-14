@@ -54,6 +54,17 @@ namespace TopSpeed.Server
             ConsoleSink.WriteLine(LocalizationService.Mark("  --start-service         Start the installed service."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --stop-service          Stop the installed service."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --restart-service       Stop it and start it again."));
+
+            // Only where it is true. On Windows these ask for consent themselves and the server
+            // is not expected to be elevated, so the sentence would be advice to do something
+            // that platform neither needs nor offers.
+            if (!OperatingSystem.IsWindows())
+            {
+                ConsoleSink.WriteLine(string.Empty);
+                ConsoleSink.WriteLine(Service.ServiceCommands.RootNeeded(
+                    AppContext.BaseDirectory,
+                    Service.ServiceAction.Install));
+            }
         }
 
         /// <summary>

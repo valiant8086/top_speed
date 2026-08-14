@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 21:31-0400\n"
+"POT-Creation-Date: 2026-08-14 00:44-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2212,11 +2212,6 @@ msgstr ""
 msgid "Update scheduler failed: {0}"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
-#, csharp-format
-msgid "Update {0} is not published yet. Attempt {1} of {2}."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 #, csharp-format
 msgid ""
@@ -2266,15 +2261,15 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid ""
-"Version {0} is available and will be installed once no players are connected."
+"Version {0} is announced, but its download has not been published yet. This "
+"is normal for a short time after a release. Trying again in {1} minutes. "
+"Attempt {2} of {3}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid ""
-"Version {0} is available, but its download has not been published yet. This "
-"is normal for a short time after a release. The server will check again in "
-"{1} minutes."
+"Version {0} is available and will be installed once no players are connected."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
@@ -2285,11 +2280,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid "Version {0} is no longer offered. Installing version {1} instead."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
-#, csharp-format
-msgid "Version {0} is still not published. Trying again in {1} minutes."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs

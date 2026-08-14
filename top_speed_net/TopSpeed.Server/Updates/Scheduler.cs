@@ -704,8 +704,14 @@ namespace TopSpeed.Server.Updates
         }
 
         /// <summary>
-        /// Advances the not-published cycle and returns a line to print, or null to stay quiet.
-        /// Only the first two failures and the final one are worth interrupting anybody for.
+        /// Advances the not-published cycle and returns the line to print.
+        ///
+        /// Every attempt is said, rather than the first two and the last. A version announced
+        /// whose build never arrives is a mistake somebody has to put right, and a server going
+        /// quiet about it for twenty two hours helps nobody: whoever reads the log wants to see
+        /// it still trying. Saying it every time also means the attempt count can go in the same
+        /// sentence, rather than needing a line of its own written only to the log.
+        ///
         /// Callers hold _gate.
         /// </summary>
         private string? AdvanceAwaitingPublication(string versionText)
@@ -723,11 +729,6 @@ namespace TopSpeed.Server.Updates
             }
 
             _attempts++;
-            _logger.Info(LocalizationService.Format(
-                LocalizationService.Mark("Update {0} is not published yet. Attempt {1} of {2}."),
-                version,
-                _attempts,
-                UpdateRetrySchedule.MaxAttempts));
 
             if (UpdateRetrySchedule.IsExhausted(_attempts))
             {
@@ -742,23 +743,12 @@ namespace TopSpeed.Server.Updates
             var delay = UpdateRetrySchedule.ApplyJitter(UpdateRetrySchedule.NextDelay(_attempts), _random);
             _nextDueUtc = DateTime.UtcNow + delay;
 
-            if (_attempts == 1)
-            {
-                return LocalizationService.Format(
-                    LocalizationService.Mark("Version {0} is available, but its download has not been published yet. This is normal for a short time after a release. The server will check again in {1} minutes."),
-                    version,
-                    (int)Math.Round(delay.TotalMinutes));
-            }
-
-            if (_attempts == 2)
-            {
-                return LocalizationService.Format(
-                    LocalizationService.Mark("Version {0} is still not published. Trying again in {1} minutes."),
-                    version,
-                    (int)Math.Round(delay.TotalMinutes));
-            }
-
-            return null;
+            return LocalizationService.Format(
+                LocalizationService.Mark("Version {0} is announced, but its download has not been published yet. This is normal for a short time after a release. Trying again in {1} minutes. Attempt {2} of {3}."),
+                version,
+                (int)Math.Round(delay.TotalMinutes),
+                _attempts,
+                UpdateRetrySchedule.MaxAttempts);
         }
 
         /// <summary>

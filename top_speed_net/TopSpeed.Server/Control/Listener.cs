@@ -86,7 +86,11 @@ namespace TopSpeed.Server.Control
                 // Nothing useful to do if the endpoint is already gone.
             }
 
-            if (!OperatingSystem.IsWindows())
+            // Only what this listener actually bound. A copy that lost the claim to a server
+            // already here is disposed on its way out too, and its socket is null: the file it
+            // would otherwise remove belongs to the server that won, which would be left running,
+            // unreachable and unable to be attached to for the rest of its life.
+            if (!OperatingSystem.IsWindows() && _socket != null)
             {
                 try
                 {

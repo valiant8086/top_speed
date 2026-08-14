@@ -224,16 +224,68 @@ namespace TopSpeed.Server.Control
         [UnsupportedOSPlatform("windows")]
         public static Socket CreateSocket(string path)
         {
-            // A file left behind by a server that was killed rather than stopped would block
-            // the bind. Reaching here means nothing answered on it, so it is safe to clear.
+            // A file left behind by a server that was killed rather than stopped would block the
+            // bind, so it has to go. But a socket file that something is still listening on looks
+            // exactly the same, and unlinking that one does not fail: the running server keeps its
+            // socket and simply becomes unreachable for the rest of its life, while this process
+            // binds a new file in its place and believes it owns the folder. Both then serve, and
+            // nothing can attach to the one that was here first.
+            //
+            // So ask before clearing. Only a refused connection proves nobody is home.
             if (File.Exists(path))
+            {
+                if (IsAnythingListening(path))
+                    throw new SocketException((int)SocketError.AddressAlreadyInUse);
+
                 File.Delete(path);
+            }
 
             var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             socket.Bind(new UnixDomainSocketEndPoint(path));
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             socket.Listen(backlog: 1);
             return socket;
+        }
+
+        /// <summary>
+        /// Whether a unix socket file has a server behind it, as opposed to being left over from
+        /// one that was killed.
+        ///
+        /// This connects and drops straight away, which a server on the other end may notice as
+        /// somebody arriving and leaving. That is accepted here: it only happens when a socket
+        /// file already exists, which is not the normal path, and a stray line in a log is a much
+        /// smaller price than deleting the endpoint of a server that is still running.
+        /// </summary>
+        [UnsupportedOSPlatform("windows")]
+        private static bool IsAnythingListening(string path)
+        {
+            try
+            {
+                using var probe = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                probe.Connect(new UnixDomainSocketEndPoint(path));
+                return true;
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
+            {
+                // The one answer that proves nobody is listening. A path that is a leftover file
+                // rather than a socket refuses in the same way, which is the case this is for.
+                return false;
+            }
+            catch (SocketException)
+            {
+                // Anything else is unclear, and the two mistakes are not equal. Refusing to start
+                // when a server was not really there costs one message and a second attempt.
+                // Clearing an endpoint that was there cannot be undone: that server keeps serving
+                // and can never be reached again. So an unclear answer is read as occupied.
+                //
+                // Linux gives one of these for a listener whose backlog is full, which is a busy
+                // server rather than an absent one, and is the moment this matters most.
+                return true;
+            }
+            catch (IOException)
+            {
+                return true;
+            }
         }
     }
 }

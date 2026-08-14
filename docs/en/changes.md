@@ -10,6 +10,10 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
 - Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.
 
+## 2026.8.9.7
+### Server Changes
+- Nothing. This version carries no changes at all: it exists so that a server running 2026.8.9.6 can be offered an update whose download has been removed on purpose, which is the one path that cannot be tested without publishing something to break.
+
 ## 2026.8.9.6
 ### Server Changes
 - A new "Log level" setting decides how much goes into the log, using the same words as the --log-level option: error, warning, info, debug, or all. A server installed as a service could not be told to record debug detail before, and a log turned on in settings.json recorded everything whether you wanted it or not. It now records errors, warnings and activity unless you say otherwise.

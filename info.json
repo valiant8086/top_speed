@@ -1,6 +1,6 @@
 {
   "version": "2026.8.3.1",
-  "serverVersion": "2026.8.9.6",
+  "serverVersion": "2026.8.9.7",
   "changes": [
     "Custom vehicles now work in multiplayer races. A room host turns them on with the new \"Custom vehicles\" game rule, and when another driver picks a vehicle you do not have, your game fetches it from the server by itself. Vehicles are matched by what is inside them rather than by their name, so one you already have is never downloaded, renaming or moving a vehicle does not cause it to download again, and a vehicle you do download arrives only once however many races you use it in. If a vehicle cannot be downloaded or cannot be loaded, the race still starts and you are told which vehicle was unavailable and who was using it.",
     "After a multiplayer race that used a downloaded vehicle, you can save it into your own Vehicles folder and then use it offline in time trial and single race. If you already have a vehicle saved under that name, you can keep both, replace yours with the downloaded one, or keep yours and discard the download. A \"Prompt to keep downloaded custom vehicles\" checkbox under Options, Server settings turns the offer off if you would rather nothing were saved.",
@@ -12,11 +12,6 @@
     "Added more Spanish, Armenian, Brazilian Portuguese, Vietnamese and Chinese translations."
   ],
   "serverChanges": [
-    "A new Log level setting decides how much goes into the log, in the same words the --log-level option takes. A service can now be told to record debug detail, which it could not be before.",
-    "The update check now leaves a line in the log at debug level, so a check that finds nothing can be told apart from a check that never ran.",
-    "Installing the service on Linux and macOS is now explained by one message for both, and macOS is also told how to check on it afterwards.",
-    "The advice about where to keep the log claimed a Windows rule on every system. Only Windows requires the log to be inside the server's folder.",
-    "Shorter wording throughout the service and update messages. The message shown when a server will not accept control now names the account that owns it.",
-    "The service menu no longer repeats the port, and a word it does not understand opens the menu instead of reporting a mistake."
+    "Nothing has changed. This version exists only so that a server can be offered an update whose download is deliberately missing, to see what it does about it."
   ]
 }

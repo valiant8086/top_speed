@@ -250,7 +250,7 @@ namespace TopSpeed.Server.Service
                 if (Control.ControlTransport.EndpointExists(directory))
                 {
                     return ServiceActionResult.Failed(LocalizationService.Translate(LocalizationService.Mark(
-                        "A server is already running from this folder, so the service cannot start as well. Stop that server first, using its shutdown command if it is the one you are reading this in, and then start the service.")));
+                        "A server is already running from this folder, so the service cannot start as well. Stop that server first, and then start the service.")));
                 }
 
                 controller.Start();

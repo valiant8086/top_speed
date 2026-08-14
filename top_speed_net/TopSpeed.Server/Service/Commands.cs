@@ -173,16 +173,15 @@ namespace TopSpeed.Server.Service
                         status.Name,
                         YesOrNo(status.StartsAutomatically));
 
-                case ServiceInstallState.Stopped:
+                // Anything else is one of the paused states, which this service never enters:
+                // starting and stopping are already reported as running and stopped, and pausing
+                // was never offered. Were one to arrive, it is a service not serving anybody, so
+                // stopped is the true reading as well as the only one worth a sentence.
+                default:
                     return LocalizationService.Format(
                         LocalizationService.Mark("Installed as \"{0}\" and stopped. Starts with the machine: {1}."),
                         status.Name,
                         YesOrNo(status.StartsAutomatically));
-
-                default:
-                    return LocalizationService.Format(
-                        LocalizationService.Mark("Installed as \"{0}\"."),
-                        status.Name);
             }
         }
 

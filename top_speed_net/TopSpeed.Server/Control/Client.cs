@@ -233,12 +233,11 @@ namespace TopSpeed.Server.Control
                             continue;
                         }
 
+                        // Nothing is said on the way out. Whatever was printed here would be on
+                        // screen for the moment it takes this to return and the window to close,
+                        // which is not long enough to read and was one more sentence to translate.
                         if (string.Equals(input.Trim(), "exit", StringComparison.OrdinalIgnoreCase))
-                        {
-                            WriteLine(LocalizationService.Translate(LocalizationService.Mark(
-                                "Detached. The server is still running.")));
                             break;
-                        }
 
                         writer.WriteLine(input);
                     }

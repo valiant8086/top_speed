@@ -341,7 +341,7 @@ namespace TopSpeed.Server.Service
                 // window missed out, so the remedy is to attach again rather than to start
                 // anything.
                 ConsoleSink.WriteLine(LocalizationService.Mark(
-                    "The service is running, but this window could not attach to it. Run the server program from this folder again to retry."));
+                    "The service is running, but this instance could not attach to it. Run the server program from this folder again to retry."));
                 return 1;
             }
 
@@ -354,7 +354,7 @@ namespace TopSpeed.Server.Service
             // remedy is the ordinary one, and saying so is better than leaving somebody to
             // wonder whether anything is still serving players.
             ConsoleSink.WriteLine(LocalizationService.Mark(
-                "No server is running from this folder now. Run the server program again to start one."));
+                "The service failed to start and is unavailable to attach. No server is running now. Try running the server again."));
             return 1;
         }
 

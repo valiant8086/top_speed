@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-13 19:12-0400\n"
+"POT-Creation-Date: 2026-08-13 20:00-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -137,8 +137,7 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
 msgid ""
 "A server is already running from this folder, so the service cannot start as "
-"well. Stop that server first, using its shutdown command if it is the one "
-"you are reading this in, and then start the service."
+"well. Stop that server first, and then start the service."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -471,10 +470,6 @@ msgstr ""
 msgid "Custom vehicles"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Control/Client.cs
-msgid "Detached. The server is still running."
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Discovery port"
 msgstr ""
@@ -741,11 +736,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
 #, csharp-format
 msgid "Installed as \"{0}\" and stopped. Starts with the machine: {1}."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Commands.cs
-#, csharp-format
-msgid "Installed as \"{0}\"."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -1165,12 +1155,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "No languages are available."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Menu.cs
-msgid ""
-"No server is running from this folder now. Run the server program again to "
-"start one."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
@@ -1829,6 +1813,12 @@ msgstr ""
 msgid "The service did not stop in time."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"The service failed to start and is unavailable to attach. No server is "
+"running now. Try running the server again."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Service/Commands.cs
 msgid "The service has been removed."
 msgstr ""
@@ -1843,7 +1833,7 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid ""
-"The service is running, but this window could not attach to it. Run the "
+"The service is running, but this instance could not attach to it. Run the "
 "server program from this folder again to retry."
 msgstr ""
 

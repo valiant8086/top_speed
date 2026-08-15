@@ -125,8 +125,13 @@ rather than using `sudo`.
 way. Run any of them without `sudo` and nothing happens except that you are told the command to
 run, with the full path already filled in so you can paste it from wherever you are.
 
-The `service` command and its menu do nothing on these systems for that reason, and say the same
-thing. Everything in the menu needs root, which the server cannot obtain while it is running.
+The `service` command inside a running server does not open a menu here, because everything in
+one needs root and the server cannot obtain it while it is running. Instead it tells you where
+the service stands and what to run to change it. Ask for `service stop` and you are told whether
+it is even running before being given the command.
+
+The exception is a server that is itself running as root, which is allowed where root is the
+only account. That one can carry all of it out, so it gets the same menu Windows gets.
 
 ### Which account runs the server
 
@@ -158,9 +163,14 @@ server started by root where root is all there is.
 Installing the service is unaffected either way. That runs as root deliberately, registers the
 service to run as your own account, and exits.
 
-`service status` cannot answer here either, since the server never runs the service manager to
-ask; use `systemctl status <name>` or `sudo launchctl print system/<name>`, with the name the
-install reported.
+`service status` needs no `sudo` at all. **On Linux it answers properly**: systemd will say
+whether a unit is installed, whether it is running and whether it starts with the machine
+without asking for any rights, so the server asks on your behalf. For more detail than it
+reports, `systemctl status <name>` with the name the install gave you.
+
+**On macOS it cannot.** Reading the system domain with `launchctl print` requires root, so there
+is nothing to ask and the server says so instead, naming the command. Run
+`sudo launchctl print system/<name>` yourself.
 
 ### Where it cannot be installed
 

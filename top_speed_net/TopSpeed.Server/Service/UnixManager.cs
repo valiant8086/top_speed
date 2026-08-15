@@ -20,11 +20,50 @@ namespace TopSpeed.Server.Service
     /// </summary>
     internal sealed class UnixServiceManager : IServiceManager
     {
+        /// <summary>
+        /// What the system says about this folder's service.
+        ///
+        /// Answerable on Linux and not on macOS, which is an asymmetry worth the trouble rather
+        /// than one to hide. systemctl reports whether a unit is enabled and whether it is
+        /// running without any rights at all, so a server nobody elevated can still say where
+        /// things stand. launchctl print needs root to read the system domain, so on macOS there
+        /// is nothing to ask and the answer stays a signpost.
+        ///
+        /// Registration is read from the file rather than from the manager. It is the same
+        /// question with a cheaper answer, it needs no process, and it tells an unloaded unit
+        /// apart from a missing one, which "is-enabled" alone reports as a failure either way.
+        /// </summary>
         public ServiceStatus Query(string directory)
         {
-            // Asking systemd or launchd would mean running them, and their answer is only ever
-            // wanted by a person, who has the command for it in front of them.
-            return new ServiceStatus(ServiceInstallState.Unsupported, UnitNameFor(directory), false);
+            var name = UnitNameFor(directory);
+
+            if (OperatingSystem.IsMacOS())
+                return new ServiceStatus(ServiceInstallState.Unsupported, name, false);
+
+            // The documented test for systemd being the thing that booted this machine. Without
+            // it systemctl either is not there or answers for nothing, and every reading below
+            // would be an invention.
+            if (!Directory.Exists("/run/systemd/system"))
+                return new ServiceStatus(ServiceInstallState.Unsupported, name, false);
+
+            if (!File.Exists(SystemUnitPath(name)))
+                return new ServiceStatus(ServiceInstallState.NotInstalled, name, false);
+
+            // Read by what they print, not only by whether they succeeded. The exit code is
+            // enough for is-active and misleading for is-enabled: a unit that is "static",
+            // "indirect" or "enabled-runtime" all report success while none of them means the
+            // thing being asked, which is whether this comes back on its own after a reboot.
+            // Only the word "enabled" means that.
+            var running = Run(ManagerProgram(), new[] { "is-active", name }, out var activeText)
+                && string.Equals(activeText.Trim(), "active", StringComparison.Ordinal);
+
+            var enabled = Run(ManagerProgram(), new[] { "is-enabled", name }, out var enabledText)
+                && string.Equals(enabledText.Trim(), "enabled", StringComparison.Ordinal);
+
+            return new ServiceStatus(
+                running ? ServiceInstallState.Running : ServiceInstallState.Stopped,
+                name,
+                enabled);
         }
 
         public ServiceActionResult Install(string directory, bool startAutomatically)

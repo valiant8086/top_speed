@@ -63,7 +63,10 @@ namespace TopSpeed.Server.Service
             var verb = (arguments ?? string.Empty).Trim();
             var named = TryParseVerb(verb, out var action);
 
-            if (!OperatingSystem.IsWindows())
+            // A server running as root can carry all of this out, so it gets the menu Windows
+            // gets. That is not the odd case it sounds like: root is the only account on plenty
+            // of rented machines, which is exactly where the server is allowed to run as it.
+            if (!OperatingSystem.IsWindows() && !Environment.IsPrivilegedProcess)
             {
                 ConsoleSink.WriteLine(UnprivilegedAnswer(verb, directory));
                 return;
@@ -94,14 +97,20 @@ namespace TopSpeed.Server.Service
         {
             var named = TryParseVerb((verb ?? string.Empty).Trim(), out var action);
 
-            // Status needs no rights, and there is something true to say about it: the system
-            // holds that answer, and this says which command asks for it.
+            // Said whatever was asked for, because it is the one thing here that can be answered
+            // without rights and it is very often what somebody wanted anyway. Somebody who typed
+            // stop wants to know whether it is running rather more than they want to be told no.
+            var status = ServiceCommands.Describe(ServiceManagers.ForCurrentPlatform().Query(directory), directory);
+
+            // And nothing more, when status is all that was asked for. Following it with a
+            // command to run would be answering a question nobody had, about rights this did not
+            // need.
             if (named && action == ServiceAction.Status)
-                return ServiceCommands.Describe(ServiceManagers.ForCurrentPlatform().Query(directory), directory);
+                return status;
 
             // No verb means the menu was asked for, and install is what somebody opening it
             // almost always wants. An unknown word is treated the same, as it is everywhere else.
-            return ServiceCommands.RootNeeded(directory, named ? action : ServiceAction.Install);
+            return status + "\n" + ServiceCommands.RootNeeded(directory, named ? action : ServiceAction.Install);
         }
 
         private static bool TryParseVerb(string verb, out ServiceAction action)

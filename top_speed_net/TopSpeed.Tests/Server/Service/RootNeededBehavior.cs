@@ -38,6 +38,31 @@ namespace TopSpeed.Tests.Server.Service
             message.Should().Contain("sudo \"" + ServiceIdentity.ExecutablePathFor(Folder) + "\"");
         }
 
+        [Theory]
+        [InlineData("install", "--install-service")]
+        [InlineData("uninstall", "--uninstall-service")]
+        [InlineData("start", "--start-service")]
+        [InlineData("stop", "--stop-service")]
+        [InlineData("restart", "--restart-service")]
+        public void TheAnswerNamesTheVerbThatWasTyped(string verb, string flag)
+        {
+            // The service command took this route before the verb had been read, so every one of
+            // them was answered with the install command. It reads as correct unless the verb is
+            // compared against the flag, which is exactly why it needs checking here.
+            ServiceConsole.UnprivilegedAnswer(verb, Folder).Should().Contain(flag);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        [InlineData("frobnicate")]
+        public void NoVerbOrAnUnknownOneFallsBackToInstalling(string verb)
+        {
+            // Where the menu would have opened. Install is what somebody opening it almost always
+            // wants, and an unknown word is treated as none, as it is everywhere else.
+            ServiceConsole.UnprivilegedAnswer(verb, Folder).Should().Contain("--install-service");
+        }
+
         [Fact]
         public void ItSaysNotToGiveTheServerItselfSudo()
         {

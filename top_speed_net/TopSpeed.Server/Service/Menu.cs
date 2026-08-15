@@ -60,24 +60,48 @@ namespace TopSpeed.Server.Service
             // both says what the choices are and lets one be made. Naming the mistake and listing
             // the verbs would be two sentences to reach the same place, and somebody who typed a
             // verb meant to act rather than to read.
-            // Nothing on these systems can be done from here. Install, uninstall, start, stop and
-            // restart all need root, which this process cannot acquire while it is running, and
-            // status cannot be answered without running the service manager. A menu whose every
-            // branch says the same sentence should say it instead of offering the choice.
+            var verb = (arguments ?? string.Empty).Trim();
+            var named = TryParseVerb(verb, out var action);
+
             if (!OperatingSystem.IsWindows())
             {
-                ConsoleSink.WriteLine(ServiceCommands.RootNeeded(directory, ServiceAction.Install));
+                ConsoleSink.WriteLine(UnprivilegedAnswer(verb, directory));
                 return;
             }
 
-            var verb = (arguments ?? string.Empty).Trim();
-            if (verb.Length == 0 || !TryParseVerb(verb, out var action))
+            if (!named)
             {
                 ShowMenu(directory, stopHostingServer, countPlayers);
                 return;
             }
 
             Perform(action, directory, stopHostingServer, countPlayers);
+        }
+
+        /// <summary>
+        /// What a server on Linux or macOS answers when asked to touch the service. Nothing there
+        /// can be carried out from inside a running server: install, uninstall, start, stop and
+        /// restart all need root, which this process cannot acquire while it is running, so a
+        /// menu whose every branch says the same sentence says it instead of offering the choice.
+        ///
+        /// Kept apart from the branch that reaches it so it can be checked on any platform. The
+        /// mistake it exists to prevent is naming the wrong action, which reads as perfectly
+        /// correct unless the verb is compared against the flag: one sentence serving five verbs
+        /// is only an improvement while it stays right about which one it is answering, and
+        /// telling somebody who asked to restart the service to install it is worse than silence.
+        /// </summary>
+        internal static string UnprivilegedAnswer(string verb, string directory)
+        {
+            var named = TryParseVerb((verb ?? string.Empty).Trim(), out var action);
+
+            // Status needs no rights, and there is something true to say about it: the system
+            // holds that answer, and this says which command asks for it.
+            if (named && action == ServiceAction.Status)
+                return ServiceCommands.Describe(ServiceManagers.ForCurrentPlatform().Query(directory), directory);
+
+            // No verb means the menu was asked for, and install is what somebody opening it
+            // almost always wants. An unknown word is treated the same, as it is everywhere else.
+            return ServiceCommands.RootNeeded(directory, named ? action : ServiceAction.Install);
         }
 
         private static bool TryParseVerb(string verb, out ServiceAction action)

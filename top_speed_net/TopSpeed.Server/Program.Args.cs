@@ -55,14 +55,22 @@ namespace TopSpeed.Server
             ConsoleSink.WriteLine(LocalizationService.Mark("  --stop-service          Stop the installed service."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --restart-service       Stop it and start it again."));
 
-            // Only where it is true. On Windows these ask for consent themselves and the server
-            // is not expected to be elevated, so the sentence would be advice to do something
-            // that platform neither needs nor offers.
+            // Only where it is true, which is twice over.
             //
-            // The one place both halves belong. Everywhere else each is said at the moment it
-            // applies; here somebody is reading about the options rather than having tripped
-            // over either, and the pair of them is the whole rule.
-            if (!OperatingSystem.IsWindows())
+            // Not on Windows, where these ask for consent themselves and the server is not
+            // expected to be elevated, so the sentence would be advice to do something that
+            // platform neither needs nor offers.
+            //
+            // And not to a reader who is already root, which on a rented server or in a
+            // container is simply the account there is. Every option above works for them as it
+            // stands, so being told to reach for sudo is advice to solve a problem they do not
+            // have, and being warned off running as root is advice against the only thing they
+            // can do. A container often has no sudo installed to reach for either.
+            //
+            // Otherwise this is the one place both halves belong. Everywhere else each is said
+            // at the moment it applies; here somebody is reading about the options rather than
+            // having tripped over either, and the pair of them is the whole rule.
+            if (!OperatingSystem.IsWindows() && !Environment.IsPrivilegedProcess)
             {
                 ConsoleSink.WriteLine(string.Empty);
                 ConsoleSink.WriteLine(Service.ServiceCommands.RootNeeded(

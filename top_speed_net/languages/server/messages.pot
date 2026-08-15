@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 04:23-0400\n"
+"POT-Creation-Date: 2026-08-14 23:34-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -746,12 +746,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
 #, csharp-format
 msgid "Installed the service {0}, running as {1}. It starts with the machine."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/Commands.cs
-msgid ""
-"Installing a service on this system is done by hand. Choose install to have "
-"the file written and the commands shown."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
@@ -1808,6 +1802,12 @@ msgstr ""
 msgid "The server refused to attach this instance."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid ""
+"The server shouldn't be run with sudo. As root, it would leave files in this "
+"folder that your own account cannot replace when the server updates."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Admin.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
@@ -1911,6 +1911,13 @@ msgstr ""
 msgid "This needs administrator rights."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid ""
+"This needs root. Run:\n"
+"{0}"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Control/Listener.cs
 msgid ""
 "This server already has a running instance in another interactive console "
@@ -1946,27 +1953,6 @@ msgstr ""
 msgid ""
 "This will drop {0} connected players until the service comes online. "
 "Proceed? (y/n)"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To restart it, run:\n"
-"{0}"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To start it, run:\n"
-"{0}"
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"To stop it, run:\n"
-"{0}"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -2356,18 +2342,11 @@ msgstr ""
 msgid "Weather transition seconds must be finite and non-negative."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
 msgid ""
-"Wrote {0}, which describes the service, and {1}, which installs it. Read "
-"them if you like, then run {1}. It asks for your password and does the rest."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
-#, csharp-format
-msgid ""
-"Wrote {0}, which removes the service. Read it if you like, then run it. It "
-"asks for your password, and clears itself away afterwards."
+"Whether this folder is installed as a service is answered by the system "
+"rather than by the server: run systemctl status on Linux, or launchctl print "
+"on macOS, with the name the install reported."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs

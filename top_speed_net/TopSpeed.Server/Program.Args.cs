@@ -58,12 +58,17 @@ namespace TopSpeed.Server
             // Only where it is true. On Windows these ask for consent themselves and the server
             // is not expected to be elevated, so the sentence would be advice to do something
             // that platform neither needs nor offers.
+            //
+            // The one place both halves belong. Everywhere else each is said at the moment it
+            // applies; here somebody is reading about the options rather than having tripped
+            // over either, and the pair of them is the whole rule.
             if (!OperatingSystem.IsWindows())
             {
                 ConsoleSink.WriteLine(string.Empty);
                 ConsoleSink.WriteLine(Service.ServiceCommands.RootNeeded(
                     AppContext.BaseDirectory,
                     Service.ServiceAction.Install));
+                ConsoleSink.WriteLine(Service.ServiceCommands.DoNotRunAsRoot());
             }
         }
 

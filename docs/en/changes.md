@@ -6,6 +6,11 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 
 
 ## Unreleased
+### Server Changes
+- Asking a Linux or macOS server to start, stop, restart or uninstall the service told you to run the install command instead. All five verbs were answered before the one you typed had been read, and the answer names a command, so it read as correct unless you compared the verb against it.
+- The message shown when a service command needs root no longer repeats a warning about running the server itself as root. That is a different mistake made at a different moment, and it is now said only when somebody actually makes it. What is left is the command to run.
+- A server running as root is no longer refused where root is the only account, which is common on a rented server handed over with root as its only login, and inside containers. The harm being prevented needs an ordinary account that owns the folder and is then locked out of it; where none exists there is nobody to lock out. Starting the server with sudo from your own account is still refused.
+
 ### Game Changes
 - When a new version is announced but its download has not finished publishing, the game now says so plainly and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short time after every release and read like a fault in the game when nothing was wrong.
 - Downloads are now checked against their expected size, so a connection that drops partway through is reported as an incomplete download instead of being treated as a finished one. The partial file is removed rather than left behind.

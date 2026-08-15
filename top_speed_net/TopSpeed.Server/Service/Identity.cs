@@ -43,6 +43,32 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
+        /// Whether root was reached from some other account, rather than being the account there
+        /// is.
+        ///
+        /// The difference decides whether running as root does any harm. A folder owned by a
+        /// person, with files in it written by root, is the thing that breaks: its owner can no
+        /// longer replace what root left. Where root is the only account there is no second owner
+        /// to be locked out, and nothing goes wrong at all.
+        ///
+        /// That case is not unusual. A rented server often arrives with root as the only login
+        /// and no ordinary account is ever made, and a container is root by default. Refusing
+        /// those would block a setup that works to prevent a problem it cannot have.
+        ///
+        /// Sudo is what tells the two apart, since it records who asked. Sudo used by root
+        /// records root, which is still the one account and so still no harm. Nothing records su,
+        /// which is why that route is not caught: after it, this process is indistinguishable
+        /// from having logged in as root.
+        /// </summary>
+        public static bool RootReachedFromAnotherAccount()
+        {
+            var invoker = Environment.GetEnvironmentVariable("SUDO_USER");
+
+            return !string.IsNullOrWhiteSpace(invoker)
+                && !string.Equals(invoker.Trim(), "root", StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// What appears in the service manager's list.
         ///
         /// The folder alone, because that is the one thing about an installation which cannot

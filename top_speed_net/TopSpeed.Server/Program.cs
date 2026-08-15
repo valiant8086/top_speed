@@ -65,11 +65,17 @@ namespace TopSpeed.Server
             // for its rights, and not applied to a service, whose unit may have been edited to
             // run as root by somebody who meant it. Refusing there would leave a machine whose
             // server no longer starts at boot.
+            //
+            // Nor where root is simply the account there is, which a rented server handed over
+            // with root as its only login, or a container, often is. Nothing is lost by allowing
+            // it: the harm needs a second account that owns the folder and is then locked out of
+            // it, and where none exists there is nobody to lock out.
             if (!OperatingSystem.IsWindows() &&
                 !ServiceRuntime.IsRunningAsService &&
-                Environment.IsPrivilegedProcess)
+                Environment.IsPrivilegedProcess &&
+                ServiceIdentity.RootReachedFromAnotherAccount())
             {
-                ConsoleSink.WriteLine(Service.ServiceCommands.RootNeeded(baseDirectory, Service.ServiceAction.Install));
+                ConsoleSink.WriteLine(Service.ServiceCommands.DoNotRunAsRoot());
                 return 1;
             }
 

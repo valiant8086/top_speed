@@ -128,10 +128,35 @@ run, with the full path already filled in so you can paste it from wherever you 
 The `service` command and its menu do nothing on these systems for that reason, and say the same
 thing. Everything in the menu needs root, which the server cannot obtain while it is running.
 
-**Do not run the server itself with `sudo`.** It is refused, and the refusal is the point: a
-server started as root writes its settings, its log, its control socket and its own updates into
-the folder as root, and your account can then no longer replace them. Nothing complains at the
-time. It surfaces later as an update that cannot be applied.
+### Which account runs the server
+
+**Run the server as one account and keep it that way.** `sudo` belongs on the service options
+above and nowhere else.
+
+Starting the server itself with `sudo` is refused. The reason is worth understanding, because it
+is not about security. A server started as root writes its settings, its log, its control socket
+and its own updates into the folder **as root**, while the folder itself still belongs to you.
+Your account can no longer replace those files. Nothing complains at the time; it surfaces later
+as settings that will not save, or an update that stops partway and reports that the folder may
+hold parts of two versions.
+
+The same applies to `su`. Where `sudo` runs one command as root using your own password, `su`
+switches your whole shell to another account using *that* account's password, and it leaves no
+record of who you were before. So a server started after `su` is refused nothing, because
+nothing can tell it apart from a genuine root login — and it will make exactly the same mess.
+Do not do it. On Ubuntu the question rarely comes up, since the root password is locked by
+default and `su` simply fails; on Debian and several other systems it works, and a lot of older
+advice online still tells you to use it.
+
+If root **is** your only account, none of this applies and the server runs normally. That is
+common on a rented server handed over with root as its only login, and inside containers. The
+problem needs an ordinary account that owns the folder and is then locked out of it, and where
+no such account exists there is nobody to lock out. The server works this out from whether
+`sudo` was used, so it refuses `sudo ./TopSpeed.Server` from your own account and allows a
+server started by root where root is all there is.
+
+Installing the service is unaffected either way. That runs as root deliberately, registers the
+service to run as your own account, and exits.
 
 `service status` cannot answer here either, since the server never runs the service manager to
 ask; use `systemctl status <name>` or `sudo launchctl print system/<name>`, with the name the

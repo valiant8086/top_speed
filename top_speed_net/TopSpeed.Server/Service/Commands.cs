@@ -144,13 +144,13 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// The one thing there is to say on a system where the service can only be reached with
-        /// root: what to run, spelled out ready to be copied.
+        /// What to run, on a system where the service can only be reached with root.
         ///
-        /// It serves three moments — a service command typed without sudo, the service menu, and
-        /// the refusal when the server itself is started as root — because all three are the same
-        /// person about to have the same trouble, and one sentence they recognise the second time
-        /// is worth more than three that each say it differently.
+        /// Short because it is read often: every service command typed without sudo answers with
+        /// this, and during any session spent setting a server up that is many times. It used to
+        /// carry a warning against running the server itself as root as well, which is a
+        /// different mistake made at a different moment and now says so there instead. Advice
+        /// about something you are not doing is noise the second time and every time after.
         ///
         /// The command is built here rather than written inside the sentence. sudo is spelled the
         /// same in every language and a path has no translation, so carrying either into a
@@ -162,8 +162,22 @@ namespace TopSpeed.Server.Service
             var command = "  sudo \"" + ServiceIdentity.ExecutablePathFor(directory) + "\" " + FlagFor(action);
 
             return LocalizationService.Format(
-                LocalizationService.Mark("Installing, removing or controlling the service needs root. Run it with sudo:\n{0}\nThe server itself does not need sudo and should not be given it: run as root it leaves files in this folder that your own account cannot replace when it updates."),
+                LocalizationService.Mark("This needs root. Run:\n{0}"),
                 command);
+        }
+
+        /// <summary>
+        /// Said when the server itself is started as root, which is the moment it is about to
+        /// matter and the only moment it is worth saying.
+        ///
+        /// It names no command. Somebody who reached this was trying to start a server, not
+        /// install a service, and answering with the install command would be a guess at what
+        /// they meant that is wrong as often as it is right.
+        /// </summary>
+        public static string DoNotRunAsRoot()
+        {
+            return LocalizationService.Translate(LocalizationService.Mark(
+                "The server shouldn't be run with sudo. As root, it would leave files in this folder that your own account cannot replace when the server updates."));
         }
 
         public static string FlagFor(ServiceAction action)

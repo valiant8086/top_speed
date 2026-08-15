@@ -64,13 +64,28 @@ namespace TopSpeed.Tests.Server.Service
         }
 
         [Fact]
-        public void ItSaysNotToGiveTheServerItselfSudo()
+        public void AskingForTheServiceSaysNothingAboutRunningTheServerAsRoot()
         {
-            // The half that matters most, since running the whole server as root is the mistake
-            // that costs something: it is silent at the time and surfaces later as an update that
-            // cannot replace files the folder's owner no longer owns.
-            ServiceCommands.RootNeeded(Folder, ServiceAction.Install)
-                .Should().Contain("should not be given it");
+            // Two different mistakes made at two different moments. This one is read every time
+            // a service command is typed without sudo, so advice about something the person is
+            // not doing is noise on the second reading and every one after.
+            var message = ServiceCommands.RootNeeded(Folder, ServiceAction.Install);
+
+            message.Should().NotContain("shouldn't");
+            message.Should().NotContain("updates");
+        }
+
+        [Fact]
+        public void RunningTheServerAsRootSaysWhatItWouldCostAndNamesNoCommand()
+        {
+            // Somebody here was trying to start a server, not install a service, so naming the
+            // install command would be a guess at what they meant that is wrong as often as it
+            // is right. What they need is why they were stopped.
+            var message = ServiceCommands.DoNotRunAsRoot();
+
+            message.Should().Contain("cannot replace");
+            message.Should().NotContain("--install-service");
+            message.Should().NotContain("sudo \"");
         }
     }
 }

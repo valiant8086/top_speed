@@ -5,8 +5,10 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
-## Unreleased
+## 2026.8.9.10
 ### Server Changes
+- On Linux the server now says where the service actually stands. systemd reports whether a unit is installed, running and set to start with the machine without needing any rights, so the server asks on your behalf instead of telling you to go and look. `service status` and `--service-status` answer properly, and any other service command typed without `sudo` reports the status first and then names the command that would change it. macOS is unchanged: reading the system domain there needs root, so there is nothing to ask.
+- A Linux or macOS server that is itself running as root now gets the full service menu, the same one Windows gets, rather than being told to use `sudo`. It already has the rights, which happens where root is the only account on the machine.
 - Asking a Linux or macOS server to start, stop, restart or uninstall the service told you to run the install command instead. All five verbs were answered before the one you typed had been read, and the answer names a command, so it read as correct unless you compared the verb against it.
 - The message shown when a service command needs root no longer repeats a warning about running the server itself as root. That is a different mistake made at a different moment, and it is now said only when somebody actually makes it. What is left is the command to run.
 - A server running as root is no longer refused where root is the only account, which is common on a rented server handed over with root as its only login, and inside containers. The harm being prevented needs an ordinary account that owns the folder and is then locked out of it; where none exists there is nobody to lock out. Starting the server with sudo from your own account is still refused.

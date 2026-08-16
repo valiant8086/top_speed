@@ -73,7 +73,7 @@ namespace TopSpeed.Server
             if (!OperatingSystem.IsWindows() &&
                 !ServiceRuntime.IsRunningAsService &&
                 Environment.IsPrivilegedProcess &&
-                ServiceIdentity.RootReachedFromAnotherAccount())
+                ServiceIdentity.RootWouldStrandTheFolderOwner(baseDirectory))
             {
                 ConsoleSink.WriteLine(Service.ServiceCommands.DoNotRunAsRoot());
                 return 1;

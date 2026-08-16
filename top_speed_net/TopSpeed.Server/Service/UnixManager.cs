@@ -181,7 +181,7 @@ namespace TopSpeed.Server.Service
         /// </summary>
         private ServiceActionResult InstallNow(string directory)
         {
-            if (!TryOwningUser(out var owner, out var refusal))
+            if (!TryOwningUser(directory, out var owner, out var refusal))
                 return ServiceActionResult.Failed(refusal);
 
             var name = UnitNameFor(directory);
@@ -226,16 +226,24 @@ namespace TopSpeed.Server.Service
         /// The account the service is to run as, which is never root.
         ///
         /// A server running as root writes root owned files into a folder whose owner then cannot
-        /// update it, so the one account this must not choose is the one it is running as. Under
-        /// sudo the invoking account is knowable and is the right answer; logged in as root there
-        /// is nothing to fall back to and nothing worth guessing.
+        /// update it, so the account to register is whoever owns the folder. That is asked of the
+        /// system rather than inferred from how root was reached, which means an install started
+        /// with su registers correctly instead of being turned away with advice to use sudo that
+        /// is no use on a machine where sudo was never set up.
+        ///
+        /// Root is refused in one case only: where it was arrived at by falling back, having
+        /// failed to learn who owns the folder. Root that owns the folder is the account there
+        /// is, and registering it is right.
         /// </summary>
-        private static bool TryOwningUser(out string owner, out string refusal)
+        private static bool TryOwningUser(string directory, out string owner, out string refusal)
         {
-            owner = ServiceIdentity.OwningUserName();
+            owner = ServiceIdentity.OwningUserName(directory);
             refusal = string.Empty;
 
             if (!string.Equals(owner, "root", StringComparison.Ordinal))
+                return true;
+
+            if (string.Equals(ServiceIdentity.FolderOwner(directory), "root", StringComparison.Ordinal))
                 return true;
 
             refusal = LocalizationService.Translate(LocalizationService.Mark(
@@ -325,7 +333,7 @@ namespace TopSpeed.Server.Service
         /// </summary>
         public static string BuildSystemdUnit(string directory)
         {
-            return BuildSystemdUnit(directory, ServiceIdentity.OwningUserName());
+            return BuildSystemdUnit(directory, ServiceIdentity.OwningUserName(directory));
         }
 
         public static string BuildSystemdUnit(string directory, string owner)
@@ -382,7 +390,7 @@ namespace TopSpeed.Server.Service
         /// </summary>
         public static string BuildLaunchdPlist(string directory)
         {
-            return BuildLaunchdPlist(directory, ServiceIdentity.OwningUserName());
+            return BuildLaunchdPlist(directory, ServiceIdentity.OwningUserName(directory));
         }
 
         public static string BuildLaunchdPlist(string directory, string owner)

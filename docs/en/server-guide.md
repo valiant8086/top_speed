@@ -145,23 +145,48 @@ Your account can no longer replace those files. Nothing complains at the time; i
 as settings that will not save, or an update that stops partway and reports that the folder may
 hold parts of two versions.
 
-The same applies to `su`. Where `sudo` runs one command as root using your own password, `su`
-switches your whole shell to another account using *that* account's password, and it leaves no
-record of who you were before. So a server started after `su` is refused nothing, because
-nothing can tell it apart from a genuine root login — and it will make exactly the same mess.
-Do not do it. On Ubuntu the question rarely comes up, since the root password is locked by
-default and `su` simply fails; on Debian and several other systems it works, and a lot of older
-advice online still tells you to use it.
+The same applies to `su`, which switches your whole shell to another account using *that*
+account's password rather than running one command with your own. It leaves no record of who you
+were before, so nothing in the environment can tell it apart from a genuine root login. The
+server does not rely on that record: it asks the system who owns the folder, which is the same
+question asked properly. A server started after `su` in your own folder is refused just as one
+started with `sudo` is.
 
-If root **is** your only account, none of this applies and the server runs normally. That is
-common on a rented server handed over with root as its only login, and inside containers. The
-problem needs an ordinary account that owns the folder and is then locked out of it, and where
-no such account exists there is nobody to lock out. The server works this out from whether
-`sudo` was used, so it refuses `sudo ./TopSpeed.Server` from your own account and allows a
-server started by root where root is all there is.
+### Installing on a machine without sudo
+
+Debian offers a root password during installation, and choosing one leaves your own account
+**out of the `sudo` group entirely**. On such a machine `sudo ./TopSpeed.Server --install-service`
+fails with "is not in the sudoers file", and `su` is the ordinary way to become root.
+
+That works. Become root however that machine expects, then install:
+
+```
+./TopSpeed.Server --install-service
+```
+
+The service is registered to run as the account that owns the server folder — which is you, not
+root — because that is read from the folder itself rather than from how root was reached.
+
+If you would rather have `sudo` anyway, become root and add yourself to it, then log out and
+back in:
+
+```
+usermod -aG sudo yourname
+```
+
+### When root is your only account
+
+Then none of this applies and the server runs normally. That is common on a rented server handed
+over with root as its only login, and inside containers. The problem needs an ordinary account
+that owns the folder and is then locked out of it, and where no such account exists there is
+nobody to lock out.
+
+The server settles this by asking who owns the folder it is running from. Root running in a
+folder that belongs to root is the account there is, and nothing is refused. Root running in a
+folder that belongs to you is the mistake, however root was reached, and is.
 
 Installing the service is unaffected either way. That runs as root deliberately, registers the
-service to run as your own account, and exits.
+service to run as whoever owns the folder, and exits.
 
 `service status` needs no `sudo` at all. **On Linux it answers properly**: systemd will say
 whether a unit is installed, whether it is running and whether it starts with the machine

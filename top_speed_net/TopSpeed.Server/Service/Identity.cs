@@ -36,10 +36,143 @@ namespace TopSpeed.Server.Service
         /// leave root owned files in a folder its owner has to be able to replace. Sudo says who
         /// asked, which is the account that owns the folder and the one meant all along.
         /// </summary>
-        public static string OwningUserName()
+        public static string OwningUserName(string directory)
         {
-            var invoker = Environment.GetEnvironmentVariable("SUDO_USER");
-            return string.IsNullOrWhiteSpace(invoker) ? Environment.UserName : invoker.Trim();
+            return ChooseServiceAccount(
+                FolderOwner(directory),
+                Environment.GetEnvironmentVariable("SUDO_USER"),
+                Environment.UserName);
+        }
+
+        /// <summary>
+        /// Which of the accounts on offer the service should run as.
+        ///
+        /// The folder's owner is asked first because it is the fact the rest are guesses at. What
+        /// this decides is who has to be able to replace these files when the server updates
+        /// itself, and that is settled by who owns them, not by who happened to type the command.
+        /// It is also the only answer available to somebody who reached root with su, which
+        /// records nothing: Debian offers a root password during installation and leaves that
+        /// account out of sudo entirely, so su is the ordinary way to be root on machines set up
+        /// that way, and every instruction to use sudo is useless there.
+        ///
+        /// Sudo comes next, for the folder that is owned by root because it was unpacked with
+        /// sudo. Running as the person who asked is both safer than root and what was meant.
+        ///
+        /// Root itself is a real answer and not a failure. Where root owns the folder and nobody
+        /// else was involved, root is the account there is, which is how a rented server or a
+        /// container usually arrives.
+        ///
+        /// Separated from the asking so it can be checked. The three inputs are awkward to
+        /// arrange on a real machine and trivial to write down.
+        /// </summary>
+        public static string ChooseServiceAccount(string? folderOwner, string? sudoUser, string currentUser)
+        {
+            var owner = (folderOwner ?? string.Empty).Trim();
+            var invoker = (sudoUser ?? string.Empty).Trim();
+
+            if (owner.Length > 0 && !IsRoot(owner))
+                return owner;
+
+            if (invoker.Length > 0 && !IsRoot(invoker))
+                return invoker;
+
+            if (owner.Length > 0)
+                return owner;
+
+            return currentUser;
+        }
+
+        /// <summary>
+        /// The account a folder belongs to, as the system reports it, or null where it cannot be
+        /// asked.
+        ///
+        /// Asked of stat rather than read through the runtime, which exposes a file's permissions
+        /// and not its owner, and rather than through a p/invoke, which would mean laying out
+        /// struct stat correctly for seven shipping targets whose layouts differ and only one of
+        /// which can be tried here. A wrong layout does not fail; it reads whatever is next in
+        /// memory and returns a plausible name. Running the program that already knows costs one
+        /// process and cannot be subtly wrong.
+        /// </summary>
+        public static string? FolderOwner(string directory)
+        {
+            if (OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(directory))
+                return null;
+
+            // Same question, two spellings: BSD stat on macOS, GNU or busybox stat everywhere
+            // else. Both print the name, so nothing here has to map a number to an account.
+            var arguments = OperatingSystem.IsMacOS()
+                ? new[] { "-f", "%Su", directory }
+                : new[] { "-c", "%U", directory };
+
+            var answer = RunForOutput("stat", arguments);
+            if (answer == null)
+                return null;
+
+            answer = answer.Trim();
+
+            // An owner with no matching account is reported as the bare number, which names
+            // nobody and would be written into a unit file that then cannot start.
+            if (answer.Length == 0 || answer.All(char.IsDigit))
+                return null;
+
+            return answer;
+        }
+
+        /// <summary>
+        /// Whether running as root here would leave the folder's owner unable to replace what
+        /// root writes into it, which is the whole of the harm and worth measuring rather than
+        /// inferring.
+        ///
+        /// Where the owner cannot be asked this falls back to what sudo recorded, which is the
+        /// same question answered less well.
+        /// </summary>
+        public static bool RootWouldStrandTheFolderOwner(string directory)
+        {
+            var owner = FolderOwner(directory);
+            if (string.IsNullOrEmpty(owner))
+                return RootReachedFromAnotherAccount();
+
+            return !IsRoot(owner);
+        }
+
+        private static bool IsRoot(string account)
+        {
+            return string.Equals(account, "root", StringComparison.Ordinal);
+        }
+
+        private static string? RunForOutput(string program, string[] arguments)
+        {
+            try
+            {
+                var info = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = program,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                foreach (var argument in arguments)
+                    info.ArgumentList.Add(argument);
+
+                using var process = System.Diagnostics.Process.Start(info);
+                if (process == null)
+                    return null;
+
+                var text = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                return process.ExitCode == 0 ? text : null;
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                || ex is InvalidOperationException
+                || ex is IOException)
+            {
+                // No stat, or nothing able to run it. The caller has a poorer answer to fall
+                // back on and this is not worth failing an install over.
+                return null;
+            }
         }
 
         /// <summary>

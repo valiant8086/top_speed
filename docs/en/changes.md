@@ -5,6 +5,11 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.8.9.11
+### Server Changes
+- Installing the service on Linux and macOS now works out which account to register from the owner of the server folder, rather than from how root was reached. This fixes installing on a machine with no sudo set up. Debian offers a root password during installation and leaves your own account out of the sudo group when you take it, so `sudo` fails there and `su` is the ordinary way to become root — and installing after `su` used to be refused, with advice to use a `sudo` that machine did not have. It now registers the service to run as the account that owns the folder, which is you rather than root.
+- Running the server itself as root is now refused on the same basis. It used to be worked out from whether `sudo` recorded who asked, which meant reaching root with `su` avoided the check entirely and made exactly the mess the check exists to prevent. The folder's owner is the thing that actually matters, and it is now what gets asked. Where root owns the folder, which is the case on a machine whose only account is root, nothing is refused.
+
 ## 2026.8.9.10
 ### Server Changes
 - On Linux the server now says where the service actually stands. systemd reports whether a unit is installed, running and set to start with the machine without needing any rights, so the server asks on your behalf instead of telling you to go and look. `service status` and `--service-status` answer properly, and any other service command typed without `sudo` reports the status first and then names the command that would change it. macOS is unchanged: reading the system domain there needs root, so there is nothing to ask.

@@ -120,6 +120,13 @@ namespace TopSpeed.Server.Updates
                 return false;
             }
 
+            // A server somebody started in a terminal on Linux or macOS leaves by becoming the
+            // update rather than by launching it and exiting, so that the terminal never changes
+            // hands and the server that comes back can be typed at. A service does not: it has no
+            // terminal to keep, and its manager is what starts it again.
+            if (!OperatingSystem.IsWindows() && !Service.ServiceRuntime.IsRunningAsService)
+                return PrepareHandoff(root, updaterPath, zipPath);
+
             try
             {
                 var process = Process.GetCurrentProcess();
@@ -188,6 +195,41 @@ namespace TopSpeed.Server.Updates
                 ConsoleSink.WriteLineFormat(LocalizationService.Mark("Could not launch updater: {0}"), ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Arranges for this process to become the update on its way out, rather than starting
+        /// anything now. Nothing is launched here: exec unwinds nothing, so it has to wait until
+        /// the port, the control socket and the log have been let go of.
+        ///
+        /// The marker is raised against this process id, which is the one that stays alive for
+        /// the whole update — first as the script, then as the server it becomes.
+        /// </summary>
+        private bool PrepareHandoff(string root, string updaterPath, string zipPath)
+        {
+            var serverPath = ResolveExecutablePath(root, _config.ServerEntryName);
+            if (!File.Exists(serverPath))
+            {
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Updater not found: {0}"),
+                    RuntimeAssetResolver.ResolveExecutableFileName(_config.ServerEntryName));
+                return false;
+            }
+
+            UpdateHandoff.Prepare(UpdateHandoff.BuildScript(
+                root,
+                updaterPath,
+                zipPath,
+                _config.ServerEntryName,
+                _config.UpdaterEntryName,
+                serverPath));
+
+            UpdateMarker.Raise(root, Environment.ProcessId, windowComesBackByItself: true);
+
+            ConsoleSink.WriteLine(LocalizationService.Mark(
+                "Installing the update. This window comes back with the new server when it is done."));
+
+            return true;
         }
 
         private static string ResolveExecutablePath(string root, string executableStem)

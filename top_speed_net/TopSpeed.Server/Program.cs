@@ -145,6 +145,16 @@ namespace TopSpeed.Server
             if (ServiceRuntime.HandingOverToService)
                 exitCode = ServiceConsole.CompleteHandover(baseDirectory);
 
+            // The last thing this process does, and on Linux and macOS it may not return: an
+            // update started from a terminal replaces this process rather than ending it, so that
+            // the shell keeps waiting on the same id and the server that comes back owns the
+            // terminal instead of being a background process forbidden to read it.
+            //
+            // Here rather than where the update was asked for, because exec unwinds nothing. By
+            // this line the port, the control socket and the log are all released, which is what
+            // makes the folder safe to replace and the executable free to be overwritten.
+            Updates.UpdateHandoff.Complete(baseDirectory);
+
             return exitCode;
         }
 

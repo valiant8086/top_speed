@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 23:34-0400\n"
+"POT-Creation-Date: 2026-08-17 15:15-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -759,6 +759,12 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Installing the update now. Connected players will be disconnected."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+msgid ""
+"Installing the update. This window comes back with the new server when it is "
+"done."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -1862,6 +1868,12 @@ msgid ""
 "The service was installed, but this account could not give it write access "
 "to the server folder. The service will not be able to save settings or "
 "updates until that is granted."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Handoff.cs
+msgid ""
+"The update could not be started, so nothing was changed. Try again with "
+"update."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Service.cs

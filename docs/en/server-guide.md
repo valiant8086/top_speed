@@ -228,6 +228,19 @@ anyone connected.
 In `notify` mode the server tells you when a version is available; the steps above are then
 exactly the same. In `auto` mode it does all of it by itself once no players are connected.
 
+### When you started the server yourself
+
+On **Linux and macOS** the update happens in the window you were already using. The server hands
+that window over to the update rather than exiting, so the updater's own output appears there,
+and when it finishes the new server starts in the same place. You keep the console throughout,
+and it works the same way however many times the server updates.
+
+On **Windows** the updated server opens in a **new console window** and your original one
+returns to its prompt. Windows has no way for a program to hand its console to a successor, and
+a second program sharing one would compete with the shell for your keystrokes with nothing to
+decide between them. If you would rather not have windows come and go, install the server as a
+service, which is the better answer on every platform.
+
 ### When the server is a service
 
 The server stops, the files are replaced, and the service is started again. It is back in
@@ -246,7 +259,8 @@ take the folder the updater is still writing into.
 
 What it suggests depends on what is being updated. After a service update you are told to run
 it again in a moment to attach. After an update to a server you started yourself, you are told
-to leave it alone, because the updater opens that one again itself.
+to leave it alone, because that server comes back by itself — in the window it was already in on
+Linux and macOS, and in a new one on Windows.
 
 ### Files the update keeps
 

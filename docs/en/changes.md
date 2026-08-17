@@ -5,6 +5,12 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.8.9.12
+### Server Changes
+- A server you started yourself on Linux or macOS now updates in the window you were already using, and comes back in it. Before, it appeared to die: the shell that launched it took the terminal back as soon as the old server exited, so the new one arrived as a background process, which the system forbids from reading the terminal. It printed its banner and a prompt and then waited silently for somebody to attach, while still holding the port and serving players. It now hands the window over to the update instead of exiting, so the terminal never changes hands and the server that comes back can be typed at. It works the same way for any number of updates.
+- The updater's own output now appears in that window while it works, where before it wrote nowhere at all unless it was asked for a log file.
+- Windows is unchanged, and still opens the updated server in a new console window. Nothing there can hand a console to a successor, and a second program sharing one would compete with the shell for keystrokes. A service remains the better way to run a server that nobody wants to watch.
+
 ## 2026.8.9.11
 ### Server Changes
 - Installing the service on Linux and macOS now works out which account to register from the owner of the server folder, rather than from how root was reached. This fixes installing on a machine with no sudo set up. Debian offers a root password during installation and leaves your own account out of the sudo group when you take it, so `sudo` fails there and `su` is the ordinary way to become root — and installing after `su` used to be refused, with advice to use a `sudo` that machine did not have. It now registers the service to run as the account that owns the folder, which is you rather than root.

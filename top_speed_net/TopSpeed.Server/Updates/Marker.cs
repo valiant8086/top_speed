@@ -27,8 +27,15 @@ namespace TopSpeed.Server.Updates
         /// Longer than any unpack and shorter than anybody's patience. Past it the file is
         /// treated as abandoned however alive the process looks, so that an updater which hung
         /// rather than died costs a wait rather than a folder that can never be started again.
+        ///
+        /// Everything that waits for this marker waits this long, which is why it is not private.
+        /// The systemd unit, the launchd job and the handoff a console update becomes each sit in
+        /// a loop watching for the file to go, and each used to carry its own number: sixty
+        /// seconds in the two unit files and two minutes in the handoff, against the five minutes
+        /// this says the file is worth believing. A service could therefore start a server while
+        /// an update it should still have been waiting for was legitimately in progress.
         /// </summary>
-        private static readonly TimeSpan AssumeAbandonedAfter = TimeSpan.FromMinutes(5);
+        public static readonly TimeSpan AssumeAbandonedAfter = TimeSpan.FromMinutes(5);
 
         public static string PathIn(string directory)
         {

@@ -52,7 +52,7 @@ namespace TopSpeed.Tests.Server
             script.Should().Contain("while [ -e \".updating\" ]");
             // An updater that died holding the marker must not leave a folder that can never
             // start a server again.
-            script.Should().Contain("-lt 120");
+            script.Should().Contain("-lt 300");
         }
 
         [Fact]

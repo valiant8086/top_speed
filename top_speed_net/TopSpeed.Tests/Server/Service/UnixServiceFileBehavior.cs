@@ -57,8 +57,16 @@ namespace TopSpeed.Tests.Server.Service
         {
             // An updater that dies partway leaves the file behind, and an updater older than the
             // file never learns to remove it. Unbounded, either of those would mean a server that
-            // never starts again, which is far worse than the minute this costs.
-            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("-lt 60");
+            // never starts again, which is far worse than the wait this costs.
+            //
+            // Checked against the marker rather than a number written here. Three places waited
+            // for this file and each had picked its own answer, the units waiting a minute for
+            // something the marker itself says is worth believing for five — so a service could
+            // start a server while an update it should have waited for was still running.
+            var seconds = (int)TopSpeed.Server.Updates.UpdateMarker.AssumeAbandonedAfter.TotalSeconds;
+
+            UnixServiceManager.BuildSystemdUnit(Folder).Should().Contain("-lt " + seconds);
+            UnixServiceManager.BuildLaunchdPlist(Folder).Should().Contain("-lt " + seconds);
         }
 
         [Fact]

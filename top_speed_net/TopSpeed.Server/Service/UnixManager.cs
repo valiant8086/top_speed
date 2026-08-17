@@ -251,6 +251,14 @@ namespace TopSpeed.Server.Service
             return false;
         }
 
+        /// <summary>
+        /// How long a unit waits for an update to finish before starting the server anyway, as
+        /// seconds for a shell to count. One question, answered in one place: the marker itself.
+        /// </summary>
+        private static string MarkerWaitSeconds =>
+            ((int)Updates.UpdateMarker.AssumeAbandonedAfter.TotalSeconds)
+                .ToString(CultureInfo.InvariantCulture);
+
         private static string ManagerProgram()
         {
             return OperatingSystem.IsMacOS() ? "launchctl" : "systemctl";
@@ -355,10 +363,16 @@ namespace TopSpeed.Server.Service
             //
             // Bounded, because the file is removed by the updater and an updater older than it
             // never learns to: without a limit one of those would stop the server starting at
-            // all, which is far worse than the minute it costs to give up and start anyway.
+            // all, which is far worse than the wait it costs to give up and start anyway.
+            //
+            // The bound is the marker's own, not a number chosen here. It used to be a minute,
+            // against the five the marker says the file is worth believing, so a service could
+            // start a server while an update it should have waited for was still running.
             unit.Append("ExecStartPre=/bin/sh -c 'i=0; while [ -e ")
                 .Append(Updates.UpdateMarker.FileName)
-                .Append(" ] && [ $$i -lt 60 ]; do sleep 1; i=$$((i+1)); done'\n");
+                .Append(" ] && [ $$i -lt ")
+                .Append(MarkerWaitSeconds)
+                .Append(" ]; do sleep 1; i=$$((i+1)); done'\n");
             // The argument matters as much as the path. It tells the server something else is
             // managing it, which is what stops the updater from launching a second copy behind
             // this unit's back after an update.
@@ -411,7 +425,7 @@ namespace TopSpeed.Server.Service
             // The argument tells the server it is being managed, so the updater leaves starting
             // it again to launchd rather than launching a copy launchd knows nothing about.
             var start = "i=0; while [ -e " + Updates.UpdateMarker.FileName +
-                " ] && [ $i -lt 60 ]; do sleep 1; i=$((i+1)); done; exec \"" +
+                " ] && [ $i -lt " + MarkerWaitSeconds + " ]; do sleep 1; i=$((i+1)); done; exec \"" +
                 ServiceIdentity.ExecutablePathFor(directory) + "\" --service";
             plist.Append("  <key>ProgramArguments</key>\n  <array>\n    <string>/bin/sh</string>\n    <string>-c</string>\n    <string>")
                 .Append(Escape(start))

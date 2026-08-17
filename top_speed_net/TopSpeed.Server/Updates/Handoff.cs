@@ -49,10 +49,10 @@ namespace TopSpeed.Server.Updates
     {
         /// <summary>
         /// How long the script waits for the update to finish before giving up and starting the
-        /// server anyway. An updater that died holding the marker must not leave a folder that
-        /// can never start a server again; two minutes is far longer than any update takes.
+        /// server anyway. Taken from the marker rather than chosen here, because how long that
+        /// file is worth believing is one question and had grown three answers.
         /// </summary>
-        private const int WaitSeconds = 120;
+        private static int WaitSeconds => (int)UpdateMarker.AssumeAbandonedAfter.TotalSeconds;
 
         private static string? _pending;
 

@@ -5,6 +5,11 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.8.9.13
+### Server Changes
+- Everything that waits for an update to finish now waits the same length of time. Three places watch for the file that marks an update in progress, and each had settled on its own answer: the systemd unit and the launchd job gave up after a minute, the console handoff after two, while the file itself is treated as abandoned only after five. A service could therefore start a server while an update it should have waited for was still running, which is the half-of-each-version state the wait exists to prevent. All three now take the figure from the same place, so they cannot drift apart again.
+- **If you installed the service before this version, reinstall it to pick that up.** The waiting is written into the systemd unit or launchd job when the service is installed, so an existing registration keeps the old minute. Run the uninstall and install commands again and it is written afresh.
+
 ## 2026.8.9.12
 ### Server Changes
 - A server you started yourself on Linux or macOS now updates in the window you were already using, and comes back in it. Before, it appeared to die: the shell that launched it took the terminal back as soon as the old server exited, so the new one arrived as a background process, which the system forbids from reading the terminal. It printed its banner and a prompt and then waited silently for somebody to attach, while still holding the port and serving players. It now hands the window over to the update instead of exiting, so the terminal never changes hands and the server that comes back can be typed at. It works the same way for any number of updates.

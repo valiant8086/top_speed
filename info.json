@@ -1,6 +1,6 @@
 {
   "version": "2026.8.3.1",
-  "serverVersion": "2026.8.9.14",
+  "serverVersion": "2026.8.9.15",
   "changes": [
     "Custom vehicles now work in multiplayer races. A room host turns them on with the new \"Custom vehicles\" game rule, and when another driver picks a vehicle you do not have, your game fetches it from the server by itself. Vehicles are matched by what is inside them rather than by their name, so one you already have is never downloaded, renaming or moving a vehicle does not cause it to download again, and a vehicle you do download arrives only once however many races you use it in. If a vehicle cannot be downloaded or cannot be loaded, the race still starts and you are told which vehicle was unavailable and who was using it.",
     "After a multiplayer race that used a downloaded vehicle, you can save it into your own Vehicles folder and then use it offline in time trial and single race. If you already have a vehicle saved under that name, you can keep both, replace yours with the downloaded one, or keep yours and discard the download. A \"Prompt to keep downloaded custom vehicles\" checkbox under Options, Server settings turns the offer off if you would rather nothing were saved.",
@@ -12,6 +12,7 @@
     "Added more Spanish, Armenian, Brazilian Portuguese, Vietnamese and Chinese translations."
   ],
   "serverChanges": [
+    "This version carries no changes of its own. It exists so that a server running 2026.8.9.14 has something to update to, because the change being tested lives in the server that leaves rather than the one that arrives.",
     "Fixed the console update on Linux and macOS failing at once with a message about a missing --pid argument. Versions 2026.8.9.12 and 2026.8.9.13 could not update themselves that way at all: nothing was replaced, the window waited five minutes, and the old server came back. A server on either of those versions has to be replaced by unpacking this one over it by hand. Windows, and any server installed as a service, were unaffected.",
     "A server you started yourself on Linux or macOS now updates in the window you were already using, and comes back in it. Before, it looked as though it had died: the shell took the terminal back the moment the old server exited, so the new one arrived as a background process, which the system forbids from reading the terminal. It printed its banner and a prompt and then went quiet, while still running and still serving players. The updater's own output now appears in that window too. Windows is unchanged and still opens the updated server in a new console window.",
     "Everything that waits for an update to finish now waits the same length of time. Three places watch for the file that marks an update in progress and each had its own answer, so a service could start a server while an update it should have waited for was still running. If you installed the service before this version, uninstall and install it again to pick that up: the waiting is written into the registration when the service is installed.",

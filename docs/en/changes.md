@@ -5,6 +5,10 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.8.9.15
+### Server Changes
+- Nothing. This version carries no changes of its own: it exists so that a server running 2026.8.9.14 has something to update to, which is the only way to watch a console update keep the window it started in. The change being tested is in the server that leaves, so a server can only demonstrate it by updating away from itself.
+
 ## 2026.8.9.14
 ### Server Changes
 - Fixed the console update on Linux and macOS failing immediately with "Missing or invalid --pid argument". Versions 2026.8.9.12 and 2026.8.9.13 could not update themselves that way at all: the update stopped before anything was replaced, the window waited five minutes, and the old server came back. **A server on either of those versions cannot update itself on Linux or macOS and has to be replaced by unpacking this version over it by hand.** Windows and any server installed as a service were unaffected.

@@ -13,7 +13,7 @@ namespace TopSpeed.Protocol
         public const ushort ServerYear = 2026;
         public const byte ServerMonth = 8;
         public const byte ServerDay = 9;
-        public const byte ServerRevision = 13;
+        public const byte ServerRevision = 14;
     }
 
     // Edit protocol compatibility values here (network handshake only).

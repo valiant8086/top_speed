@@ -5,6 +5,11 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.8.9.14
+### Server Changes
+- Fixed the console update on Linux and macOS failing immediately with "Missing or invalid --pid argument". Versions 2026.8.9.12 and 2026.8.9.13 could not update themselves that way at all: the update stopped before anything was replaced, the window waited five minutes, and the old server came back. **A server on either of those versions cannot update itself on Linux or macOS and has to be replaced by unpacking this version over it by hand.** Windows and any server installed as a service were unaffected.
+- The cause is worth recording. The updater has always required a process to wait for before it starts replacing files, and after the change in 2026.8.9.12 there is no honest answer to give it: the update now happens inside the same process the old server occupied, so naming that process would tell the updater to wait for the very thing waiting for the updater. It is handed a process that has already finished instead, which every version of the updater copes with. Teaching the updater to accept no answer would not have been enough, because the updater is deliberately skipped when an update is unpacked, so the one in any folder is whichever version arrived there first and may be much older than the server asking it to run.
+
 ## 2026.8.9.13
 ### Server Changes
 - Everything that waits for an update to finish now waits the same length of time. Three places watch for the file that marks an update in progress, and each had settled on its own answer: the systemd unit and the launchd job gave up after a minute, the console handoff after two, while the file itself is treated as abandoned only after five. A service could therefore start a server while an update it should have waited for was still running, which is the half-of-each-version state the wait exists to prevent. All three now take the figure from the same place, so they cannot drift apart again.

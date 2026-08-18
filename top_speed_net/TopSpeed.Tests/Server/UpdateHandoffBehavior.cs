@@ -37,6 +37,24 @@ namespace TopSpeed.Tests.Server
         }
 
         [Fact]
+        public void TheUpdaterIsGivenAProcessIdThatHasAlreadyGone()
+        {
+            // It insists on one and waits for it to exit. Naming this process would name the
+            // shell that is waiting for the updater, so the wait would never end; omitting it is
+            // refused outright, which is how this was found. An id that has already been reaped
+            // satisfies the argument and the wait is over before it starts.
+            //
+            // Teaching the updater that the argument is optional would not have been enough: it
+            // is skipped when an update is unpacked, so the one in any folder is whichever
+            // version arrived there first and may be far older than the server writing this.
+            var script = Script();
+
+            script.Should().Contain("true & _finished=$!");
+            script.Should().Contain("wait \"$_finished\"");
+            script.Should().Contain("--pid \"$_finished\"");
+        }
+
+        [Fact]
         public void TheUpdaterIsToldNotToStartAnything()
         {
             // Coming back is the script's job. An updater that also started one would leave two

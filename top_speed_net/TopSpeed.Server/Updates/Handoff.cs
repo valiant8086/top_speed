@@ -126,9 +126,24 @@ namespace TopSpeed.Server.Updates
             // marker the wait watches for.
             script.Append("cd ").Append(Quote(root)).Append(" || exit 1\n");
 
+            // Every updater ever shipped insists on a --pid and waits for it to exit, and there
+            // is no honest one to give: exec kept this process id, so naming it would be telling
+            // the updater to wait for the very shell that is waiting for the updater.
+            //
+            // It does cope with an id that has already gone, which is what this makes. A child
+            // that exits at once, reaped so the number is genuinely free, and handed over as
+            // something to wait for that is already over. The alternative was to teach the
+            // updater that the argument is optional, which fixes nothing: the updater is skipped
+            // when an update is unpacked, so the one in a folder is whichever version first
+            // arrived there, and a script written today may be handed to one written long before
+            // it.
+            script.Append("true & _finished=$!\n");
+            script.Append("wait \"$_finished\" 2>/dev/null\n");
+
             // Told not to start anything itself. Coming back is this script's job, and an updater
             // that also started one would leave two servers racing for the same port.
             script.Append(Quote(updaterPath))
+                .Append(" --pid \"$_finished\"")
                 .Append(" --zip ").Append(Quote(zipPath))
                 .Append(" --dir ").Append(Quote(root))
                 .Append(" --game ").Append(Quote(serverEntryName))

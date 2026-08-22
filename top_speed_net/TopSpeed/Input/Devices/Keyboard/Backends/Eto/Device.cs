@@ -29,6 +29,8 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Eto
                 if (_disposed)
                     return false;
 
+                ReleaseKeysNoLongerHeld();
+
                 for (var i = 0; i < _keys.Length; i++)
                 {
                     if (_keys[i])
@@ -37,6 +39,28 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Eto
             }
 
             return true;
+        }
+
+        // A key we believe is down but the hardware says is not can only have got that way by losing
+        // its key-up — something else consumed the release before it reached the window. Left alone it
+        // stays held forever: the throttle keeps accelerating, the car keeps steering. Checking the
+        // real state each time it is read costs a fraction of a microsecond per held key and puts the
+        // two views back in agreement within a frame.
+        //
+        // Only releases, never presses. A key held while another window had focus is not input this
+        // game should act on, and inventing a press from hardware state would do exactly that.
+        private void ReleaseKeysNoLongerHeld()
+        {
+            if (_suspended || !MacKeyState.IsAvailable)
+                return;
+
+            for (var i = 0; i < _keys.Length; i++)
+            {
+                if (!_keys[i])
+                    continue;
+                if (MacKeyState.TryIsPhysicallyDown((InputKey)i, out var held) && !held)
+                    _keys[i] = false;
+            }
         }
 
         public bool IsDown(InputKey key)

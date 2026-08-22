@@ -132,9 +132,10 @@
     <Compile Remove="Input\Devices\Keyboard\Backends\DirectInput\**\*.cs" />
   </ItemGroup>
 
-  <!-- MacControlTabInterceptor needs MonoMac, which only Eto.Platform.Mac64 provides. -->
+  <!-- These need MonoMac, which only Eto.Platform.Mac64 provides. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0' and '$(RuntimeIdentifier)' != 'osx-x64' and '$(RuntimeIdentifier)' != 'osx-arm64'">
     <Compile Remove="Window\Eto\MacControlTabInterceptor.cs" />
+    <Compile Remove="Window\Eto\MacQuitKeyInterceptor.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">

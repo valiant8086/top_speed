@@ -1,6 +1,8 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Eto.Drawing;
 using Eto.Forms;
 using TopSpeed.Input;
@@ -11,6 +13,10 @@ namespace TopSpeed.Windowing.Eto
 {
     internal sealed class WindowHost : IWindowHost, IKeyboardEventSource
     {
+        // Long enough for a working Quit() to win the race, short enough that quitting does
+        // not feel stalled on the platforms where it never will.
+        private const int ForcedExitDelayMs = 500;
+        private int _shutdownStarted;
         private readonly object _textInputLock = new object();
         private readonly Application _application;
         private readonly Form _window;
@@ -56,7 +62,10 @@ namespace TopSpeed.Windowing.Eto
             _window.Content = _root;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
                 TryInstallMacControlTabInterceptor();
+                TryInstallMacQuitKeyInterceptor();
+            }
         }
 
         public void Run()
@@ -75,7 +84,48 @@ namespace TopSpeed.Windowing.Eto
                 catch
                 {
                 }
+
+                // Eto.Mac hides the window for a programmatic Close() but never raises Form.Closed, so
+                // waiting on that event means shutdown simply never happens: the loop keeps running and
+                // the app lingers with no window, endable only from Force Quit. Drive it from here
+                // instead. Windows and Linux do raise the event, and Shutdown only runs once either way.
+                Shutdown();
             });
+        }
+
+        // Runs the close handlers exactly once, however the window went away, then ends the process.
+        private void Shutdown()
+        {
+            if (Interlocked.Exchange(ref _shutdownStarted, 1) != 0)
+                return;
+
+            // Synchronous, and everything that matters is already durable: settings are written when
+            // they change rather than saved on the way out, so this is stopping the loop and releasing
+            // audio, speech and input devices.
+            try
+            {
+                Closed?.Invoke();
+            }
+            catch
+            {
+            }
+
+            // Armed before Quit() rather than after, because Quit() runs on the UI thread and does not
+            // reliably return here - anything queued behind it would never start. Where Quit() works
+            // the process is gone long before this fires; where it does not, this is what ends it.
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(ForcedExitDelayMs).ConfigureAwait(false);
+                Environment.Exit(0);
+            });
+
+            try
+            {
+                (Application.Instance ?? _application).Quit();
+            }
+            catch
+            {
+            }
         }
 
         public void Dispose()
@@ -161,7 +211,7 @@ namespace TopSpeed.Windowing.Eto
 
         private void OnClosed(object? sender, EventArgs e)
         {
-            Closed?.Invoke();
+            Shutdown();
         }
 
         private void OnWindowKeyDown(object? sender, KeyEventArgs e)
@@ -326,6 +376,29 @@ namespace TopSpeed.Windowing.Eto
             {
                 // Best effort: without the monitor the game still runs, only Control+Tab
                 // stays unavailable because Cocoa consumes it.
+            }
+        }
+
+        // Command+Q reaches the main menu's Quit item before any window sees it, and this app has no
+        // menu bar for it to reach, so the shortcut does nothing. MacQuitKeyInterceptor catches the
+        // press first and asks for the same close the Exit item and Escape at the main menu use. Same
+        // reflection lookup and the same osx-only compilation as the Control+Tab monitor above.
+        private void TryInstallMacQuitKeyInterceptor()
+        {
+            try
+            {
+                var type = Type.GetType("TopSpeed.Windowing.Eto.MacQuitKeyInterceptor");
+                var install = type?.GetMethod("Install", BindingFlags.Public | BindingFlags.Static);
+                install?.Invoke(null, new object[]
+                {
+                    (Func<IntPtr>)(() => NativeHandle),
+                    (Action)RequestClose
+                });
+            }
+            catch
+            {
+                // Best effort: without the monitor the game still runs and still quits from the menu,
+                // Command+Q just stays inert as it is today.
             }
         }
 

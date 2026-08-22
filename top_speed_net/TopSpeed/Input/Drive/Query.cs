@@ -208,6 +208,11 @@ namespace TopSpeed.Input
             if (IsInputTrappedByMenu(key))
                 return false;
 
+            // This key went down as part of a modifier chord, so it belongs to that chord and not to
+            // the intent bound to the bare key. See ModifierChords.
+            if (WasPressedUnderModifier(key))
+                return false;
+
             var active = meta.KeyboardMode == TriggerMode.Hold
                 ? IsKeyDown(_lastState, key)
                 : WasPressedRaw(key);

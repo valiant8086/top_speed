@@ -25,6 +25,7 @@ namespace TopSpeed.Input
         {
             _prevState.CopyFrom(_lastState);
             _lastState.CopyFrom(input);
+            UpdateModifierChordState();
 
             var wasControllerAvailable = _controllerAvailable;
             var nextWheelMode = controller.HasValue && controllerIsRacingWheel;

@@ -110,6 +110,13 @@ namespace TopSpeed.Windowing.Eto
             {
             }
 
+            // Everything below is the macOS workaround. Linux raises Form.Closed, returns from
+            // Application.Run on its own and exits cleanly, exactly as it did before any of this, so
+            // there is nothing here for it to gain - only a 500ms cap on releasing audio and a forced
+            // exit racing a teardown that was already finishing by itself.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return;
+
             // Armed before Quit() rather than after, because Quit() runs on the UI thread and does not
             // reliably return here - anything queued behind it would never start. Where Quit() works
             // the process is gone long before this fires; where it does not, this is what ends it.

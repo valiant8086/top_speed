@@ -201,6 +201,30 @@ namespace TopSpeed.Shortcuts
             return false;
         }
 
+        // True when some registered shortcut claims this key with modifiers that are held right now.
+        // Shortcuts and drive intents are evaluated by separate readers of the same keyboard, so
+        // without asking this a combination fires its own action and the bare-key intent underneath it
+        // at the same time - Control+Shift+C toggles transmission and also reads the distance travelled
+        // off the C bound to Report distance. Every registered binding is considered rather than only
+        // the ones reachable in the current menu context, because the ones that collide here are the
+        // globally dispatched ones that fire with no menu on the stack at all.
+        public bool HasHeldModifierBindingForKey(Key key, IInputService input)
+        {
+            if (key == Key.Unknown || input == null)
+                return false;
+
+            foreach (var pair in _actions)
+            {
+                var action = pair.Value;
+                if (action.Key != key || action.Modifiers.IsEmpty)
+                    continue;
+                if (action.Modifiers.MatchesInput(input))
+                    return true;
+            }
+
+            return false;
+        }
+
         public bool IsBindingInUseInGroup(string groupId, Key key, ShortcutModifiers modifiers, string ignoredActionId)
         {
             if (!TryGetGroupActionIds(groupId, out var actionIds))

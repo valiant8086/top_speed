@@ -130,6 +130,11 @@ namespace TopSpeed.Menu
             return _shortcutCatalog.TryGetBinding(actionId, out binding);
         }
 
+        public bool HasHeldModifierBindingForKey(Key key, IInputService input)
+        {
+            return _shortcutCatalog.HasHeldModifierBindingForKey(key, input);
+        }
+
         public bool IsShortcutKeyInUse(string groupId, Key key, string ignoredActionId)
         {
             return IsShortcutBindingInUse(groupId, key, ShortcutModifiers.None, ignoredActionId);

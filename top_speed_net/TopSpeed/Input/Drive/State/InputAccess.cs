@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Key = TopSpeed.Input.InputKey;
 using TopSpeed.Input.Devices.Controller;
@@ -42,6 +43,21 @@ namespace TopSpeed.Input
                 foreach (var input in controllerInputs)
                     _menuNavigationControllerInputs.Add(input);
             }
+        }
+
+        // Supplied by the game once the shortcut catalog exists. Lets the drive layer ask whether a
+        // registered shortcut already claims a key with the modifiers currently held, so a combination
+        // and the bare-key intent underneath it cannot both act on one press.
+        private Func<Key, bool>? _shortcutClaimsKey;
+
+        public void SetShortcutKeyClaimQuery(Func<Key, bool>? query)
+        {
+            _shortcutClaimsKey = query;
+        }
+
+        private bool IsClaimedByHeldShortcut(Key key)
+        {
+            return _shortcutClaimsKey != null && _shortcutClaimsKey(key);
         }
 
         public void SetPausedHornInputAllowed(bool allowed)

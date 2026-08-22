@@ -41,7 +41,14 @@ namespace TopSpeed.Input
                     continue;
 
                 // A modifier is never a chord against itself, or an intent bound to one could never fire.
-                _pressedUnderModifier[i] = modifierHeld && IsChordKey(key) && !IsModifierKey(key);
+                // Two ways a press can belong to something else: a hardcoded chord in Query.cs, or a
+                // registered shortcut whose modifiers are held. The second is why Control+Shift+C used
+                // to toggle transmission and read the distance off the C underneath it - shortcuts and
+                // drive intents are separate readers of the same keyboard and neither knew about the
+                // other. IsClaimedByHeldShortcut checks the binding's own modifiers, so it needs no
+                // modifierHeld gate of its own.
+                _pressedUnderModifier[i] = !IsModifierKey(key)
+                    && ((modifierHeld && IsChordKey(key)) || IsClaimedByHeldShortcut(key));
             }
         }
 

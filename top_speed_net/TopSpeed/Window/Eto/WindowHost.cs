@@ -169,6 +169,11 @@ namespace TopSpeed.Windowing.Eto
             if (_textInputActive)
                 return;
             EmitKeyDown(e.KeyData);
+
+            // The game consumed this key. Without marking it handled, Eto forwards the event to the
+            // native view's default keyDown, it walks the responder chain unclaimed, and macOS plays
+            // the alert beep — on every arrow key, all race long.
+            e.Handled = true;
         }
 
         private void OnWindowKeyUp(object? sender, KeyEventArgs e)
@@ -177,6 +182,8 @@ namespace TopSpeed.Windowing.Eto
             // them is how the key that opened the prompt ends up latched down forever in
             // the event-driven keyboard device.
             EmitKeyUp(e.KeyData);
+            if (!_textInputActive)
+                e.Handled = true;
         }
 
         private void OnInputKeyDown(object? sender, KeyEventArgs e)

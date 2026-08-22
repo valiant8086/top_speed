@@ -31,13 +31,11 @@ namespace TopSpeed.Drive.Session.Systems
             if (!ReferenceEquals(_panels.ActivePanel, _radioPanel))
                 _radioPanel.Tick(elapsed);
 
+            // One cycling request rather than a forward and a backward one: there are two panels, so
+            // MovePrevious lands where MoveNext does. MovePrevious stays on the manager for when a
+            // third panel makes a backward binding worth having.
             var panelChanged = false;
-            if (_input.GetPreviousPanelRequest())
-            {
-                _panels.MovePrevious();
-                panelChanged = true;
-            }
-            else if (_input.GetNextPanelRequest())
+            if (_input.GetPanelSwitchRequest())
             {
                 _panels.MoveNext();
                 panelChanged = true;

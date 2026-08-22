@@ -60,20 +60,23 @@ namespace TopSpeed.Input
             return _shortcutClaimsKey != null && _shortcutClaimsKey(key);
         }
 
+        private System.Func<bool>? _panelSwitchPressed;
+
+        public void SetPanelSwitchQuery(System.Func<bool>? query)
+        {
+            _panelSwitchPressed = query;
+        }
+
+        public bool GetPanelSwitchRequest()
+        {
+            return !_overlayInputBlocked && _panelSwitchPressed != null && _panelSwitchPressed();
+        }
+
         public void SetPausedHornInputAllowed(bool allowed)
         {
             _pausedHornInputAllowed = allowed;
         }
 
-        private bool IsCtrlDown()
-        {
-            return _lastState.IsDown(Key.LeftControl) || _lastState.IsDown(Key.RightControl);
-        }
-
-        private bool IsShiftDown()
-        {
-            return _lastState.IsDown(Key.LeftShift) || _lastState.IsDown(Key.RightShift);
-        }
     }
 }
 

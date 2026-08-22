@@ -41,10 +41,6 @@ namespace TopSpeed.Input
 
         public bool GetFlush() => !_overlayInputBlocked && IsKeyDown(_lastState, _kbFlush);
 
-        public bool GetNextPanelRequest() => WasPressed(Key.Tab) && IsCtrlDown() && !IsShiftDown();
-
-        public bool GetPreviousPanelRequest() => WasPressed(Key.Tab) && IsCtrlDown() && IsShiftDown();
-
         public bool GetOpenRadioMediaRequest() => WasPressed(Key.O);
 
         public bool GetOpenRadioFolderRequest() => WasPressed(Key.F);

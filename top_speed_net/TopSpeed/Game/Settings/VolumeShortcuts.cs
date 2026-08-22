@@ -21,7 +21,8 @@ namespace TopSpeed.Game
             GlobalVolumeDecreaseStepShortcutActionId,
             GlobalVolumeIncreaseStepShortcutActionId,
             GlobalVolumeDecreaseLargeStepShortcutActionId,
-            GlobalVolumeIncreaseLargeStepShortcutActionId
+            GlobalVolumeIncreaseLargeStepShortcutActionId,
+            SwitchVehiclePanelShortcutActionId
         };
 
         private static readonly AudioVolumeCategory[] GlobalVolumeShortcutCategories =

@@ -77,6 +77,7 @@ namespace TopSpeed.Game
             _stateMachine = new StateMachine(this);
             _menu = new MenuManager(audio, speech, () => _settings.UsageHints);
             _driveInput.SetShortcutKeyClaimQuery(key => _menu.HasHeldModifierBindingForKey(key, _input));
+            _driveInput.SetPanelSwitchQuery(WasPanelSwitchShortcutPressed);
             _dialogs = new DialogManager(_menu, message => speech.Speak(message));
             _choices = new ChoiceDialogManager(_menu, message => speech.Speak(message));
             var pick = new Pick();
@@ -143,6 +144,7 @@ namespace TopSpeed.Game
             _multiplayerDispatch = new MultiplayerDispatch(this);
             _menuRegistry.RegisterAll();
             _multiplayerCoordinator.ConfigureMenuCloseHandlers();
+            RegisterDriveShortcutActions();
             RegisterGlobalShortcutActions();
             ApplySavedShortcutBindings();
             _settings.AudioVolumes ??= new AudioVolumeSettings();

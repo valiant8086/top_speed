@@ -8,6 +8,11 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 ## Unreleased (2026.8.22)
 ### Game Changes
 - Linux: Fixed the clutch letting go if you pressed Tab while holding Shift. The game took it as the Shift key being let go even though you were still holding it, so the clutch came up and the next gear change ground. It only happened with the left Shift key, which is why it could look intermittent.
+- Fixed keys sticking down on macOS while VoiceOver is running. Steering while holding the throttle could leave the throttle on, and accelerating while turning could leave the car steering by itself.
+- Fixed a system beep on every key press on macOS, which meant a beep for every steer and every throttle press throughout a race.
+- Fixed the game not closing on macOS. Exit and Escape at the main menu now end it, and Command+Q closes it the way Alt+F4 does on Windows and Linux.
+- Fixed keyboard shortcuts also setting off the plain key underneath them. Control plus Tab switched panels and read your race position out at the same time.
+
 
 ## 2026.8.3.1
 ### Game Changes

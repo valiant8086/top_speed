@@ -208,6 +208,24 @@ namespace TopSpeed.Shortcuts
         // off the C bound to Report distance. Every registered binding is considered rather than only
         // the ones reachable in the current menu context, because the ones that collide here are the
         // globally dispatched ones that fire with no menu on the stack at all.
+        // Held rather than pressed, for shortcuts that act for as long as they are down - push to talk
+        // above all. Same most-specific rule as a press, and it has to be: push to talk asks for no
+        // modifiers and toggle voice activation asks for Control+Shift on the same V, so without this
+        // reaching for the toggle would satisfy push to talk too and open the microphone.
+        public bool IsActionHeld(string actionId, IInputService input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(actionId))
+                return false;
+            if (!_actions.TryGetValue(actionId.Trim(), out var action))
+                return false;
+            if (action.Key == Key.Unknown || !input.IsDown(action.Key))
+                return false;
+            if (!action.Modifiers.IsSatisfiedBy(input))
+                return false;
+
+            return BestSatisfiedModifierCountForKey(action.Key, input) <= action.Modifiers.Count;
+        }
+
         public bool HasHeldModifierBindingForKey(Key key, IInputService input)
         {
             if (key == Key.Unknown || input == null)

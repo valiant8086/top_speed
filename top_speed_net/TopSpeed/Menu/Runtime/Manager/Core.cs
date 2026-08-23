@@ -130,6 +130,11 @@ namespace TopSpeed.Menu
             return _shortcutCatalog.TryGetBinding(actionId, out binding);
         }
 
+        public bool IsShortcutActionHeld(string actionId, IInputService input)
+        {
+            return _shortcutCatalog.IsActionHeld(actionId, input);
+        }
+
         public bool WasShortcutActionTriggered(string actionId, IInputService input)
         {
             return _shortcutCatalog.TryResolveTriggeredActionById(input, actionId, out _);

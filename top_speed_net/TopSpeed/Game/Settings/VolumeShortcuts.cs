@@ -125,17 +125,7 @@ namespace TopSpeed.Game
                 return false;
             if (string.Equals(actionId, CommunicatorShortcutIds.PushToTalk, System.StringComparison.Ordinal) && IsTopZonePttGestureHeld())
                 return true;
-            if (!_menu.TryGetShortcutBinding(actionId, out var binding))
-                return false;
-
-            return IsShortcutHeld(binding);
-        }
-
-        private bool IsShortcutHeld(ShortcutBinding binding)
-        {
-            return binding.Key != InputKey.Unknown
-                && _input.IsDown(binding.Key)
-                && binding.Modifiers.IsSatisfiedBy(_input);
+            return _menu.IsShortcutActionHeld(actionId, _input);
         }
 
         private bool CanHandleGlobalShortcutInput()

@@ -213,16 +213,10 @@ namespace TopSpeed.Shortcuts
             if (key == Key.Unknown || input == null)
                 return false;
 
-            foreach (var pair in _actions)
-            {
-                var action = pair.Value;
-                if (action.Key != key || action.Modifiers.IsEmpty)
-                    continue;
-                if (action.Modifiers.MatchesInput(input))
-                    return true;
-            }
-
-            return false;
+            // Only when the binding that wins actually asks for modifiers. A shortcut that asks for
+            // none is not claiming the key away from the drive intent bound to it - it is competing on
+            // equal terms, which the binding conflict checks are there to prevent in the first place.
+            return BestSatisfiedModifierCountForKey(key, input) > 0;
         }
 
         public bool IsBindingInUseInGroup(string groupId, Key key, ShortcutModifiers modifiers, string ignoredActionId)
@@ -476,12 +470,36 @@ namespace TopSpeed.Shortcuts
             return new ShortcutBinding(action.Id, action.DisplayName, action.Description, action.Key, action.Modifiers, action.GestureIntent);
         }
 
-        private static bool IsPressedByKeyboard(IInputService input, ShortcutAction candidate)
+        private bool IsPressedByKeyboard(IInputService input, ShortcutAction candidate)
         {
-            if (!candidate.Modifiers.MatchesInput(input))
+            if (!candidate.Modifiers.IsSatisfiedBy(input))
+                return false;
+            if (!input.WasPressed(candidate.Key))
                 return false;
 
-            return input.WasPressed(candidate.Key);
+            // Satisfied is not enough on its own: F6 asks for nothing and so is satisfied even while
+            // Shift is down, but Shift+F6 asks for more and means something different. The binding that
+            // asks for the most wins, which is also what makes an unrelated modifier harmless - nothing
+            // else on the key asks for it, so the plain binding is still the most specific match.
+            return BestSatisfiedModifierCountForKey(candidate.Key, input) <= candidate.Modifiers.Count;
+        }
+
+        // -1 when nothing on this key is satisfied at all.
+        private int BestSatisfiedModifierCountForKey(Key key, IInputService input)
+        {
+            var best = -1;
+            foreach (var pair in _actions)
+            {
+                var action = pair.Value;
+                if (action.Key != key)
+                    continue;
+                if (!action.Modifiers.IsSatisfiedBy(input))
+                    continue;
+                if (action.Modifiers.Count > best)
+                    best = action.Modifiers.Count;
+            }
+
+            return best;
         }
 
         private static string FormatName(string source)

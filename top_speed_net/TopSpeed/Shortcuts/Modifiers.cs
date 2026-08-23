@@ -19,6 +19,29 @@ namespace TopSpeed.Shortcuts
 
         public bool IsEmpty => !Shift && !Control && !Alt;
 
+        // How many modifiers this binding asks for. Used to pick the most specific match when several
+        // bindings on one key are satisfied at once.
+        public int Count => (Shift ? 1 : 0) + (Control ? 1 : 0) + (Alt ? 1 : 0);
+
+        // Satisfied when everything this binding asks for is held, whether or not anything else is.
+        // Demanding equality instead meant an unrelated modifier being down blocked the binding
+        // entirely: holding a modifier bound to a game control - the horn, or a throttle - made every
+        // shortcut that asks for no modifiers unreachable for as long as it was held. Whether a held
+        // extra actually means something is decided by which binding is most specific, not here.
+        public bool IsSatisfiedBy(IInputService input)
+        {
+            if (input == null)
+                return false;
+            if (Shift && !IsModifierDown(input, ModifierKeyGroup.Shift))
+                return false;
+            if (Control && !IsModifierDown(input, ModifierKeyGroup.Control))
+                return false;
+            if (Alt && !IsModifierDown(input, ModifierKeyGroup.Alt))
+                return false;
+
+            return true;
+        }
+
         public static ShortcutModifiers None => default;
 
         public static ShortcutModifiers FromInput(IInputService input)
@@ -30,16 +53,6 @@ namespace TopSpeed.Shortcuts
                 IsModifierDown(input, ModifierKeyGroup.Shift),
                 IsModifierDown(input, ModifierKeyGroup.Control),
                 IsModifierDown(input, ModifierKeyGroup.Alt));
-        }
-
-        public bool MatchesInput(IInputService input)
-        {
-            if (input == null)
-                return false;
-
-            return IsModifierDown(input, ModifierKeyGroup.Shift) == Shift
-                && IsModifierDown(input, ModifierKeyGroup.Control) == Control
-                && IsModifierDown(input, ModifierKeyGroup.Alt) == Alt;
         }
 
         public bool Equals(ShortcutModifiers other)

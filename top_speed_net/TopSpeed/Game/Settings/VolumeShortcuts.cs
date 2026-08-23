@@ -135,7 +135,7 @@ namespace TopSpeed.Game
         {
             return binding.Key != InputKey.Unknown
                 && _input.IsDown(binding.Key)
-                && binding.Modifiers.MatchesInput(_input);
+                && binding.Modifiers.IsSatisfiedBy(_input);
         }
 
         private bool CanHandleGlobalShortcutInput()

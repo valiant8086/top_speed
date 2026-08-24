@@ -18,6 +18,7 @@ namespace TopSpeed.Windowing.Sdl
         private static readonly InitFlags RequiredInit = InitFlags.Video | InitFlags.Events | InitFlags.Sensor;
         private readonly object _sync = new object();
         private readonly TouchZoneRouter _touchZoneRouter;
+        private readonly MainThreadDispatcher _mainThread;
         private readonly Queue<TextInputResult> _textResults;
         private readonly StringBuilder _textInputBuffer;
         private IntPtr _window;
@@ -38,12 +39,16 @@ namespace TopSpeed.Windowing.Sdl
 
         public IntPtr NativeHandle => _window;
 
+        /// <summary>Runs work on the thread that owns this window. See <see cref="MainThreadDispatcher"/>.</summary>
+        public MainThreadDispatcher MainThread => _mainThread;
+
         public WindowHost()
         {
             var recognizer = new GestureRecognizer(BuildGestureOptions());
             _touchZoneRouter = new TouchZoneRouter(recognizer);
             _touchZoneRouter.TouchRaised += OnTouchZoneTouchRaised;
             _touchZoneRouter.GestureRaised += OnTouchZoneGestureRaised;
+            _mainThread = new MainThreadDispatcher();
             _textResults = new Queue<TextInputResult>();
             _textInputBuffer = new StringBuilder(128);
         }
@@ -65,11 +70,13 @@ namespace TopSpeed.Windowing.Sdl
             while (_running && !_closeRequested && !_disposed)
             {
                 PumpEvents();
+                _mainThread.Drain();
                 _touchZoneRouter.Update();
                 Thread.Sleep(4);
             }
 
             _running = false;
+            _mainThread.Stop();
             Closed?.Invoke();
         }
 
@@ -155,6 +162,7 @@ namespace TopSpeed.Windowing.Sdl
             _disposed = true;
             _running = false;
             _closeRequested = true;
+            _mainThread.Stop();
             HideTextInput();
             _touchZoneRouter.TouchRaised -= OnTouchZoneTouchRaised;
             _touchZoneRouter.GestureRaised -= OnTouchZoneGestureRaised;

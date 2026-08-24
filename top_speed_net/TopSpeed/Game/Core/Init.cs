@@ -42,7 +42,10 @@ namespace TopSpeed.Game
                 new TopSpeed.Input.Devices.Keyboard.Backends.DirectInput.Factory(),
                 new TopSpeed.Input.Devices.Keyboard.Backends.Sdl.Factory()
 #else
-                new TopSpeed.Input.Devices.Keyboard.Backends.Eto.Factory(),
+                // SDL reads the physical keys the window is already pumping events for, so the
+                // Eto keyboard is no longer registered here. Eto reported whatever character the
+                // layout produced, which lost Shift plus Tab, Shift plus 1 and the like, and
+                // could miss a key release outright and leave a key stuck down.
                 new TopSpeed.Input.Devices.Keyboard.Backends.Sdl.Factory()
 #endif
             };

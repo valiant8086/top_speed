@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 #if WINDOWS
 using System.Windows.Forms;
 #else
-using Eto.Forms;
+using TS.Sdl.Dialogs;
 #endif
 using TopSpeed.Game;
 using TopSpeed.Localization;
@@ -15,7 +15,7 @@ using TopSpeed.Runtime;
 #if WINDOWS
 using TopSpeed.Windowing.WinForms;
 #else
-using TopSpeed.Windowing.Eto;
+using TopSpeed.Windowing.Sdl;
 #endif
 
 namespace TopSpeed
@@ -48,13 +48,14 @@ namespace TopSpeed
                            new FileDialogService(),
                            new ClipboardService()))
 #else
+                // The SDL window host is its own text input service, the same way the mobile
+                // hosts use it, so there is no separate service to construct here.
                 var window = new WindowHost();
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    SpeechThreadRuntime.SetDispatcher(new UiThreadSpeechDispatcher());
-                var textInput = new TextInputService(window);
+                    SpeechThreadRuntime.SetDispatcher(window.MainThread);
                 using (var app = new GameApp(
                            window,
-                           textInput,
+                           window,
                            new LoopHost(),
                            new FileDialogService(window),
                            new ClipboardService()))
@@ -154,24 +155,15 @@ namespace TopSpeed
 #else
             try
             {
-                var message = LocalizationService.Format(
-                    LocalizationService.Mark("An unexpected error occurred. A log file was created: {0}"),
-                    logReference);
-                var title = LocalizationService.Translate(LocalizationService.Mark("Top Speed"));
-                var application = ApplicationFactory.GetOrCreate();
-
-                void ShowDialog()
-                {
-                    MessageBox.Show(
-                        message,
-                        title,
-                        MessageBoxType.Error);
-                }
-
-                if (Application.Instance != null)
-                    application.Invoke(ShowDialog);
-                else
-                    ShowDialog();
+                // SDL puts this up on its own without needing a window or a running event loop,
+                // which matters because startup can fail before either one exists.
+                MessageBoxes.ShowSimple(
+                    MessageBoxFlags.Error,
+                    LocalizationService.Translate(LocalizationService.Mark("Top Speed")),
+                    LocalizationService.Format(
+                        LocalizationService.Mark("An unexpected error occurred. A log file was created: {0}"),
+                        logReference),
+                    IntPtr.Zero);
             }
             catch
             {

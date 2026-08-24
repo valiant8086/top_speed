@@ -14,6 +14,7 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - Fixed keyboard shortcuts also setting off the plain key underneath them. Control plus Tab switched panels and read your race position out at the same time, and Control plus Shift plus C turned the transmitter on or off while also reading out how far you had driven.
 - The panel switcher can now be changed like any other shortcut. It is still Control plus Tab to begin with, and it appears under shortcuts as "Switch vehicle panel" if you would rather put it somewhere else.
 - Control plus Shift plus Tab no longer moves back through the vehicle panels. There are only two, so moving forwards already reaches the other one.
+- Fixed shortcuts not working while a modifier key is being used as a control. If you map the horn or a throttle onto Control, holding it used to switch off every shortcut that has no modifier of its own, so F6 would not change the volume category and push to talk would not open the microphone. Shortcuts that do ask for a modifier still win, so F6 and Shift plus F6 remain two different things.
 
 
 ## 2026.8.3.1

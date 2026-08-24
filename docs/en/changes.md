@@ -11,7 +11,9 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - macOS: Fixed keys sticking down while VoiceOver is running. Steering while holding the throttle could leave the throttle on, and accelerating while turning could leave the car steering by itself.
 - macOS: Fixed a system beep on every key press, which meant a beep for every steer and every throttle press throughout a race.
 - macOS: Fixed the game not closing. Exit and Escape at the main menu now end it, and Command+Q closes it the way Alt+F4 does on Windows and Linux.
-- Fixed keyboard shortcuts also setting off the plain key underneath them. Control plus Tab switched panels and read your race position out at the same time.
+- Fixed keyboard shortcuts also setting off the plain key underneath them. Control plus Tab switched panels and read your race position out at the same time, and Control plus Shift plus C turned the transmitter on or off while also reading out how far you had driven.
+- The panel switcher can now be changed like any other shortcut. It is still Control plus Tab to begin with, and it appears under shortcuts as "Switch vehicle panel" if you would rather put it somewhere else.
+- Control plus Shift plus Tab no longer moves back through the vehicle panels. There are only two, so moving forwards already reaches the other one.
 
 
 ## 2026.8.3.1

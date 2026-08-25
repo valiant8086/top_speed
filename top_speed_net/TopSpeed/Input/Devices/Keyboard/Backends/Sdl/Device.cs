@@ -25,6 +25,8 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                     continue;
                 if (!code.TryToInputKey(out var key))
                     continue;
+                if (!IsStillHeld(key))
+                    continue;
 
                 state.Set(key, true);
             }
@@ -40,7 +42,25 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                 return false;
 
             var keyboard = SdlKeyboard.GetState();
-            return keyboard.IsValid && keyboard.IsDown(code);
+            return keyboard.IsValid && keyboard.IsDown(code) && IsStillHeld(key);
+        }
+
+        // Asking SDL which keys are down reads a table it fills in from its event queue, so a key-up
+        // that never arrived leaves that key down there for good. VoiceOver takes the key-ups of the
+        // arrow chords it watches for its own shortcuts, which is enough to leave the throttle on or
+        // the car steering after the key was let go. The hardware still knows the truth, so a key SDL
+        // calls held is checked against it and dropped when the two disagree.
+        //
+        // Only ever drops a key, never adds one. A key held while another window had focus is not
+        // input this game should act on, and reading it as a press from hardware state would be
+        // exactly that. Anywhere but macOS, and for any key with no macOS equivalent, SDL is left to
+        // speak for itself.
+        private static bool IsStillHeld(InputKey key)
+        {
+            if (!MacKeyState.IsAvailable)
+                return true;
+
+            return !MacKeyState.TryIsPhysicallyDown(key, out var held) || held;
         }
 
         public bool IsAnyKeyHeld(bool ignoreModifiers)
@@ -60,6 +80,8 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                 if (!code.TryToInputKey(out var key))
                     continue;
                 if (ignoreModifiers && IsModifier(key))
+                    continue;
+                if (!IsStillHeld(key))
                     continue;
 
                 return true;

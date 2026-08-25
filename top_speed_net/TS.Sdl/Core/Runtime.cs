@@ -19,6 +19,19 @@ namespace TS.Sdl
             return SDL_Init(flags);
         }
 
+        /// <summary>
+        /// Sets one of SDL's own settings. Hints that decide how a subsystem starts are only read
+        /// while it starts, so those have to be set before the subsystem is initialized. A hint the
+        /// platform knows nothing about is ignored.
+        /// </summary>
+        public static bool SetHint(string name, string value)
+        {
+            if (!IsAvailable || string.IsNullOrEmpty(name))
+                return false;
+
+            return SDL_SetHint(name, value ?? string.Empty);
+        }
+
         public static void SetMainReady()
         {
             if (!IsAvailable)
@@ -107,6 +120,10 @@ namespace TS.Sdl
 
             return SDL_GetTicksNS();
         }
+
+        [DllImport(LibraryName, EntryPoint = "SDL_SetHint", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private static extern bool SDL_SetHint([MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string value);
 
         [DllImport(LibraryName, EntryPoint = "SDL_Init", CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]

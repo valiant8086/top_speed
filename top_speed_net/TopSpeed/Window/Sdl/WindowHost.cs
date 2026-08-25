@@ -18,6 +18,7 @@ namespace TopSpeed.Windowing.Sdl
     internal sealed class WindowHost : IWindowHost, ITextInputService, IGestureEventSource, ITouchZoneGestureEventSource, ITouchZoneTouchEventSource, IControllerEventSource
     {
         private static readonly InitFlags RequiredInit = InitFlags.Video | InitFlags.Events | InitFlags.Sensor;
+        private const string AllowLibdecorHint = "SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR";
         // Every pump would be several Cocoa calls per frame for something that changes only when a
         // window opens or closes; a sixteenth of a second is far below noticing and costs nothing.
         private const int FocusCheckPumps = 15;
@@ -353,6 +354,15 @@ namespace TopSpeed.Windowing.Sdl
 #endif
 
             SdlRuntime.SetMainReady();
+
+            // Wayland has no title bar of its own, so SDL draws one with libdecor, which loads GTK
+            // to do it. The window is blank and exists only to hold the keyboard, so a title bar
+            // buys nothing, while GTK arriving in the process brings the accessibility bridge in
+            // beside the screen reader and complains about its own objects while it does. Read
+            // when the video subsystem starts, so it has to be set first.
+            if (OperatingSystem.IsLinux())
+                SdlRuntime.SetHint(AllowLibdecorHint, "0");
+
             if (!SdlRuntime.InitSubSystem(RequiredInit) && (SdlRuntime.WasInit(RequiredInit) & RequiredInit) != RequiredInit)
                 throw new InvalidOperationException($"Unable to initialize SDL runtime: {SdlRuntime.GetError()}");
 

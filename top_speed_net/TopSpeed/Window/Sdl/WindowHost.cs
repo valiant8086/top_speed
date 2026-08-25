@@ -28,6 +28,7 @@ namespace TopSpeed.Windowing.Sdl
         private bool _running;
         private bool _closeRequested;
         private bool _textInputActive;
+        private bool _nativePromptActive;
         private bool _disposed;
 
         public event Action? Loaded;
@@ -101,14 +102,30 @@ namespace TopSpeed.Windowing.Sdl
             _touchZoneRouter.ClearZones();
         }
 
-        public void ShowTextInput(string? initialText)
+        public void ShowTextInput(string prompt, string? initialText)
         {
+            // Prefer a window the desktop puts up, so a screen reader can read and edit it. Only
+            // when the desktop offers nothing do we fall back to collecting keys in the game window,
+            // which a screen reader cannot see into.
+            if (NativeTextPrompt.TryShow(prompt, initialText, ResolveWindowTitle(), OnNativePromptCompleted))
+            {
+                lock (_sync)
+                {
+                    _textInputBuffer.Clear();
+                    _textInputActive = false;
+                    _nativePromptActive = true;
+                }
+
+                return;
+            }
+
             lock (_sync)
             {
                 _textInputBuffer.Clear();
                 if (!string.IsNullOrEmpty(initialText))
                     _textInputBuffer.Append(initialText);
                 _textInputActive = true;
+                _nativePromptActive = false;
             }
 
             if (_window == IntPtr.Zero)
@@ -130,6 +147,8 @@ namespace TopSpeed.Windowing.Sdl
             lock (_sync)
             {
                 _textInputActive = false;
+                if (_nativePromptActive)
+                    return;
             }
 
             if (_window == IntPtr.Zero)
@@ -151,6 +170,17 @@ namespace TopSpeed.Windowing.Sdl
 
                 result = _textResults.Dequeue();
                 return true;
+            }
+        }
+
+        // Runs on a background thread once the desktop's prompt closes. Queued like any other
+        // result so the game picks it up on its own thread.
+        private void OnNativePromptCompleted(TextInputResult result)
+        {
+            lock (_sync)
+            {
+                _nativePromptActive = false;
+                _textResults.Enqueue(result);
             }
         }
 

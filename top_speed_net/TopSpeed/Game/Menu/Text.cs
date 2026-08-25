@@ -28,7 +28,7 @@ namespace TopSpeed.Game
             _textInputPromptActive = true;
             _textInputPromptCallback = onCompleted;
             _input.Suspend();
-            _textInput.ShowTextInput(initialValue);
+            _textInput.ShowTextInput(prompt, initialValue);
         }
 
         private void UpdateTextInputPrompt()

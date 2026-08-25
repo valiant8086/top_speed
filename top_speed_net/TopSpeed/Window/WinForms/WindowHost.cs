@@ -43,7 +43,7 @@ namespace TopSpeed.Windowing.WinForms
             _window.Close();
         }
 
-        public void ShowTextInput(string? initialText)
+        public void ShowTextInput(string prompt, string? initialText)
         {
             _window.ShowTextInput(initialText);
         }

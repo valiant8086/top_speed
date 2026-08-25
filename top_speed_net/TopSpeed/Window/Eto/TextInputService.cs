@@ -11,7 +11,7 @@ namespace TopSpeed.Windowing.Eto
             _window = window;
         }
 
-        public void ShowTextInput(string? initialText)
+        public void ShowTextInput(string prompt, string? initialText)
         {
             _window.ShowTextInput(initialText);
         }

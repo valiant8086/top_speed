@@ -119,6 +119,13 @@ namespace TopSpeed.Windowing.Sdl
                 return;
             }
 
+            // Collecting the keys here says nothing back, which is only bearable as a last resort.
+            // The planned replacement is for the game to read the field out itself, and to be worth
+            // having it needs the whole set a screen reader would give: the character moved onto for
+            // left and right, the field or history for up and down, what backspace and delete
+            // removed, the line ends for home and end, and whole words for control plus left or
+            // right - option plus left or right on macOS. That is also the point to add the setting
+            // for choosing this over the desktop's own window.
             lock (_sync)
             {
                 _textInputBuffer.Clear();

@@ -29,6 +29,8 @@ namespace TopSpeed.Windowing.Sdl
         private bool _closeRequested;
         private bool _textInputActive;
         private bool _nativePromptActive;
+        private bool _macPromptActive;
+        private MacTextPrompt? _macPrompt;
         private bool _disposed;
 
         public event Action? Loaded;
@@ -104,9 +106,14 @@ namespace TopSpeed.Windowing.Sdl
 
         public void ShowTextInput(string prompt, string? initialText)
         {
-            // Prefer a window the desktop puts up, so a screen reader can read and edit it. Only
-            // when the desktop offers nothing do we fall back to collecting keys in the game window,
-            // which a screen reader cannot see into.
+            // macOS puts a real Cocoa text field inside this window, the way the Windows build
+            // puts a text box inside its form, so a screen reader reads and edits it in place.
+            if (TryShowMacPrompt(prompt, initialText))
+                return;
+
+            // Elsewhere, prefer a window the desktop puts up, so a screen reader can read and edit
+            // it. Only when the desktop offers nothing do we fall back to collecting keys in the
+            // game window, which a screen reader cannot see into.
             if (NativeTextPrompt.TryShow(prompt, initialText, ResolveWindowTitle(), OnNativePromptCompleted))
             {
                 lock (_sync)
@@ -124,8 +131,8 @@ namespace TopSpeed.Windowing.Sdl
             // having it needs the whole set a screen reader would give: the character moved onto for
             // left and right, the field or history for up and down, what backspace and delete
             // removed, the line ends for home and end, and whole words for control plus left or
-            // right - option plus left or right on macOS. That is also the point to add the setting
-            // for choosing this over the desktop's own window.
+            // right. That is also the point to add the setting for choosing this over the window the
+            // desktop or Cocoa puts up.
             lock (_sync)
             {
                 _textInputBuffer.Clear();
@@ -151,18 +158,71 @@ namespace TopSpeed.Windowing.Sdl
 
         public void HideTextInput()
         {
+            bool nativePromptActive;
             lock (_sync)
             {
                 _textInputActive = false;
-                if (_nativePromptActive)
-                    return;
+                nativePromptActive = _nativePromptActive;
             }
+
+            HideMacPrompt();
+
+            // A window the desktop put up closes itself; there is nothing here to take away.
+            if (nativePromptActive)
+                return;
 
             if (_window == IntPtr.Zero)
                 return;
 
             Keyboard.ClearComposition(_window);
             Keyboard.StopTextInput(_window);
+        }
+
+        // Cocoa work has to happen on the thread that owns the window, so both of these go through
+        // the dispatcher the window loop drains.
+        private bool TryShowMacPrompt(string prompt, string? initialText)
+        {
+            if (!MacTextPrompt.IsSupported || _window == IntPtr.Zero)
+                return false;
+
+            // Set before the field goes up, so a player who presses Return straight away cannot be
+            // answered before this is marked active and have the answer overwritten.
+            lock (_sync)
+            {
+                _textInputBuffer.Clear();
+                _textInputActive = false;
+                _macPromptActive = true;
+            }
+
+            var shown = _mainThread.Invoke(() =>
+            {
+                _macPrompt ??= new MacTextPrompt(OnMacPromptCompleted);
+                return _macPrompt.Show(_window, prompt, initialText);
+            });
+
+            if (!shown)
+            {
+                lock (_sync)
+                    _macPromptActive = false;
+            }
+
+            return shown;
+        }
+
+        private void HideMacPrompt()
+        {
+            bool active;
+            lock (_sync)
+            {
+                active = _macPromptActive;
+                _macPromptActive = false;
+            }
+
+            if (!active || _macPrompt == null)
+                return;
+
+            var prompt = _macPrompt;
+            _mainThread.Invoke(() => prompt.Hide());
         }
 
         public bool TryConsumeTextInput(out TextInputResult result)
@@ -187,6 +247,17 @@ namespace TopSpeed.Windowing.Sdl
             lock (_sync)
             {
                 _nativePromptActive = false;
+                _textResults.Enqueue(result);
+            }
+        }
+
+        // Runs on the window's own thread, from Cocoa, when the player finishes with the field.
+        // The field has already taken itself away by this point.
+        private void OnMacPromptCompleted(TextInputResult result)
+        {
+            lock (_sync)
+            {
+                _macPromptActive = false;
                 _textResults.Enqueue(result);
             }
         }

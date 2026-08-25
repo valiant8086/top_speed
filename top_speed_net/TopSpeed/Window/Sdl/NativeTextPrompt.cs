@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using TopSpeed.Runtime;
 
@@ -12,6 +11,8 @@ namespace TopSpeed.Windowing.Sdl
     /// window. The SDL window is not built from desktop controls, so a screen reader has nothing to
     /// read inside it; a window the desktop put up is read normally, which gives the player review
     /// by character and word, cursor movement and correction rather than just typing.
+    ///
+    /// Linux only. macOS is deliberately left out - see <see cref="Probe"/>.
     /// </summary>
     internal static class NativeTextPrompt
     {
@@ -22,7 +23,6 @@ namespace TopSpeed.Windowing.Sdl
         private const string Zenity = "zenity";
         private const string KDialog = "kdialog";
         private const string Yad = "yad";
-        private const string MacHelper = "osascript";
 
         private static readonly object ProbeLock = new object();
         private static bool _probed;
@@ -51,11 +51,11 @@ namespace TopSpeed.Windowing.Sdl
             if (start == null)
                 return false;
 
-            Task.Run(() => onCompleted(Run(start, helper)));
+            Task.Run(() => onCompleted(Run(start)));
             return true;
         }
 
-        private static TextInputResult Run(ProcessStartInfo start, string helper)
+        private static TextInputResult Run(ProcessStartInfo start)
         {
             try
             {
@@ -66,12 +66,11 @@ namespace TopSpeed.Windowing.Sdl
                 var output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
 
-                // Both helpers report a dismissed prompt by exiting non-zero.
+                // The helpers all report a dismissed prompt by exiting non-zero.
                 if (process.ExitCode != 0)
                     return TextInputResult.CreateCancelled();
 
-                var text = helper == MacHelper ? ParseAppleScriptAnswer(output) : output.TrimEnd('\n', '\r');
-                return TextInputResult.Submitted(text ?? string.Empty);
+                return TextInputResult.Submitted(output.TrimEnd('\n', '\r'));
             }
             catch (Exception)
             {
@@ -113,52 +112,7 @@ namespace TopSpeed.Windowing.Sdl
                 return start;
             }
 
-            if (helper == MacHelper)
-            {
-                start.ArgumentList.Add("-e");
-                start.ArgumentList.Add(
-                    "display dialog " + Quote(prompt) +
-                    " default answer " + Quote(initialText) +
-                    " with title " + Quote(title));
-                return start;
-            }
-
             return null;
-        }
-
-        // osascript takes source rather than arguments, so anything the player could type has to be
-        // escaped back into an AppleScript string literal.
-        private static string Quote(string value)
-        {
-            var builder = new StringBuilder(value.Length + 2);
-            builder.Append('"');
-            for (var i = 0; i < value.Length; i++)
-            {
-                var c = value[i];
-                if (c == '\\' || c == '"')
-                    builder.Append('\\');
-                if (c == '\n' || c == '\r')
-                {
-                    builder.Append(' ');
-                    continue;
-                }
-
-                builder.Append(c);
-            }
-
-            builder.Append('"');
-            return builder.ToString();
-        }
-
-        // osascript answers as "button returned:OK, text returned:whatever the player typed".
-        private static string ParseAppleScriptAnswer(string output)
-        {
-            const string Marker = "text returned:";
-            var index = output.IndexOf(Marker, StringComparison.Ordinal);
-            if (index < 0)
-                return string.Empty;
-
-            return output.Substring(index + Marker.Length).TrimEnd('\n', '\r');
         }
 
         private static string? ResolveHelper()
@@ -183,8 +137,14 @@ namespace TopSpeed.Windowing.Sdl
             if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS())
                 return null;
 
+            // macOS asked with osascript's "display dialog", and the cost was too high. While the
+            // dialog was up the game window stopped answering the window server, so macOS painted
+            // it as not responding, and switching away and back could leave neither the dialog nor
+            // the game reachable, with the game needing to be forced to quit. A prompt that can
+            // strand the player is worse than one a screen reader cannot read, so macOS types into
+            // the game window instead - see WindowHost.ShowTextInput.
             if (OperatingSystem.IsMacOS())
-                return Exists(MacHelper) ? MacHelper : null;
+                return null;
 
             if (OperatingSystem.IsLinux())
                 return FirstPresent(LinuxCandidates());

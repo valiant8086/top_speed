@@ -65,6 +65,19 @@ namespace TopSpeed.Windowing.Sdl
             return result;
         }
 
+        /// <summary>Runs work that has no answer to wait for, but still has to run on this thread.</summary>
+        public void Invoke(Action action)
+        {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            Invoke(() =>
+            {
+                action();
+                return true;
+            });
+        }
+
         /// <summary>Called from the window loop, on the thread that owns the window.</summary>
         public void Drain()
         {

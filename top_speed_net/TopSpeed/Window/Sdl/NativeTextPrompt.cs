@@ -15,8 +15,13 @@ namespace TopSpeed.Windowing.Sdl
     /// </summary>
     internal static class NativeTextPrompt
     {
-        // Same helper SDL falls back to for its own file dialogs on Linux.
-        private const string LinuxHelper = "zenity";
+        // Whichever of these the desktop happens to have. zenity is the GTK one and the most
+        // widely installed, kdialog is its KDE counterpart, and yad is a zenity fork that turns up
+        // on installs that ship neither. All three are read by a screen reader, because all three
+        // are built from ordinary desktop controls.
+        private const string Zenity = "zenity";
+        private const string KDialog = "kdialog";
+        private const string Yad = "yad";
         private const string MacHelper = "osascript";
 
         private static readonly object ProbeLock = new object();
@@ -86,7 +91,7 @@ namespace TopSpeed.Windowing.Sdl
                 CreateNoWindow = true
             };
 
-            if (helper == LinuxHelper)
+            if (helper == Zenity || helper == Yad)
             {
                 start.ArgumentList.Add("--entry");
                 start.ArgumentList.Add("--title");
@@ -94,6 +99,16 @@ namespace TopSpeed.Windowing.Sdl
                 start.ArgumentList.Add("--text");
                 start.ArgumentList.Add(prompt);
                 start.ArgumentList.Add("--entry-text");
+                start.ArgumentList.Add(initialText);
+                return start;
+            }
+
+            if (helper == KDialog)
+            {
+                start.ArgumentList.Add("--title");
+                start.ArgumentList.Add(title);
+                start.ArgumentList.Add("--inputbox");
+                start.ArgumentList.Add(prompt);
                 start.ArgumentList.Add(initialText);
                 return start;
             }
@@ -172,7 +187,29 @@ namespace TopSpeed.Windowing.Sdl
                 return Exists(MacHelper) ? MacHelper : null;
 
             if (OperatingSystem.IsLinux())
-                return Exists(LinuxHelper) ? LinuxHelper : null;
+                return FirstPresent(LinuxCandidates());
+
+            return null;
+        }
+
+        // Ask with the desktop's own tool where we can tell which desktop it is, so the prompt
+        // looks and behaves like everything else the player uses.
+        private static string[] LinuxCandidates()
+        {
+            var desktop = Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? string.Empty;
+            if (desktop.IndexOf("KDE", StringComparison.OrdinalIgnoreCase) >= 0)
+                return new[] { KDialog, Zenity, Yad };
+
+            return new[] { Zenity, Yad, KDialog };
+        }
+
+        private static string? FirstPresent(string[] candidates)
+        {
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                if (Exists(candidates[i]))
+                    return candidates[i];
+            }
 
             return null;
         }

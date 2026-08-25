@@ -64,6 +64,10 @@ namespace TopSpeed.Windowing.Sdl.Cocoa
         [return: MarshalAs(UnmanagedType.I1)]
         internal static extern bool SendBool(IntPtr receiver, IntPtr selector, IntPtr argument);
 
+        [DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+        [return: MarshalAs(UnmanagedType.I1)]
+        internal static extern bool SendBool(IntPtr receiver, IntPtr selector);
+
         /// <summary>Allocates and initializes an NSString the caller owns and must release.</summary>
         internal static IntPtr NewString(string? value)
         {

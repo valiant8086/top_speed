@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using TopSpeed.Localization;
 using TopSpeed.Runtime;
+using TopSpeed.Windowing.Sdl.Cocoa;
 using TS.Sdl;
 using TS.Sdl.Events;
 using TS.Sdl.Input;
@@ -16,6 +17,9 @@ namespace TopSpeed.Windowing.Sdl
     internal sealed class WindowHost : IWindowHost, ITextInputService, IGestureEventSource, ITouchZoneGestureEventSource, ITouchZoneTouchEventSource, IControllerEventSource
     {
         private static readonly InitFlags RequiredInit = InitFlags.Video | InitFlags.Events | InitFlags.Sensor;
+        // Every pump would be several Cocoa calls per frame for something that changes only when a
+        // window opens or closes; a sixteenth of a second is far below noticing and costs nothing.
+        private const int FocusCheckPumps = 15;
         private readonly object _sync = new object();
         private readonly TouchZoneRouter _touchZoneRouter;
         private readonly MainThreadDispatcher _mainThread;
@@ -31,6 +35,8 @@ namespace TopSpeed.Windowing.Sdl
         private bool _nativePromptActive;
         private bool _macPromptActive;
         private MacTextPrompt? _macPrompt;
+        private int _focusCheckPumps;
+        private bool _focusRestoreTried;
         private bool _disposed;
 
         public event Action? Loaded;
@@ -75,6 +81,7 @@ namespace TopSpeed.Windowing.Sdl
                 PumpEvents();
                 _mainThread.Drain();
                 _touchZoneRouter.Update();
+                KeepKeyboardFocus();
                 Thread.Sleep(4);
             }
 
@@ -176,6 +183,43 @@ namespace TopSpeed.Windowing.Sdl
 
             Keyboard.ClearComposition(_window);
             Keyboard.StopTextInput(_window);
+        }
+
+        // Runs on the window's own thread, from the pump loop. See MacWindowFocus: something Cocoa
+        // put over the window can leave it with nothing listening to the keyboard, which reads as
+        // the game hanging and beeping until the player switches away and back.
+        private void KeepKeyboardFocus()
+        {
+            if (!MacTextPrompt.IsSupported || _window == IntPtr.Zero)
+                return;
+
+            if (_focusCheckPumps++ < FocusCheckPumps)
+                return;
+            _focusCheckPumps = 0;
+
+            // Our own text field is meant to hold the keyboard while it is up, so leave it be.
+            lock (_sync)
+            {
+                if (_macPromptActive)
+                {
+                    _focusRestoreTried = false;
+                    return;
+                }
+            }
+
+            if (!MacWindowFocus.HasLostKeyboardFocus(_window))
+            {
+                _focusRestoreTried = false;
+                return;
+            }
+
+            // Try once per episode. If Cocoa will not give the keyboard back there is no sense
+            // asking sixteen times a second, and a screen reader would announce every attempt.
+            if (_focusRestoreTried)
+                return;
+
+            _focusRestoreTried = true;
+            MacWindowFocus.RestoreKeyboardFocus(_window);
         }
 
         // Cocoa work has to happen on the thread that owns the window, so both of these go through

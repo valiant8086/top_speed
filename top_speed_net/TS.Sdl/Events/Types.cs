@@ -8,6 +8,9 @@ namespace TS.Sdl.Events
     {
         First = 0,
         Quit = 0x100,
+        // The compositor asking for the window's contents again. Wayland shows a window only while
+        // it holds a buffer, so the frame has to be drawn again whenever this arrives.
+        WindowExposed = 0x204,
         KeyDown = 0x300,
         KeyUp,
         TextEditing,

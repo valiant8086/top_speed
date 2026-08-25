@@ -10,6 +10,7 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 - macOS: Anywhere the game asks you to type something, you now type into a real text box inside the game window, the same as on Windows. VoiceOver reads it, echoes what you type and lets you review it by character and word, move the cursor and correct mistakes, instead of typing blind with nothing spoken back.
 - macOS: Fixed the game closing itself the instant you opened a file, such as picking music to play on the radio. It shut down before it could say anything about why, so all you got was the game disappearing.
 - macOS: Fixed the game stopping responding after you closed the file chooser. Every key press beeped, a screen reader called it an empty window, and the only way back was to switch to another program and then switch back.
+- Linux: The game window now opens and takes the keyboard on Wayland desktops, such as the standard desktop on Ubuntu. The window was listed when you switched windows but never actually appeared, so it could not be focused and your keys went to whatever was behind it, while the game itself carried on playing its startup sound and speaking.
 - Linux: Fixed the clutch letting go if you pressed Tab while holding Shift. The game took it as the Shift key being let go even though you were still holding it, so the clutch came up and the next gear change ground. It only happened with the left Shift key, which is why it could look intermittent.
 
 ## 2026.8.3.1

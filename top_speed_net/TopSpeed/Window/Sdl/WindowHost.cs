@@ -8,6 +8,7 @@ using TopSpeed.Windowing.Sdl.Cocoa;
 using TS.Sdl;
 using TS.Sdl.Events;
 using TS.Sdl.Input;
+using SdlRenderer = TS.Sdl.Video.Renderer;
 using SdlRuntime = TS.Sdl.Runtime;
 using SdlWindow = TS.Sdl.Video.Window;
 using SdlWindowFlags = TS.Sdl.Video.WindowFlags;
@@ -26,6 +27,7 @@ namespace TopSpeed.Windowing.Sdl
         private readonly Queue<TextInputResult> _textResults;
         private readonly StringBuilder _textInputBuffer;
         private IntPtr _window;
+        private IntPtr _renderer;
         private uint _windowId;
         private bool _initialized;
         private bool _loadedRaised;
@@ -320,6 +322,12 @@ namespace TopSpeed.Windowing.Sdl
             _touchZoneRouter.GestureRaised -= OnTouchZoneGestureRaised;
             _touchZoneRouter.Dispose();
 
+            if (_renderer != IntPtr.Zero)
+            {
+                SdlRenderer.Destroy(_renderer);
+                _renderer = IntPtr.Zero;
+            }
+
             if (_window != IntPtr.Zero)
             {
                 SdlWindow.Destroy(_window);
@@ -357,8 +365,30 @@ namespace TopSpeed.Windowing.Sdl
                 throw new InvalidOperationException($"Unable to create SDL window: {SdlRuntime.GetError()}");
 
             SdlWindow.Show(_window);
+
+            // A shown window is not necessarily a window the desktop will display. Wayland maps a
+            // toplevel only once a buffer has been committed to it, so without this the window is
+            // listed by the compositor, never appears, and never takes the keyboard - which takes
+            // the keys with it, since SDL reports them to the focused window. Nothing is drawn
+            // beyond a cleared frame; the game has no visuals of its own.
+            _renderer = SdlRenderer.Create(_window);
+            PresentFrame();
+
             _windowId = SdlWindow.GetId(_window);
             _initialized = true;
+        }
+
+        /// <summary>
+        /// Redraws the one frame the window ever has. Silent when there is no renderer: a desktop
+        /// that shows an undrawn window loses nothing by it, and one that cannot make a renderer at
+        /// all is no worse off than before.
+        /// </summary>
+        private void PresentFrame()
+        {
+            if (_renderer == IntPtr.Zero)
+                return;
+
+            SdlRenderer.Present(_renderer);
         }
 
         private void PumpEvents()
@@ -373,6 +403,10 @@ namespace TopSpeed.Windowing.Sdl
                 {
                     case EventType.Quit:
                         RequestClose();
+                        break;
+
+                    case EventType.WindowExposed:
+                        PresentFrame();
                         break;
 
                     case EventType.FingerDown:

@@ -23,6 +23,11 @@ namespace TopSpeed
     internal static class Program
     {
         private static int _exceptionHandled;
+#if !WINDOWS
+        // Held so the error message box can be put up on the thread that owns the window. Null
+        // until the window exists, which is exactly when a failure has no thread to go to anyway.
+        private static MainThreadDispatcher? _mainThread;
+#endif
 
         [STAThread]
         private static void Main()
@@ -51,6 +56,7 @@ namespace TopSpeed
                 // The SDL window host is its own text input service, the same way the mobile
                 // hosts use it, so there is no separate service to construct here.
                 var window = new WindowHost();
+                _mainThread = window.MainThread;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     SpeechThreadRuntime.SetDispatcher(window.MainThread);
                 using (var app = new GameApp(
@@ -157,13 +163,26 @@ namespace TopSpeed
             {
                 // SDL puts this up on its own without needing a window or a running event loop,
                 // which matters because startup can fail before either one exists.
-                MessageBoxes.ShowSimple(
-                    MessageBoxFlags.Error,
-                    LocalizationService.Translate(LocalizationService.Mark("Top Speed")),
-                    LocalizationService.Format(
-                        LocalizationService.Mark("An unexpected error occurred. A log file was created: {0}"),
-                        logReference),
-                    IntPtr.Zero);
+                void Show()
+                {
+                    MessageBoxes.ShowSimple(
+                        MessageBoxFlags.Error,
+                        LocalizationService.Translate(LocalizationService.Mark("Top Speed")),
+                        LocalizationService.Format(
+                            LocalizationService.Mark("An unexpected error occurred. A log file was created: {0}"),
+                            logReference),
+                        IntPtr.Zero);
+                }
+
+                // On macOS this is an AppKit alert, and AppKit aborts the process outright rather
+                // than raising something catchable if it is built off the main thread. That would
+                // lose the very message this is here to show, so once there is a window to go
+                // through, go through it. Before then the failure is already on the main thread.
+                var mainThread = _mainThread;
+                if (mainThread != null)
+                    mainThread.Invoke(Show);
+                else
+                    Show();
             }
             catch
             {

@@ -1,3 +1,4 @@
+using System;
 using TS.Sdl.Input;
 using SdlKeyboard = TS.Sdl.Input.Keyboard;
 
@@ -18,17 +19,24 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
             if (!keyboard.IsValid)
                 return true;
 
+            // SDL fills its table from its own event queue, so a key event something else swallowed
+            // never reaches it. VoiceOver swallows both halves of the arrow chords it watches - Left
+            // with Right, Up with Left or Right - which leaves the table wrong in both directions:
+            // a missing key-up holds the throttle on after it was let go, and a missing key-down
+            // stops the car steering while the key is still held. The second is the worse of the two
+            // on an oval, where left is held for most of the lap.
+            //
+            // So the hardware, which never lost the event, decides for every key it can name, and
+            // SDL speaks only for the rest.
             for (var i = 0; i < (int)Scancode.Count; i++)
             {
                 var code = (Scancode)i;
-                if (!keyboard.IsDown(code))
-                    continue;
                 if (!code.TryToInputKey(out var key))
                     continue;
-                if (!IsStillHeld(key))
-                    continue;
 
-                state.Set(key, true);
+                var held = HardwareSays(key) ?? keyboard.IsDown(code);
+                if (held)
+                    state.Set(key, true);
             }
 
             return true;
@@ -38,29 +46,33 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
         {
             if (_suspended)
                 return false;
+            var hardware = HardwareSays(key);
+            if (hardware.HasValue)
+                return hardware.Value;
+
             if (!key.TryToScancode(out var code))
                 return false;
 
             var keyboard = SdlKeyboard.GetState();
-            return keyboard.IsValid && keyboard.IsDown(code) && IsStillHeld(key);
+            return keyboard.IsValid && keyboard.IsDown(code);
         }
 
-        // Asking SDL which keys are down reads a table it fills in from its event queue, so a key-up
-        // that never arrived leaves that key down there for good. VoiceOver takes the key-ups of the
-        // arrow chords it watches for its own shortcuts, which is enough to leave the throttle on or
-        // the car steering after the key was let go. The hardware still knows the truth, so a key SDL
-        // calls held is checked against it and dropped when the two disagree.
-        //
-        // Only ever drops a key, never adds one. A key held while another window had focus is not
-        // input this game should act on, and reading it as a press from hardware state would be
-        // exactly that. Anywhere but macOS, and for any key with no macOS equivalent, SDL is left to
-        // speak for itself.
-        private static bool IsStillHeld(InputKey key)
+        /// <summary>
+        /// What the hardware says about a key, when the hardware is worth asking. Null means it is
+        /// not, and SDL's own answer stands.
+        /// </summary>
+        private static bool? HardwareSays(InputKey key)
         {
             if (!MacKeyState.IsAvailable)
-                return true;
+                return null;
 
-            return !MacKeyState.TryIsPhysicallyDown(key, out var held) || held;
+            // Only while the keyboard is actually talking to us. Keys held in another application
+            // are not input this game should act on, and this is the whole reason the hardware can
+            // be trusted to add a key here rather than only to take one away.
+            if (SdlKeyboard.GetFocusedWindow() == IntPtr.Zero)
+                return null;
+
+            return MacKeyState.TryIsPhysicallyDown(key, out var held) ? held : (bool?)null;
         }
 
         public bool IsAnyKeyHeld(bool ignoreModifiers)
@@ -75,13 +87,11 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
             for (var i = 0; i < (int)Scancode.Count; i++)
             {
                 var code = (Scancode)i;
-                if (!keyboard.IsDown(code))
-                    continue;
                 if (!code.TryToInputKey(out var key))
                     continue;
                 if (ignoreModifiers && IsModifier(key))
                     continue;
-                if (!IsStillHeld(key))
+                if (!(HardwareSays(key) ?? keyboard.IsDown(code)))
                     continue;
 
                 return true;

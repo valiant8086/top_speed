@@ -21,6 +21,19 @@ namespace TS.Sdl.Input
             return new KeyboardState(state, count);
         }
 
+        /// <summary>
+        /// The window the keyboard is currently talking to, or zero when it is talking to something
+        /// else entirely. Zero is the honest answer for another application having the keyboard, and
+        /// is what tells a caller that anything the hardware reports as held is not meant for us.
+        /// </summary>
+        public static IntPtr GetFocusedWindow()
+        {
+            if (!Runtime.IsAvailable)
+                return IntPtr.Zero;
+
+            return SDL_GetKeyboardFocus();
+        }
+
         public static void Reset()
         {
             if (!Runtime.IsAvailable)
@@ -156,6 +169,9 @@ namespace TS.Sdl.Input
 
         [DllImport(LibraryName, EntryPoint = "SDL_GetKeyboardState", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr SDL_GetKeyboardState(out int numkeys);
+
+        [DllImport(LibraryName, EntryPoint = "SDL_GetKeyboardFocus", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr SDL_GetKeyboardFocus();
 
         [DllImport(LibraryName, EntryPoint = "SDL_ResetKeyboard", CallingConvention = CallingConvention.Cdecl)]
         private static extern void SDL_ResetKeyboard();

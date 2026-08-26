@@ -1,3 +1,4 @@
+using System;
 using TS.Sdl.Input;
 
 namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
@@ -141,49 +142,55 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
             }
         }
 
+        // Turned around from the table above rather than written out a second time. Spelling both
+        // directions by hand is what left this one short of the letters and the digits, and a key
+        // missing here is not a key that misbehaves - it is a key the game cannot see at all,
+        // because asking whether it is down starts by asking which scancode it is. That took out
+        // first-letter and digit navigation in every menu, and any driving action bound to a letter.
+        //
+        // Where several scancodes give the same key, the first one wins, which is the one on the
+        // main part of the keyboard: scancodes run in that order, so the number row is reached
+        // before the keypad. Keys standing for either side at once, such as BothShift, name no
+        // single scancode and are absent by design; callers ask about the left and right ones.
+        private static readonly Scancode[] Scancodes = BuildScancodes();
+
         public static bool TryToScancode(this InputKey key, out Scancode code)
         {
-            switch (key)
+            var index = (int)key;
+            if (index < 0 || index >= Scancodes.Length)
             {
-                case InputKey.Escape: code = Scancode.Escape; return true;
-                case InputKey.Tab: code = Scancode.Tab; return true;
-                case InputKey.Return: code = Scancode.Return; return true;
-                case InputKey.Space: code = Scancode.Space; return true;
-                case InputKey.Back: code = Scancode.Backspace; return true;
-                case InputKey.LeftShift: code = Scancode.LShift; return true;
-                case InputKey.RightShift: code = Scancode.RShift; return true;
-                case InputKey.LeftControl: code = Scancode.LCtrl; return true;
-                case InputKey.RightControl: code = Scancode.RCtrl; return true;
-                case InputKey.LeftAlt: code = Scancode.LAlt; return true;
-                case InputKey.RightAlt: code = Scancode.RAlt; return true;
-                case InputKey.Left: code = Scancode.Left; return true;
-                case InputKey.Right: code = Scancode.Right; return true;
-                case InputKey.Up: code = Scancode.Up; return true;
-                case InputKey.Down: code = Scancode.Down; return true;
-                case InputKey.Home: code = Scancode.Home; return true;
-                case InputKey.End: code = Scancode.End; return true;
-                case InputKey.PageUp: code = Scancode.Pageup; return true;
-                case InputKey.PageDown: code = Scancode.Pagedown; return true;
-                case InputKey.Insert: code = Scancode.Insert; return true;
-                case InputKey.Delete: code = Scancode.Delete; return true;
-                case InputKey.F1: code = Scancode.F1; return true;
-                case InputKey.F2: code = Scancode.F2; return true;
-                case InputKey.F3: code = Scancode.F3; return true;
-                case InputKey.F4: code = Scancode.F4; return true;
-                case InputKey.F5: code = Scancode.F5; return true;
-                case InputKey.F6: code = Scancode.F6; return true;
-                case InputKey.F7: code = Scancode.F7; return true;
-                case InputKey.F8: code = Scancode.F8; return true;
-                case InputKey.F9: code = Scancode.F9; return true;
-                case InputKey.F10: code = Scancode.F10; return true;
-                case InputKey.F11: code = Scancode.F11; return true;
-                case InputKey.F12: code = Scancode.F12; return true;
-                case InputKey.Slash: code = Scancode.Slash; return true;
-                case InputKey.Backslash: code = Scancode.Backslash; return true;
-                default:
-                    code = Scancode.Unknown;
-                    return false;
+                code = Scancode.Unknown;
+                return false;
             }
+
+            code = Scancodes[index];
+            return code != Scancode.Unknown;
+        }
+
+        private static Scancode[] BuildScancodes()
+        {
+            var highest = 0;
+            foreach (InputKey value in Enum.GetValues(typeof(InputKey)))
+            {
+                if ((int)value > highest)
+                    highest = (int)value;
+            }
+
+            var map = new Scancode[highest + 1];
+            for (var i = 0; i < (int)Scancode.Count; i++)
+            {
+                var candidate = (Scancode)i;
+                if (!candidate.TryToInputKey(out var key))
+                    continue;
+
+                var index = (int)key;
+                if (index < 0 || index >= map.Length || map[index] != Scancode.Unknown)
+                    continue;
+
+                map[index] = candidate;
+            }
+
+            return map;
         }
     }
 }

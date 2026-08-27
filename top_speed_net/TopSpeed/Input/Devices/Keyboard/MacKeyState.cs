@@ -55,6 +55,13 @@ namespace TopSpeed.Input.Devices.Keyboard
             down = false;
             if (!IsAvailable)
                 return false;
+
+            // The modifiers are asked about differently. Asking after them by key code cannot tell
+            // the two sides of a pair apart - holding the right shift key answers for the left one -
+            // whereas the modifier flags carry a bit per side and answer correctly.
+            if (TryModifierMask(key, out var mask))
+                return TryFlagsSay(mask, out down);
+
             if (!TryMapKeyCode(key, out var keyCode))
                 return false;
 
@@ -66,6 +73,41 @@ namespace TopSpeed.Input.Devices.Keyboard
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        private static bool TryFlagsSay(ulong mask, out bool down)
+        {
+            down = false;
+            try
+            {
+                down = (CGEventSourceFlagsState(HidSystemState) & mask) != 0;
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // One bit per physical modifier key, left and right kept apart. These are the device
+        // dependent flags, which is what makes them worth asking: the plain Shift or Control flag
+        // says only that one of the pair is held.
+        private static bool TryModifierMask(InputKey key, out ulong mask)
+        {
+            switch (key)
+            {
+                case InputKey.LeftControl: mask = 0x00000001; return true;
+                case InputKey.RightControl: mask = 0x00002000; return true;
+                case InputKey.LeftShift: mask = 0x00000002; return true;
+                case InputKey.RightShift: mask = 0x00000004; return true;
+                case InputKey.LeftAlt: mask = 0x00000020; return true;
+                case InputKey.RightAlt: mask = 0x00000040; return true;
+                case InputKey.LeftWindowsKey: mask = 0x00000008; return true;
+                case InputKey.RightWindowsKey: mask = 0x00000010; return true;
+                default:
+                    mask = 0;
+                    return false;
             }
         }
 
@@ -89,6 +131,9 @@ namespace TopSpeed.Input.Devices.Keyboard
         [DllImport(ApplicationServices)]
         [return: MarshalAs(UnmanagedType.I1)]
         private static extern bool CGEventSourceKeyState(int stateId, ushort keyCode);
+
+        [DllImport(ApplicationServices)]
+        private static extern ulong CGEventSourceFlagsState(int stateId);
 
         // InputKey carries DirectInput scancodes; these are the macOS virtual keycodes for the same
         // physical keys. The synthetic BothShift/BothControl/BothAlt entries are deliberately absent —
@@ -159,17 +204,9 @@ namespace TopSpeed.Input.Devices.Keyboard
                 case InputKey.Period: code = 47; return true;
                 case InputKey.Slash: code = 44; return true;
 
-                // The modifiers are deliberately absent, all of them. This layer cannot tell the two
-                // sides of one apart: holding the right shift key reports the left one as held and
-                // the right one as not, and the same goes for control, alt and the command keys.
-                // Answering from here would lose the right hand side of every pair entirely and put
-                // the left one down in its place - the right shift key doing nothing at all, while
-                // a clutch on "either shift" worked from the left side only.
-                //
-                // The keyboard events know which side was pressed, so the modifiers are left to
-                // them. Nothing is given up by that: what the hardware is here to rescue is the
-                // arrow keys, whose presses a screen reader takes for its own shortcuts, and no
-                // screen reader shortcut is watching for a bare shift.
+                // No modifiers here. They are answered from the flags instead, above, because asking
+                // after them by key code cannot tell the two sides of a pair apart: holding the
+                // right shift key answers for the left one and leaves the right reading as up.
 
                 case InputKey.F1: code = 122; return true;
                 case InputKey.F2: code = 120; return true;

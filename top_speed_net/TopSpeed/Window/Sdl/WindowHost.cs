@@ -22,6 +22,8 @@ namespace TopSpeed.Windowing.Sdl
         // Every pump would be several Cocoa calls per frame for something that changes only when a
         // window opens or closes; a sixteenth of a second is far below noticing and costs nothing.
         private const int FocusCheckPumps = 15;
+        private const int IdleMilliseconds = 4;
+        private const double IdleSeconds = IdleMilliseconds / 1000.0;
         private readonly object _sync = new object();
         private readonly TouchZoneRouter _touchZoneRouter;
         private readonly MainThreadDispatcher _mainThread;
@@ -85,7 +87,7 @@ namespace TopSpeed.Windowing.Sdl
                 _mainThread.Drain();
                 _touchZoneRouter.Update();
                 KeepKeyboardFocus();
-                Thread.Sleep(4);
+                Idle();
             }
 
             _running = false;
@@ -191,6 +193,24 @@ namespace TopSpeed.Windowing.Sdl
         // Runs on the window's own thread, from the pump loop. See MacWindowFocus: something Cocoa
         // put over the window can leave it with nothing listening to the keyboard, which reads as
         // the game hanging and beeping until the player switches away and back.
+        // The pause between pumps. On macOS it is spent running the run loop rather than asleep,
+        // while our own text field is up: that field is an ordinary desktop control, and a screen
+        // reader asks about it over the accessibility interface rather than through events, so a
+        // loop that only drains events leaves those questions unanswered and the field reads back
+        // about a second late. Sleeping is right the rest of the time, when nothing is waiting to
+        // be asked about and the game is only pacing itself.
+        private void Idle()
+        {
+            bool promptActive;
+            lock (_sync)
+                promptActive = _macPromptActive;
+
+            if (promptActive && MacRunLoop.Spin(IdleSeconds))
+                return;
+
+            Thread.Sleep(IdleMilliseconds);
+        }
+
         private void KeepKeyboardFocus()
         {
             if (!MacTextPrompt.IsSupported || _window == IntPtr.Zero)

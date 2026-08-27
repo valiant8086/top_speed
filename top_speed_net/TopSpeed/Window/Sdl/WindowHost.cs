@@ -193,19 +193,23 @@ namespace TopSpeed.Windowing.Sdl
         // Runs on the window's own thread, from the pump loop. See MacWindowFocus: something Cocoa
         // put over the window can leave it with nothing listening to the keyboard, which reads as
         // the game hanging and beeping until the player switches away and back.
-        // The pause between pumps. On macOS it is spent running the run loop rather than asleep,
-        // while our own text field is up: that field is an ordinary desktop control, and a screen
-        // reader asks about it over the accessibility interface rather than through events, so a
-        // loop that only drains events leaves those questions unanswered and the field reads back
-        // about a second late. Sleeping is right the rest of the time, when nothing is waiting to
-        // be asked about and the game is only pacing itself.
+        // The pause between pumps, spent on macOS running the run loop rather than asleep. Asking
+        // SDL for events empties the event queue and nothing else, and a screen reader does not ask
+        // its questions that way: it asks over the accessibility interface, and those arrive as run
+        // loop sources. A loop that only drains events never answers them.
+        //
+        // Not only while our text field is up, which was the first attempt at this. The moment worth
+        // answering most is the one just after the field goes away, when the window takes the
+        // keyboard back and the screen reader has something to say about it - and by then the field
+        // is already gone, so anything watching for it has stopped watching. Left to a sleep, that
+        // announcement waited for whatever next happened to run the loop, and arrived stuck to the
+        // front of it.
+        //
+        // Everywhere else this is what a sleep was: it lasts the same time and gives the time back
+        // as soon as there is something to do.
         private void Idle()
         {
-            bool promptActive;
-            lock (_sync)
-                promptActive = _macPromptActive;
-
-            if (promptActive && MacRunLoop.Spin(IdleSeconds))
+            if (MacRunLoop.Spin(IdleSeconds))
                 return;
 
             Thread.Sleep(IdleMilliseconds);

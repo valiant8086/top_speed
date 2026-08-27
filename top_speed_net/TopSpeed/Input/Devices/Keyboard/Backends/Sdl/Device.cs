@@ -47,8 +47,7 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                 if (!code.TryToInputKey(out var key))
                     continue;
 
-                var held = HardwareSays(key) ?? keyboard.IsDown(code);
-                if (held && !IsIgnored(key, held))
+                if (Visible(key, HardwareSays(key) ?? keyboard.IsDown(code)))
                     state.Set(key, true);
             }
 
@@ -74,7 +73,7 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                 down = keyboard.IsValid && keyboard.IsDown(code);
             }
 
-            return down && !IsIgnored(key, down);
+            return Visible(key, down);
         }
 
         /// <summary>
@@ -109,10 +108,13 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                 var code = (Scancode)i;
                 if (!code.TryToInputKey(out var key))
                     continue;
-                if (ignoreModifiers && IsModifier(key))
+
+                // Asked about every key before anything is skipped: this is also what lifts a hold
+                // once the key is let go of, and a key nobody ever asks about is never let go of.
+                var held = Visible(key, HardwareSays(key) ?? keyboard.IsDown(code));
+                if (!held)
                     continue;
-                var held = HardwareSays(key) ?? keyboard.IsDown(code);
-                if (!held || IsIgnored(key, held))
+                if (ignoreModifiers && IsModifier(key))
                     continue;
 
                 return true;
@@ -146,20 +148,29 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
             }
         }
 
-        // True while the key is being held aside. Stops as soon as it is actually let go of, which
-        // is what makes the next press count normally.
-        private bool IsIgnored(InputKey key, bool downNow)
+        /// <summary>
+        /// What the game should see for a key, given what it is really doing. A key being held aside
+        /// reads as up until it is actually let go of, and letting go is what puts it back to normal.
+        ///
+        /// Every read goes through here, including reads of keys that are up, because a key that is
+        /// up is exactly the news this is waiting for. Skipping the call when the key is not down
+        /// leaves nothing able to lift the hold, and the key never works again.
+        /// </summary>
+        private bool Visible(InputKey key, bool downNow)
         {
             var index = (int)key;
             if (index < 0 || index >= _ignoredUntilReleased.Length)
-                return false;
-            if (!_ignoredUntilReleased[index])
-                return false;
-            if (downNow)
-                return true;
+                return downNow;
 
-            _ignoredUntilReleased[index] = false;
-            return false;
+            if (_ignoredUntilReleased[index])
+            {
+                if (downNow)
+                    return false;
+
+                _ignoredUntilReleased[index] = false;
+            }
+
+            return downNow;
         }
 
         public void Suspend()

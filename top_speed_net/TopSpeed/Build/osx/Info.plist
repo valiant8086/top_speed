@@ -20,6 +20,8 @@
     <string>1.0</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.15</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Top Speed uses your microphone so you can talk to the other drivers with the communicator during a race.</string>
     <key>NSHighResolutionCapable</key>
     <true />
   </dict>

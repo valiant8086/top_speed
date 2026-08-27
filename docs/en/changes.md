@@ -7,6 +7,7 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 
 ## Unreleased (2026.8.22)
 ### Game Changes
+- macOS: Fixed the communicator not being able to use your microphone. macOS never offered to give the game permission, so the game did not appear in the microphone list under Privacy and Security at all and there was nothing to switch on. It now asks the first time you use the communicator.
 - Linux: Fixed the clutch letting go if you pressed Tab while holding Shift. The game took it as the Shift key being let go even though you were still holding it, so the clutch came up and the next gear change ground. It only happened with the left Shift key, which is why it could look intermittent.
 
 ## 2026.8.3.1

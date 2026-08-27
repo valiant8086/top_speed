@@ -159,14 +159,17 @@ namespace TopSpeed.Input.Devices.Keyboard
                 case InputKey.Period: code = 47; return true;
                 case InputKey.Slash: code = 44; return true;
 
-                case InputKey.LeftShift: code = 56; return true;
-                case InputKey.RightShift: code = 60; return true;
-                case InputKey.LeftControl: code = 59; return true;
-                case InputKey.RightControl: code = 62; return true;
-                case InputKey.LeftAlt: code = 58; return true;
-                case InputKey.RightAlt: code = 61; return true;
-                case InputKey.LeftWindowsKey: code = 55; return true;
-                case InputKey.RightWindowsKey: code = 54; return true;
+                // The modifiers are deliberately absent, all of them. This layer cannot tell the two
+                // sides of one apart: holding the right shift key reports the left one as held and
+                // the right one as not, and the same goes for control, alt and the command keys.
+                // Answering from here would lose the right hand side of every pair entirely and put
+                // the left one down in its place - the right shift key doing nothing at all, while
+                // a clutch on "either shift" worked from the left side only.
+                //
+                // The keyboard events know which side was pressed, so the modifiers are left to
+                // them. Nothing is given up by that: what the hardware is here to rescue is the
+                // arrow keys, whose presses a screen reader takes for its own shortcuts, and no
+                // screen reader shortcut is watching for a bare shift.
 
                 case InputKey.F1: code = 122; return true;
                 case InputKey.F2: code = 120; return true;

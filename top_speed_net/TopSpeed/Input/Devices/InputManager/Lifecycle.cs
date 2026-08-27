@@ -16,6 +16,12 @@ namespace TopSpeed.Input
             _suspended = false;
             _keyboardBackend.Resume();
             _controllerBackend.Resume();
+
+            // Whatever ended the thing that suspended us is very likely still held: the Return that
+            // sent a chat message, the Escape that closed a prompt. Without this it lands in the
+            // game the moment input comes back, sending the message and then activating whatever
+            // Return does behind it. Nothing counts again until it is let go of.
+            _keyboardBackend.ResetHeldState();
         }
 
         public void Dispose()

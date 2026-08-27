@@ -7,6 +7,19 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
     internal sealed class Device : IKeyboardDevice
     {
         private bool _suspended;
+        private readonly bool[] _ignoredUntilReleased = BuildIgnoreTable();
+
+        private static bool[] BuildIgnoreTable()
+        {
+            var highest = 0;
+            foreach (InputKey value in Enum.GetValues(typeof(InputKey)))
+            {
+                if ((int)value > highest)
+                    highest = (int)value;
+            }
+
+            return new bool[highest + 1];
+        }
 
         public bool TryPopulateState(InputState state)
         {
@@ -35,7 +48,7 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                     continue;
 
                 var held = HardwareSays(key) ?? keyboard.IsDown(code);
-                if (held)
+                if (held && !IsIgnored(key, held))
                     state.Set(key, true);
             }
 
@@ -46,15 +59,22 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
         {
             if (_suspended)
                 return false;
+            bool down;
             var hardware = HardwareSays(key);
             if (hardware.HasValue)
-                return hardware.Value;
+            {
+                down = hardware.Value;
+            }
+            else
+            {
+                if (!key.TryToScancode(out var code))
+                    return false;
 
-            if (!key.TryToScancode(out var code))
-                return false;
+                var keyboard = SdlKeyboard.GetState();
+                down = keyboard.IsValid && keyboard.IsDown(code);
+            }
 
-            var keyboard = SdlKeyboard.GetState();
-            return keyboard.IsValid && keyboard.IsDown(code);
+            return down && !IsIgnored(key, down);
         }
 
         /// <summary>
@@ -91,7 +111,8 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
                     continue;
                 if (ignoreModifiers && IsModifier(key))
                     continue;
-                if (!(HardwareSays(key) ?? keyboard.IsDown(code)))
+                var held = HardwareSays(key) ?? keyboard.IsDown(code);
+                if (!held || IsIgnored(key, held))
                     continue;
 
                 return true;
@@ -100,8 +121,45 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
             return false;
         }
 
+        /// <summary>
+        /// Forgets whatever is held right now, until it is let go of and pressed again. Reading the
+        /// keys as they are means a key still down from whatever just ended - the Return that sent a
+        /// chat message, say - would otherwise be read straight away as a fresh press in the game
+        /// behind it. The event-driven keyboards get this for nothing, because clearing what they
+        /// believe leaves nothing to report until a new press arrives; here the key is still
+        /// physically down, so it has to be held aside by name.
+        /// </summary>
         public void ResetHeldState()
         {
+            var keyboard = SdlKeyboard.GetState();
+            for (var i = 0; i < (int)Scancode.Count; i++)
+            {
+                var code = (Scancode)i;
+                if (!code.TryToInputKey(out var key))
+                    continue;
+
+                var index = (int)key;
+                if (index < 0 || index >= _ignoredUntilReleased.Length)
+                    continue;
+                if (HardwareSays(key) ?? (keyboard.IsValid && keyboard.IsDown(code)))
+                    _ignoredUntilReleased[index] = true;
+            }
+        }
+
+        // True while the key is being held aside. Stops as soon as it is actually let go of, which
+        // is what makes the next press count normally.
+        private bool IsIgnored(InputKey key, bool downNow)
+        {
+            var index = (int)key;
+            if (index < 0 || index >= _ignoredUntilReleased.Length)
+                return false;
+            if (!_ignoredUntilReleased[index])
+                return false;
+            if (downNow)
+                return true;
+
+            _ignoredUntilReleased[index] = false;
+            return false;
         }
 
         public void Suspend()

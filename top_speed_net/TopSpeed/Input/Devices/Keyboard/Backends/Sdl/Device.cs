@@ -39,8 +39,9 @@ namespace TopSpeed.Input.Devices.Keyboard.Backends.Sdl
             // stops the car steering while the key is still held. The second is the worse of the two
             // on an oval, where left is held for most of the lap.
             //
-            // So the hardware, which never lost the event, decides for every key it can name, and
-            // SDL speaks only for the rest.
+            // So the hardware, which never lost the event, decides the arrows, and SDL speaks for
+            // everything else - including, on purpose, the keys a screen reader took and answered
+            // itself, which the game is better off never seeing.
             for (var i = 0; i < (int)Scancode.Count; i++)
             {
                 var code = (Scancode)i;

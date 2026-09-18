@@ -20,6 +20,15 @@ namespace TopSpeed.Server.Control
     {
         public const string Protocol = "TOPSPEED-CONTROL/1";
 
+        /// <summary>How long one wait for a connection lasts before the loop looks for a stop.</summary>
+        private const int AcceptSliceMicroseconds = 250_000;
+
+        /// <summary>
+        /// How long Dispose gives the loop to notice the stop and leave. Longer than a slice plus
+        /// the pause a served session takes to notice, so a loop that is going to leave has left.
+        /// </summary>
+        private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(2);
+
         private readonly string _directory;
         private readonly Logger _logger;
         private readonly Func<string> _describeStatus;
@@ -76,6 +85,18 @@ namespace TopSpeed.Server.Control
         public void Dispose()
         {
             _stop = true;
+
+            // The socket is disposed only once nothing is waiting on it. On macOS, disposing a
+            // socket that another thread is blocked in Accept on wakes nothing: the accept sleeps
+            // on, the handle stays in use, and Dispose spins waiting for it to be let go, with
+            // nothing that will ever let go of it. That held every shutdown of the server on a
+            // Mac, quit and Ctrl+C and updates alike, on the last line before the process would
+            // have ended, and it held the updater along with it. Linux wakes the accept and so
+            // never showed it. The loop waits in slices now and leaves on its own when told to,
+            // so there is nothing for Dispose to wake, only something to wait for.
+            if (!OperatingSystem.IsWindows())
+                _thread?.Join(StopTimeout);
+
             try
             {
                 _pipe?.Dispose();
@@ -157,8 +178,20 @@ namespace TopSpeed.Server.Control
             if (socket == null)
                 return null;
 
-            var accepted = socket.Accept();
-            return new NetworkStream(accepted, ownsSocket: true);
+            // Waited for in slices rather than blocked on outright, so that a stop is noticed
+            // by this thread rather than needing to be forced on it from outside; see Dispose
+            // for what forcing it cost. Accept is only called once a connection is known to be
+            // waiting, so it returns at once and the socket is never disposed underneath it.
+            while (!_stop)
+            {
+                if (!socket.Poll(AcceptSliceMicroseconds, SelectMode.SelectRead))
+                    continue;
+
+                var accepted = socket.Accept();
+                return new NetworkStream(accepted, ownsSocket: true);
+            }
+
+            return null;
         }
 
         /// <summary>

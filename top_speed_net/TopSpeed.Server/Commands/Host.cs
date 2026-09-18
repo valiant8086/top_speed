@@ -222,21 +222,20 @@ namespace TopSpeed.Server.Commands
         /// </summary>
         private void ApproveOffered()
         {
-            if (!_scheduler.TryApproveOffered(out var approved) || approved == null)
+            var connected = _server.GetPlayersSnapshot().Length;
+            if (!_scheduler.TryApproveOffered(connected, out var approved, out var installNow) || approved == null)
                 return;
 
-            var connected = _server.GetPlayersSnapshot().Length;
-            if (connected > 0)
+            if (installNow)
             {
-                ConsoleSink.WriteLineFormat(
-                    LocalizationService.Mark("Update {0} is scheduled and will install once the {1} connected players disconnect. Type \"update --force\" to install it now."),
-                    approved.VersionText,
-                    connected);
+                _scheduler.InstallNow(approved);
                 return;
             }
 
-            if (_scheduler.TryForceNow(out var readyNow) && readyNow != null)
-                _scheduler.InstallNow(readyNow);
+            ConsoleSink.WriteLineFormat(
+                LocalizationService.Mark("Update {0} is scheduled and will install once the {1} connected players disconnect. Type \"update --force\" to install it now."),
+                approved.VersionText,
+                connected);
         }
 
         private void ExecuteForcedUpdate()

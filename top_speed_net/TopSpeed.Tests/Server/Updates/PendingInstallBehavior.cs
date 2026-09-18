@@ -59,9 +59,55 @@ namespace TopSpeed.Tests.Server.Updates
         {
             var scheduler = NewScheduler(mode);
             scheduler.ApplyCheckResult(Available(version), interactive: true);
-            scheduler.TryApproveOffered(out _).Should().BeTrue();
+            scheduler.TryApproveOffered(connectedPlayers: 1, out _, out _).Should().BeTrue();
             scheduler.GetStatus().State.Should().Be(UpdateSchedulerState.PendingInstall);
             return scheduler;
+        }
+
+        [Fact]
+        public void Approving_on_an_empty_server_hands_the_install_to_the_caller_and_to_nobody_else()
+        {
+            // The caller is told to run it, and having been told, holds the only right to. A
+            // force typed straight afterwards, or the scheduler thread waking to the pending
+            // install, both find it taken. Before this the approval woke the scheduler and then
+            // forced the install as well, and the two downloaded the same file at once.
+            var scheduler = NewScheduler(StartupUpdateMode.Off);
+            scheduler.ApplyCheckResult(Available("2026.8.9.4"), interactive: true);
+
+            scheduler.TryApproveOffered(connectedPlayers: 0, out var approved, out var installNow).Should().BeTrue();
+
+            approved!.VersionText.Should().Be("2026.8.9.4");
+            installNow.Should().BeTrue();
+            scheduler.TryForceNow(out _).Should().BeFalse("the install is already claimed");
+        }
+
+        [Fact]
+        public void Approving_with_players_connected_leaves_the_install_to_the_scheduler()
+        {
+            // Somebody is racing, so the install waits for the server to empty, which is the
+            // scheduler's job to watch for. The caller gets the approval to report and nothing
+            // to run; forcing is still open to them, which is what --force is for.
+            var scheduler = NewScheduler(StartupUpdateMode.Off);
+            scheduler.ApplyCheckResult(Available("2026.8.9.4"), interactive: true);
+
+            scheduler.TryApproveOffered(connectedPlayers: 2, out var approved, out var installNow).Should().BeTrue();
+
+            approved!.VersionText.Should().Be("2026.8.9.4");
+            installNow.Should().BeFalse();
+            scheduler.GetStatus().State.Should().Be(UpdateSchedulerState.PendingInstall);
+            scheduler.TryForceNow(out var forced).Should().BeTrue();
+            forced!.VersionText.Should().Be("2026.8.9.4");
+        }
+
+        [Fact]
+        public void Nothing_offered_means_nothing_to_approve()
+        {
+            var scheduler = NewScheduler(StartupUpdateMode.Off);
+
+            scheduler.TryApproveOffered(connectedPlayers: 0, out var approved, out var installNow).Should().BeFalse();
+
+            approved.Should().BeNull();
+            installNow.Should().BeFalse();
         }
 
         [Fact]

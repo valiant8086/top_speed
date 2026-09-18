@@ -328,10 +328,19 @@ namespace TopSpeed.Server.Updates
         /// Approves the version already offered, which is what typing update a second time
         /// means. Returns it so the caller can say whether it is going in now or waiting for the
         /// server to empty; false means nothing was on offer to approve.
+        ///
+        /// Who installs it is settled here, in the one step, and not afterwards. With nobody
+        /// connected the caller is handed the install to run itself and the scheduler thread is
+        /// left asleep. It used to be woken as well, and being woken to a pending install on an
+        /// empty server it began the same install: two threads downloading the same file to the
+        /// same name, with the one that lost deleting the file the other was still writing. With
+        /// players connected the scheduler is woken instead, because waiting for them to leave
+        /// is its job and nobody's window should be held for it.
         /// </summary>
-        public bool TryApproveOffered(out ServerUpdateInfo? approved)
+        public bool TryApproveOffered(int connectedPlayers, out ServerUpdateInfo? approved, out bool installNow)
         {
             approved = null;
+            installNow = false;
             lock (_gate)
             {
                 if (_state != UpdateSchedulerState.Offered || _pending == null)
@@ -340,9 +349,30 @@ namespace TopSpeed.Server.Updates
                 _state = UpdateSchedulerState.PendingInstall;
                 _installRetryAfterUtc = DateTime.MinValue;
                 approved = _pending;
+
+                if (connectedPlayers == 0 && !_installing)
+                {
+                    _installing = true;
+                    installNow = true;
+                    return true;
+                }
             }
 
             _wake.Set();
+            return true;
+        }
+
+        /// <summary>
+        /// Takes the right to run the install, if nobody else has it. Every install holds this
+        /// from before its download starts, which is what keeps two threads that each have a
+        /// reason to install from both doing it. Callers hold the gate.
+        /// </summary>
+        private bool TryClaimInstallUnsafe()
+        {
+            if (_installing)
+                return false;
+
+            _installing = true;
             return true;
         }
 
@@ -365,7 +395,7 @@ namespace TopSpeed.Server.Updates
                 {
                     installNow = _pending;
                     _state = UpdateSchedulerState.PendingInstall;
-                    _installing = true;
+                    TryClaimInstallUnsafe();
                     return true;
                 }
 
@@ -552,7 +582,19 @@ namespace TopSpeed.Server.Updates
             {
                 case ServerUpdateCheckOutcome.UpdateAvailable when result.Update != null:
                     var approved = ApproveForInstall(result.Update);
-                    if (approved != null)
+                    if (approved == null)
+                        return;
+
+                    // Claimed only now, after the check, because the check takes long enough for
+                    // somebody to have typed update --force in the meantime and taken the install
+                    // for their own window. Theirs is the one that runs.
+                    bool claimed;
+                    lock (_gate)
+                    {
+                        claimed = TryClaimInstallUnsafe();
+                    }
+
+                    if (claimed)
                         PerformInstall(approved, showProgress: false);
                     return;
 
@@ -639,13 +681,12 @@ namespace TopSpeed.Server.Updates
                 found.VersionText);
         }
 
+        /// <summary>
+        /// Runs the install. The caller holds the claim to it already; taking it here as well
+        /// was what let a second caller through, since by then the first was already running.
+        /// </summary>
         private void PerformInstall(ServerUpdateInfo update, bool showProgress)
         {
-            lock (_gate)
-            {
-                _installing = true;
-            }
-
             if (!_updater.Install(update, showProgress))
             {
                 // Leave the update armed. The server is empty when an unattended install runs,

@@ -101,6 +101,14 @@ namespace TopSpeed.Server.Updates
 
             var zipPath = Path.Combine(targetDirectory, _config.BuildExpectedAssetName(update.VersionText));
 
+            // Whether the file at that path is this attempt's to remove. It is not until this
+            // attempt has created it: a download that fails to open the file because another
+            // download already has it open must leave that file alone. Deleting it looked harmless
+            // and was, on Windows, refused; on Linux and macOS an open file deletes without
+            // complaint, and the other download went on writing to a file that no longer had a
+            // name, finished, and handed the updater a path with nothing at it.
+            var createdFile = false;
+
             try
             {
                 using var response = await _http.GetAsync(update.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
@@ -130,6 +138,7 @@ namespace TopSpeed.Server.Updates
                         FileShare.None,
                         bufferSize: buffer.Length,
                         useAsync: true);
+                    createdFile = true;
 
                     while (true)
                     {
@@ -191,7 +200,8 @@ namespace TopSpeed.Server.Updates
             }
             catch (TaskCanceledException)
             {
-                TryDeleteIncompleteDownload(zipPath);
+                if (createdFile)
+                    TryDeleteIncompleteDownload(zipPath);
                 return new ServerDownloadResult
                 {
                     IsSuccess = false,
@@ -201,7 +211,8 @@ namespace TopSpeed.Server.Updates
             }
             catch (Exception ex)
             {
-                TryDeleteIncompleteDownload(zipPath);
+                if (createdFile)
+                    TryDeleteIncompleteDownload(zipPath);
                 return new ServerDownloadResult
                 {
                     IsSuccess = false,

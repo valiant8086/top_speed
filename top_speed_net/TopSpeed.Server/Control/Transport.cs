@@ -150,9 +150,23 @@ namespace TopSpeed.Server.Control
 
             // The account the server runs under, so it can always reach its own endpoint
             // whatever that account turns out to be.
+            //
+            // It may also make further instances of the pipe, which nobody else below may.
+            // Windows asks for that right on the pipe itself before it will create a second
+            // instance while a first exists, and a second is what the listener keeps ready so
+            // that a client arriving while another is attached is answered rather than queued.
+            // Granting it to this account widens nothing: any process already running as this
+            // account can open this one, end it and take the name outright, so making an
+            // instance beside it is the lesser thing. Interactive is not given it, and so still
+            // cannot squat the name, and Administrators always had it.
             var current = WindowsIdentity.GetCurrent();
             if (current.User != null)
-                security.AddAccessRule(new PipeAccessRule(current.User, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+            {
+                security.AddAccessRule(new PipeAccessRule(
+                    current.User,
+                    PipeAccessRights.ReadWrite | PipeAccessRights.CreateNewInstance,
+                    AccessControlType.Allow));
+            }
 
             security.AddAccessRule(new PipeAccessRule(
                 new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),

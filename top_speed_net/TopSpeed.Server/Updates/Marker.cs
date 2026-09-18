@@ -46,6 +46,13 @@ namespace TopSpeed.Server.Updates
         private const string WindowReturnsTag = "window-returns";
 
         /// <summary>
+        /// Written on the third line when the process named is not the updater but the server
+        /// that raised the marker, which becomes the updater by replacing itself. It is one
+        /// process id wearing several names in turn, so it cannot be judged by its name.
+        /// </summary>
+        private const string BecomesTheUpdaterTag = "becomes-the-updater";
+
+        /// <summary>
         /// Raised as the updater is started, rather than by the updater itself, so that it is
         /// already there when the server exits. A manager starts counting from that moment, and
         /// an updater that has not reached its first line yet would have nothing to show for it.
@@ -57,9 +64,27 @@ namespace TopSpeed.Server.Updates
         /// </summary>
         public static void Raise(string directory, int updaterProcessId, bool windowComesBackByItself)
         {
-            var contents = updaterProcessId.ToString(CultureInfo.InvariantCulture);
-            if (windowComesBackByItself)
-                contents += "\n" + WindowReturnsTag;
+            Raise(directory, updaterProcessId, windowComesBackByItself, becomesTheUpdater: false);
+        }
+
+        /// <summary>
+        /// Raised by a server about to replace itself with the update rather than start one. The
+        /// id recorded is its own, and it keeps that id through every program it becomes on the
+        /// way, so the marker is judged by whether it is alive and not by what it is called at
+        /// the moment anybody looks. Judged by name it read as no update at all for most of the
+        /// update, including the moment an attached window lost its connection and asked.
+        /// </summary>
+        public static void RaiseForHandoff(string directory, int ownProcessId)
+        {
+            Raise(directory, ownProcessId, windowComesBackByItself: true, becomesTheUpdater: true);
+        }
+
+        private static void Raise(string directory, int processId, bool windowComesBackByItself, bool becomesTheUpdater)
+        {
+            var contents = processId.ToString(CultureInfo.InvariantCulture);
+            contents += "\n" + (windowComesBackByItself ? WindowReturnsTag : string.Empty);
+            if (becomesTheUpdater)
+                contents += "\n" + BecomesTheUpdaterTag;
 
             Attempt(() => File.WriteAllText(PathIn(directory), contents));
         }
@@ -106,7 +131,9 @@ namespace TopSpeed.Server.Updates
                     !int.TryParse(lines[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
                     return false;
 
-                if (!UpdaterIsRunning(pid))
+                var becomesTheUpdater = lines.Length > 2
+                    && string.Equals(lines[2].Trim(), BecomesTheUpdaterTag, StringComparison.Ordinal);
+                if (!(becomesTheUpdater ? ProcessIsAlive(pid) : UpdaterIsRunning(pid)))
                     return false;
 
                 windowComesBackByItself = lines.Length > 1
@@ -128,6 +155,31 @@ namespace TopSpeed.Server.Updates
         /// once they are free, and a stranger wearing the same one would otherwise keep a folder
         /// shut for as long as it happened to run.
         /// </summary>
+        /// <summary>
+        /// For the marker a server raises about itself. Its id cannot have been handed to a
+        /// stranger while it is still the one in the chain, and a chain that died leaves a file
+        /// that goes stale on the same clock as any other.
+        /// </summary>
+        private static bool ProcessIsAlive(int processId)
+        {
+            if (processId <= 0)
+                return false;
+
+            try
+            {
+                using var process = Process.GetProcessById(processId);
+                return !process.HasExited;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }
+
         private static bool UpdaterIsRunning(int processId)
         {
             if (processId <= 0)

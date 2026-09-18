@@ -224,7 +224,7 @@ namespace TopSpeed.Server.Updates
                 _config.UpdaterEntryName,
                 serverPath));
 
-            UpdateMarker.Raise(root, Environment.ProcessId, windowComesBackByItself: true);
+            UpdateMarker.RaiseForHandoff(root, Environment.ProcessId);
 
             // Only when the window is this server's own. Said to an attached window it was a
             // promise about a window the server does not have: that window belongs to the

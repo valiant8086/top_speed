@@ -67,6 +67,28 @@ namespace TopSpeed.Tests.Server.Updates
         }
 
         [Fact]
+        public void A_handoff_marker_is_judged_by_whether_its_process_is_alive_and_not_by_its_name()
+        {
+            // A server that becomes the update keeps one process id through every program it
+            // becomes on the way: itself, the shell, the updater, itself again. Judged by name it
+            // read as no update for most of the update, including the moment an attached window
+            // lost its connection and asked. This process is not called Updater either.
+            UpdateMarker.RaiseForHandoff(_folder, Process.GetCurrentProcess().Id);
+
+            UpdateMarker.UpdateIsUnderWay(_folder, out var windowComesBack).Should().BeTrue();
+            windowComesBack.Should().BeTrue("a handoff always ends with the server back in its window");
+        }
+
+        [Fact]
+        public void A_handoff_marker_whose_process_has_gone_is_abandoned()
+        {
+            // The chain died partway. Nothing is coming back, and the folder must be startable.
+            UpdateMarker.RaiseForHandoff(_folder, 999_999);
+
+            UpdateMarker.UpdateIsUnderWay(_folder, out _).Should().BeFalse();
+        }
+
+        [Fact]
         public void An_old_marker_is_abandoned_however_alive_its_process_looks()
         {
             // The backstop for an updater that hung rather than died. No unpack takes this long,

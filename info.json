@@ -1,11 +1,12 @@
 {
   "version": "2026.8.29.1",
-  "serverVersion": "2026.9.17.2",
+  "serverVersion": "2026.9.17.3",
   "changes": [
     "Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.",
     "Fixed a long-standing bug where when another vehicle crosses the finish line, the player would only hear it's sound and the sound would get cut completely instead of slowing down."
   ],
   "serverChanges": [
+    "A copy of the server started while another is already attached is now told so at once. It used to wait in a queue, silently, until the attached one left, which could be hours and looked exactly like a server that had hung. The server answers the moment it connects, on every platform, and a copy whose holder has gone, by any route including being killed, is let in within a quarter of a second without any handshake being needed.",
     "Fixed the server never finishing its shutdown on macOS. Quitting, pressing Ctrl+C and updating all stopped on the last line, with the process left running and the window unusable; an update stopped there too, so the updater was never reached and nothing was replaced. It came from the way the control connection was closed, which on macOS left it waiting forever; Linux happened not to. This is very likely the cause of an update reported by a Mac user as successful with no files changed.",
     "Fixed a second copy of the server freezing both itself and the server it was attaching to, on Linux and macOS, whenever the running server had been started in a terminal. Attaching to a server without a terminal, such as one started from a file manager or as a service, was unaffected, which is why it went unseen.",
     "Fixed the same update being downloaded twice when approved on an empty server. Typing update to accept an offered version set off two downloads of the same file, and the one that lost could delete the file the other was still writing, leaving the updater nothing to install. One thread now installs, decided at the moment of approval.",

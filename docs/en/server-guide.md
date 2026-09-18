@@ -68,9 +68,9 @@ Run the program again from a folder that already has a server running and it doe
 start a second one. It becomes a console onto the server already there: everything that
 server prints appears in the new window, and commands typed there are answered by it.
 
-Only one window at a time may hold the console. While the server's own window has it, a
-second copy says so and leaves. While an attached window has it, a further copy waits quietly
-until that window closes and then takes its place.
+Only one window at a time may hold the console. Run another and it tells you so at once,
+whether the server's own window has it or an attached one does. When the window holding it
+closes, however it closes, the next to arrive takes its place.
 
 In an attached window, `exit` closes that window and leaves the server running. `shutdown`
 stops the server itself. That difference matters: `exit` is about the window, `shutdown` is

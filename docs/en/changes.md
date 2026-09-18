@@ -5,6 +5,10 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.17.3
+### Server Changes
+- A copy of the server started while another is already attached is now told so at once. It used to wait in a queue, silently, until the attached one left, which could be hours and looked exactly like a server that had hung. The server answers the moment it connects, on every platform, and a copy whose holder has gone, by any route including being killed, is let in within a quarter of a second without any handshake being needed.
+
 ## 2026.9.17.2
 ### Server Changes
 - Fixed the server never finishing its shutdown on macOS. Quitting, pressing Ctrl+C and updating all stopped on the last line, with the process left running and the window unusable; an update stopped there too, so the updater was never reached and nothing was replaced. It came from the way the control connection was closed, which on macOS left it waiting forever; Linux happened not to. This is very likely the cause of an update reported by a Mac user as successful with no files changed.

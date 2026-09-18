@@ -5,6 +5,14 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.17.2
+### Server Changes
+- Fixed the server never finishing its shutdown on macOS. Quitting, pressing Ctrl+C and updating all stopped on the last line, with the process left running and the window unusable; an update stopped there too, so the updater was never reached and nothing was replaced. It came from the way the control connection was closed, which on macOS left it waiting forever; Linux happened not to. This is very likely the cause of an update reported by a Mac user as successful with no files changed.
+- Fixed a second copy of the server freezing both itself and the server it was attaching to, on Linux and macOS, whenever the running server had been started in a terminal. Attaching to a server without a terminal, such as one started from a file manager or as a service, was unaffected, which is why it went unseen.
+- Fixed the same update being downloaded twice when approved on an empty server. Typing update to accept an offered version set off two downloads of the same file, and the one that lost could delete the file the other was still writing, leaving the updater nothing to install. One thread now installs, decided at the moment of approval.
+- The launcher for starting the server from a file manager now ships in the download instead of being written on the first run, so it is there before the first run, which is when it is wanted. On macOS it is Start Server.command; on Linux it is start-server.sh, run with the file manager's "Run in Terminal" choice. Opening TopSpeed.Server itself from a file manager still does not give you a window, and the guide now says what happens instead and how to reach a server started that way.
+- The guide now covers getting the server onto a Mac: unpack it in Terminal with curl and unzip, which leaves it runnable, or clear the quarantine mark from the folder once if it came through a browser. Updates never bring the mark back.
+
 ## 2026.9.17.1
 ### Server Changes
 - Brought up to date with the 2026.8.29.1 release, which changed the network protocol. A server on this version needs the 2026.8.29.1 game or later, and an older game will not be able to join it.

@@ -9,17 +9,48 @@ setting does, see the server settings page.
 Run `TopSpeed.Server`. It creates `settings.json` beside itself on the first run and starts
 listening straight away.
 
-On Linux and macOS it also writes a way to start itself without a terminal, since pressing
-enter on a program with no extension does something different in every file manager. On macOS
-that is `Start Server.command`, which Finder runs in Terminal. On Linux it is `start-server.sh`,
-which most file managers offer to run in a terminal from its context menu. Each is written only
-if it is not already there, so one you have edited or deleted stays that way.
+From a terminal that is `./TopSpeed.Server` on Linux and macOS, or `TopSpeed.Server` in a
+command prompt on Windows. Starting it from a file manager instead differs by platform:
 
-The server needs a terminal. Started without one it reaches the end of its input straight away
-and stops, which looks like nothing having happened at all, so launching the program file
-itself from a file manager is not a way round this.
+| | Start from the file manager with |
+| --- | --- |
+| Windows | `TopSpeed.Server.exe` itself. It opens its own console window. |
+| macOS | `Start Server.command`, which Finder opens in Terminal. |
+| Linux | `start-server.sh`, choosing **Run in Terminal** when the file manager asks. |
+
+On macOS and Linux, opening `TopSpeed.Server` itself from the file manager does not give you
+a window. macOS reads the dot in its name as a file extension and says nothing can open it. A
+Linux desktop runs it, but with no terminal attached, so the server starts in the background
+with nothing to show: it is running and serving players, and the way to reach it is to open a
+terminal in that folder and run `./TopSpeed.Server` again, which attaches to it (see
+"Attaching a second window"). Choosing plain **Run** rather than **Run in Terminal** for
+`start-server.sh` does the same.
 
 The console prints what the server is doing and takes commands. Type `help` for the list.
+
+### Getting it onto a Mac
+
+Anything a browser downloads on macOS is marked as quarantined, and the server is not signed
+with an Apple developer certificate, so a copy unpacked from a browser download is refused
+with a message calling it damaged. There are two ways round that, and the first is easier.
+
+Download and unpack it in Terminal, which applies no such mark:
+
+```
+curl -L -o tsServer.zip <download link>
+unzip tsServer.zip -d tsServer
+```
+
+Or, if you downloaded it in a browser, clear the mark from the whole folder once, since the
+runtime files beside the program carry it too:
+
+```
+xattr -dr com.apple.quarantine <folder you unpacked into>
+```
+
+Either way it is a first-install chore only. The server's own updates are downloaded and
+unpacked by the server, which applies no mark, so a server that has been set up once stays
+runnable through every update after it.
 
 | Command | What it does |
 | --- | --- |
@@ -37,8 +68,9 @@ Run the program again from a folder that already has a server running and it doe
 start a second one. It becomes a console onto the server already there: everything that
 server prints appears in the new window, and commands typed there are answered by it.
 
-Only one window at a time may hold the console. Run a third and it tells you which window
-already has it.
+Only one window at a time may hold the console. While the server's own window has it, a
+second copy says so and leaves. While an attached window has it, a further copy waits quietly
+until that window closes and then takes its place.
 
 In an attached window, `exit` closes that window and leaves the server running. `shutdown`
 stops the server itself. That difference matters: `exit` is about the window, `shutdown` is

@@ -104,6 +104,26 @@
     <ProjectReference Include="..\TopSpeed.Shared\TopSpeed.Shared.csproj" />
   </ItemGroup>
 
+  <!--
+    A way to start the server from a file manager, shipped beside it. Finder runs a .command in
+    Terminal; Linux file managers offer to run a .sh in one. The program itself cannot be that
+    file: macOS reads the dot in its name as an extension and refuses to open it, and a Linux
+    desktop runs it with no terminal at all. Windows needs nothing, since the .exe opens a
+    console by itself. Copied only into the publish output of the platform it is for.
+  -->
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('osx'))">
+    <None Include="Launchers\Start Server.command" Link="Start Server.command" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('linux'))">
+    <None Include="Launchers\start-server.sh" Link="start-server.sh" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The mode is kept in git, but a checkout that lost it would ship a launcher nothing can run. -->
+  <Target Name="MakeLauncherRunnable" AfterTargets="Publish" Condition="!$([MSBuild]::IsOSPlatform('Windows')) and '$(PublishDir)' != ''">
+    <Exec Command="chmod +x &quot;$(PublishDir)Start Server.command&quot;" Condition="Exists('$(PublishDir)Start Server.command')" />
+    <Exec Command="chmod +x &quot;$(PublishDir)start-server.sh&quot;" Condition="Exists('$(PublishDir)start-server.sh')" />
+  </Target>
+
   <ItemGroup>
     <ServerTranslationPo Include="$(MSBuildThisFileDirectory)..\languages\server\**\messages.po" />
     <Content Include="..\languages\server\**\*">

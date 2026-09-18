@@ -11,8 +11,8 @@ namespace TopSpeed.Protocol
 
         // Server release version used by updater checks and packaging.
         public const ushort ServerYear = 2026;
-        public const byte ServerMonth = 8;
-        public const byte ServerDay = 29;
+        public const byte ServerMonth = 9;
+        public const byte ServerDay = 17;
         public const byte ServerRevision = 1;
     }
 

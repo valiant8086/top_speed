@@ -5,6 +5,10 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.17.1
+### Server Changes
+- Brought up to date with the 2026.8.29.1 release, which changed the network protocol. A server on this version needs the 2026.8.29.1 game or later, and an older game will not be able to join it.
+
 ##2026.8.29
 ###Game Changes
 - Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.

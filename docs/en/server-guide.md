@@ -278,10 +278,22 @@ service, which is the better answer on every platform.
 The server stops, the files are replaced, and the service is started again. It is back in
 about a second on Windows and a couple of seconds on Linux and macOS.
 
-**If a console was attached when the update began, that window closes.** The update itself is
-unaffected and the server comes back on its own; run the program again once it is done and
-you will attach to the updated server. This is expected: the point of a service is that the
-server does not depend on anyone watching it, and the console is only a viewer.
+### When you typed update in an attached window
+
+An attached window is a viewer onto a server that has no window of its own — a service, or a
+server started from a file manager. The update itself is the same as for a service: the
+server leaves, the files are replaced, and it comes back where it was, which is nowhere you
+can see. What the attached window does about that differs by platform.
+
+On **Linux and macOS** the window says the server is updating, waits, and attaches again by
+itself when the server is back, so you see the new server's banner in the window you typed
+`update` in. It becomes the updated program in the process, so nothing in that window is
+left running old code.
+
+On **Windows** the window says the server is updating and closes. It cannot wait: the files
+the updater has to replace are the very ones the window is running from, and Windows keeps
+them locked for as long as it exists. Run the program again once the update is done and you
+attach to the updated server.
 
 ### If you run the program during an update
 

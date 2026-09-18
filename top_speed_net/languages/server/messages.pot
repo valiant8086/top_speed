@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-17 15:15-0400\n"
+"POT-Creation-Date: 2026-09-18 16:06-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1382,6 +1382,11 @@ msgstr ""
 msgid "Race stopped: room={0} \"{1}\", results={2}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Network/Services/Room/Tracks/RandomSelection.cs
+#, csharp-format
+msgid "Random room track selected: room={0} \"{1}\", track={2}."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.Runtime.cs
 #, csharp-format
 msgid "Received {0}. Shutting down."
@@ -1786,6 +1791,10 @@ msgstr ""
 msgid "The server closed the connection."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Reattach.cs
+msgid "The server did not come back. Run the program again to check on it."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid "The server has not finished stopping, so the service was not started."
 msgstr ""
@@ -1797,6 +1806,15 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "The server is shutting down to install an update."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "The server is updating. Run the program again once it is back."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Reattach.cs
+msgid ""
+"The server is updating. This window will attach to it again when it is back."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs

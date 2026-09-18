@@ -173,6 +173,34 @@ namespace TopSpeed.Server.Updates
                 .Replace("`", "\\`", StringComparison.Ordinal) + "\"";
         }
 
+        /// <summary>
+        /// Replaces this process with the program at the path, keeping the process id and the
+        /// terminal, and returns only when that could not be done. Windows has no such thing,
+        /// so there it returns at once.
+        /// </summary>
+        public static bool TryBecome(string path, params string[] arguments)
+        {
+            if (OperatingSystem.IsWindows())
+                return false;
+
+            var argv = new string?[arguments.Length + 2];
+            argv[0] = path;
+            Array.Copy(arguments, 0, argv, 1, arguments.Length);
+
+            try
+            {
+                Execute(path, argv);
+            }
+            catch (DllNotFoundException)
+            {
+            }
+            catch (EntryPointNotFoundException)
+            {
+            }
+
+            return false;
+        }
+
         [DllImport("libc", EntryPoint = "execv", SetLastError = true)]
         private static extern int Execute(string path, string?[] argv);
     }

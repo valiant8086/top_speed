@@ -136,6 +136,23 @@ namespace TopSpeed.Server.Control
                 if (!serverWentAway || Service.ServiceRuntime.HandingOverToService)
                     return;
 
+                // A server that left to update says so in its folder. On Linux and macOS this
+                // window waits for it and attaches again, and does not return from that. On
+                // Windows it cannot: the files the updater is about to replace are the ones this
+                // process is running from, and they stay locked until it has gone.
+                if (Updates.UpdateMarker.UpdateIsUnderWay(directory, out _))
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        WriteLine(LocalizationService.Translate(LocalizationService.Mark(
+                            "The server is updating. Run the program again once it is back.")));
+                        return;
+                    }
+
+                    ControlReattach.WaitAndAttachAgain(directory);
+                    return;
+                }
+
                 WriteLine(LocalizationService.Translate(LocalizationService.Mark(
                     "The server has stopped, so this instance is no longer attached to anything.")));
             }

@@ -226,8 +226,15 @@ namespace TopSpeed.Server.Updates
 
             UpdateMarker.Raise(root, Environment.ProcessId, windowComesBackByItself: true);
 
-            ConsoleSink.WriteLine(LocalizationService.Mark(
-                "Installing the update. This window comes back with the new server when it is done."));
+            // Only when the window is this server's own. Said to an attached window it was a
+            // promise about a window the server does not have: that window belongs to the
+            // client, which is disconnected when this process leaves and says so itself, and
+            // on Linux and macOS attaches again by itself once the update is done.
+            if (!Commands.CommandSessions.HasAttachedSession)
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "Installing the update. This window comes back with the new server when it is done."));
+            }
 
             return true;
         }

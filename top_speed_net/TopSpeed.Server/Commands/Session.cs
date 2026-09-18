@@ -23,7 +23,21 @@ namespace TopSpeed.Server.Commands
     /// <summary>The server's own console window, when it has one.</summary>
     internal sealed class ConsoleCommandSession : ICommandSession
     {
+        private readonly bool _inputAvailable;
         private volatile bool _exhausted;
+
+        public ConsoleCommandSession()
+        {
+            // Asked once, here, and never again. Whether there is input at all is settled when
+            // the process starts and does not change; what does change is whether it has run
+            // out, which is kept separately. Asking the console each time was a deadlock on
+            // Linux and macOS: the question takes the same lock a read holds for as long as it
+            // waits for a line, so with the command thread waiting for somebody to type, the
+            // control thread asking it on behalf of somebody attaching waited forever, holding
+            // the session gate, and everything that then tried to print waited on that. Any
+            // control connection to a server with a console hung the whole server.
+            _inputAvailable = IsInputAvailable();
+        }
 
         /// <summary>
         /// Redirected input looks available right up until it turns out to be empty, which is
@@ -31,7 +45,7 @@ namespace TopSpeed.Server.Commands
         /// is settled by actually trying to read: once input ends, this session stops claiming
         /// the command session and somebody attaching can have it instead.
         /// </summary>
-        public bool CanRead => !_exhausted && IsInputAvailable();
+        public bool CanRead => !_exhausted && _inputAvailable;
 
         public bool WriteLine(string text)
         {

@@ -10,15 +10,33 @@ namespace TopSpeed.Server.Network
 {
     internal sealed partial class RaceServer
     {
-        private void SimulateBotRaceStep(GameRoom room, RoomBot bot, RoadModel roadModel, float raceDistance, float deltaSeconds)
+        private void SimulateBotRaceStep(GameRoom room, RoomBot bot, RoadModel roadModel, float raceDistance, float deltaSeconds, BotVehicleObservation[] traffic)
         {
             var currentRoad = roadModel.At(bot.PositionY);
-            var nextRoad = roadModel.At(bot.PositionY + BotAiLookaheadMeters);
-            var currentLaneHalfWidth = Math.Max(0.1f, Math.Abs(currentRoad.Right - currentRoad.Left) * 0.5f);
-            var relPos = BotRaceRules.CalculateRelativeLanePosition(bot.PositionX, currentRoad.Left, currentLaneHalfWidth);
-            relPos = Math.Max(0f, Math.Min(1f, relPos));
-            var controlRandom = (bot.AddedOrder * 37) % 100;
-            BotSharedModel.GetControlInputs((int)bot.Difficulty, controlRandom, currentRoad.Type, nextRoad.Type, relPos, out var throttle, out var steering);
+            RefreshBotRoadPreview(bot, roadModel, deltaSeconds);
+
+            var driverState = bot.DriverState;
+            var ego = new BotEgoState(
+                bot.PositionX,
+                bot.PositionY,
+                bot.SpeedKph,
+                bot.PhysicsState.LateralVelocityMps,
+                bot.PhysicsState.YawRateRad,
+                bot.PhysicsState.Gear,
+                bot.PhysicsState.EffectiveDriveRatio);
+            var capabilities = bot.Capabilities;
+            var drivingInput = new BotDrivingInput(
+                (BotDrivingDifficulty)bot.Difficulty,
+                (uint)((bot.AddedOrder + 1) * 397 ^ (int)(bot.Id + 1u) * 7919),
+                bot.Id,
+                deltaSeconds,
+                in ego,
+                in capabilities,
+                bot.RoadPreview,
+                traffic);
+            var control = BotDrivingPlanner.Step(ref driverState, in drivingInput);
+            bot.DriverState = driverState;
+            bot.Braking = control.Braking;
 
             var physicsState = bot.PhysicsState;
             physicsState.PositionX = bot.PositionX;
@@ -30,9 +48,9 @@ namespace TopSpeed.Server.Network
             var physicsInput = new BotPhysicsInput(
                 deltaSeconds,
                 currentRoad.Surface,
-                (int)Math.Round(throttle),
-                brake: 0,
-                steering: (int)Math.Round(steering),
+                (int)Math.Round(control.Throttle),
+                brake: (int)Math.Round(control.Brake),
+                steering: (int)Math.Round(control.Steering),
                 ambientTemperatureC: float.NaN,
                 rainGain: 0f,
                 stormGain: 0f,
@@ -81,8 +99,11 @@ namespace TopSpeed.Server.Network
                     bot.EngineFrequency = bot.AudioProfile.IdleFrequency;
                     bot.Horning = false;
                     bot.HornSecondsRemaining = 0f;
+                    bot.Braking = false;
                     bot.BackfirePulseSeconds = 0f;
                     bot.BackfireArmed = true;
+                    bot.DriverState = default;
+                    bot.RoadPreviewRefreshSeconds = 0f;
                     _botCrashEvents++;
                     _logger.Debug(LocalizationService.Format(
                         LocalizationService.Mark("Bot crashed: room={0}, bot={1}, number={2}, y={3:0.0}."),
@@ -113,6 +134,74 @@ namespace TopSpeed.Server.Network
                 bot.PlayerNumber,
                 room.RaceResults.Count));
             _race.UpdateStopState(room);
+        }
+
+        /// <summary>
+        /// Brings a finished bot to rest under braking, exactly as a locally simulated bot does in
+        /// its settling state. Listeners keep receiving a falling speed and engine note, so the car
+        /// audibly winds down instead of vanishing mid-note.
+        /// </summary>
+        private static void SimulateBotStoppingStep(RoomBot bot, RoadModel roadModel, float deltaSeconds)
+        {
+            var road = roadModel.At(bot.PositionY);
+            var physicsState = bot.PhysicsState;
+            physicsState.PositionX = bot.PositionX;
+            physicsState.PositionY = bot.PositionY;
+            physicsState.SpeedKph = bot.SpeedKph;
+            if (physicsState.Gear <= 0)
+                physicsState.Gear = 1;
+
+            var physicsInput = new BotPhysicsInput(
+                deltaSeconds,
+                road.Surface,
+                throttle: 0,
+                brake: -100,
+                steering: 0,
+                ambientTemperatureC: float.NaN,
+                rainGain: 0f,
+                stormGain: 0f,
+                windGain: 0f);
+            BotPhysics.Step(bot.PhysicsConfig, ref physicsState, in physicsInput);
+
+            bot.PhysicsState = physicsState;
+            bot.PositionX = physicsState.PositionX;
+            bot.PositionY = physicsState.PositionY;
+            bot.SpeedKph = physicsState.SpeedKph;
+            bot.Braking = bot.SpeedKph > 0.05f;
+            bot.EngineFrequency = CalculateBotEngineFrequency(bot, out _);
+
+            if (bot.SpeedKph <= 0.05f)
+                ServerBotFinish.CompleteStop(bot);
+        }
+
+        /// <summary>
+        /// The sample under the car is refreshed every tick because the steering loop reads the
+        /// corridor from it; the lookahead ladder only needs the planner's cadence.
+        /// </summary>
+        private static void RefreshBotRoadPreview(RoomBot bot, RoadModel roadModel, float deltaSeconds)
+        {
+            bot.RoadPreviewRefreshSeconds -= deltaSeconds;
+            var rebuildLadder = bot.RoadPreviewRefreshSeconds <= 0f;
+            if (rebuildLadder)
+            {
+                bot.RoadPreviewRefreshSeconds = BotRoadSampling.RefreshIntervalSeconds;
+                BotRoadSampling.FillDistances(bot.SpeedKph, bot.RoadPreviewDistances);
+            }
+
+            var count = rebuildLadder ? bot.RoadPreview.Length : 1;
+            for (var i = 0; i < count; i++)
+            {
+                var distance = bot.RoadPreviewDistances[i];
+                var sample = roadModel.At(bot.PositionY + distance);
+                bot.RoadPreview[i] = new BotRoadPreview(
+                    distance,
+                    sample.Left,
+                    sample.Right,
+                    sample.Surface,
+                    sample.Type,
+                    roadModel.CenterDriftPerMeter(sample.Type),
+                    Math.Max(1f, sample.Length - sample.RelPos));
+            }
         }
     }
 }

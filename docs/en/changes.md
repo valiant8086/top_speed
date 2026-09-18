@@ -5,6 +5,14 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+##2026.8.29
+###Game Changes
+- Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.
+- Fixed a long-standing bug where when another vehicle crosses the finish line, the player would only hear it's sound and the sound would get cut completely instead of slowing down.
+
+###Server Changes
+- Fixed vehicle finish line behavior
+
 ## 2026.8.9.15
 ### Server Changes
 - Nothing. This version carries no changes of its own: it exists so that a server running 2026.8.9.14 has something to update to, which is the only way to watch a console update keep the window it started in. The change being tested is in the server that leaves, so a server can only demonstrate it by updating away from itself.

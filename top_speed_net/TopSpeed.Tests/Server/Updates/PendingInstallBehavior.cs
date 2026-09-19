@@ -16,6 +16,7 @@ namespace TopSpeed.Tests.Server.Updates
     /// being one, hours after they asked and with nobody watching.
     /// </summary>
     [Trait("Category", "Behavior")]
+    [Collection("Command sessions")]
     public class PendingInstallBehavior
     {
         /// <summary>A folder of its own, so no test reads a record another one left behind.</summary>

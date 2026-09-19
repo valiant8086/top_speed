@@ -17,6 +17,7 @@ namespace TopSpeed.Tests.Server.Updates
     /// older one, which a server would otherwise fetch and install again every day for good.
     /// </summary>
     [Trait("Category", "Behavior")]
+    [Collection("Command sessions")]
     public class InstallLoopGuardBehavior : IDisposable
     {
         private readonly string _folder;

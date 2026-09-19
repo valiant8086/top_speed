@@ -20,9 +20,11 @@ namespace TopSpeed.Tests.Behavior.Server.Control
     /// hung. Now it is answered at once, and by the server, which knows, rather than guessed by
     /// the client from a wait that timed out.
     ///
-    /// These share the process-wide session state, so they live in one class and run in turn.
+    /// These share the process-wide session state with the scheduler tests, whose announcements
+    /// go to whichever window is attached, so all of them run in one collection and in turn.
     /// </summary>
     [Trait("Category", "Behavior")]
+    [Collection("Command sessions")]
     public class ControlListenerBehavior
     {
         private static readonly TimeSpan Patience = TimeSpan.FromSeconds(3);

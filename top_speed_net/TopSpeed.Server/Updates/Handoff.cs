@@ -165,7 +165,8 @@ namespace TopSpeed.Server.Updates
             return script.ToString();
         }
 
-        private static string Quote(string value)
+        /// <summary>Quoted for the shell, so that a folder with a space or a dollar in its name is ordinary.</summary>
+        internal static string Quote(string value)
         {
             return "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal)
                 .Replace("\"", "\\\"", StringComparison.Ordinal)

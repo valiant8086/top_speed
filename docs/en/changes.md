@@ -5,6 +5,11 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.17.6
+### Server Changes
+- Fixed the attached window on Linux and macOS dying with a bus error the moment its server left to update, right after saying it would attach again. It was waiting as itself, from files the updater was rewriting underneath it. It now becomes a shell for the wait, as the server does on its own way out, and becomes the updated program once the server is back.
+- A download watched from an attached window, or by a server with no console, now reports its progress every tenth rather than every percent, with the amount fetched so far on each line.
+
 ## 2026.9.17.5
 ### Server Changes
 - Nothing of its own. It exists so that a window attached to a 2026.9.17.4 server has an update to follow, which is the only way to watch it do so: the following is done by the window that was already there, so a window can only show it by staying through an update.

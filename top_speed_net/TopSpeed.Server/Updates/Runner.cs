@@ -259,13 +259,22 @@ namespace TopSpeed.Server.Updates
         private void RenderProgress(ServerDownloadProgress progress)
         {
             var percent = Math.Clamp(progress.Percent, 0, 100);
+            var downloadedText = FormatBytes(progress.DownloadedBytes);
+            var totalText = progress.TotalBytes > 0
+                ? FormatBytes(progress.TotalBytes)
+                : "?";
+
             if (Console.IsOutputRedirected)
             {
-                if (percent == _lastProgressPercent)
+                // No console to redraw on, so each report is a line of its own, and every line
+                // said here also reaches a window attached to this server. One per percent was a
+                // hundred lines for a screen reader to sit through; one per tenth is a download
+                // that can be seen to be moving.
+                if (percent == _lastProgressPercent || (percent % 10 != 0 && percent != 100))
                     return;
 
                 _lastProgressPercent = percent;
-                ConsoleSink.WriteLine(percent.ToString(CultureInfo.InvariantCulture) + "%");
+                ConsoleSink.WriteLine($"{percent}% {downloadedText}/{totalText}");
                 return;
             }
 
@@ -273,10 +282,6 @@ namespace TopSpeed.Server.Updates
             var filled = (percent * barWidth) / 100;
             var remaining = barWidth - filled;
             var bar = $"[{new string('#', filled)}{new string('-', remaining)}]";
-            var downloadedText = FormatBytes(progress.DownloadedBytes);
-            var totalText = progress.TotalBytes > 0
-                ? FormatBytes(progress.TotalBytes)
-                : "?";
             var line = $"{bar} {percent,3}% {downloadedText}/{totalText}";
 
             try

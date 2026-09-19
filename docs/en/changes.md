@@ -5,6 +5,11 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.17.4
+### Server Changes
+- A window attached to a server now follows it through an update. Typing update in an attached window used to end with the window told the server had stopped, and closed, while the server came back somewhere it could not be seen; the server also promised that window it would come back, which was true only of a window the server did not have. On Linux and macOS the attached window now says the server is updating, waits, and attaches again by itself when the server is back, becoming the updated program as it does so. On Windows it says the server is updating and closes, because the files being replaced are the ones the window runs from; run the program again once the update is done.
+- Fixed a server that updates in its own window reading as no update at all to anything that asked while it was under way, which is what an attached window and any copy started meanwhile ask. The record of an update in progress was trusted only while the process named in it was called Updater, and a server that becomes the update keeps one process through several names.
+
 ## 2026.9.17.3
 ### Server Changes
 - A copy of the server started while another is already attached is now told so at once. It used to wait in a queue, silently, until the attached one left, which could be hours and looked exactly like a server that had hung. The server answers the moment it connects, on every platform, and a copy whose holder has gone, by any route including being killed, is let in within a quarter of a second without any handshake being needed.

@@ -289,15 +289,7 @@ namespace TopSpeed.Updater
             if (!File.Exists(legacyExecutable))
                 return;
 
-            foreach (var name in new[]
-            {
-                legacyExecutable,
-                legacyExecutable + ".config",
-                Path.Combine(targetDir, LegacyUpdaterStem + ".pdb"),
-                // One fork test build briefly shipped the new updater under this name.
-                Path.Combine(targetDir, ResolveExecutableFileName("TopSpeed.Updater")),
-                Path.Combine(targetDir, "TopSpeed.Updater.pdb")
-            })
+            foreach (var name in new[] { legacyExecutable, legacyExecutable + ".config", Path.Combine(targetDir, LegacyUpdaterStem + ".pdb") })
             {
                 try
                 {

@@ -12,6 +12,25 @@ namespace TopSpeed.Updater
         private const int ExtractRetryCount = 24;
         private const int ExtractRetryDelayMs = 250;
 
+        /// <summary>
+        /// What a file is called while it is being written, beside the one it will replace. The
+        /// replacement is a rename, never a rewrite of the existing file: a program that has been
+        /// run and is then rewritten in place is refused by macOS however valid its new contents,
+        /// and a file rewritten under a process still mapping it kills that process on Linux.
+        /// A rename gives the folder a new file and leaves the old one to whoever still holds it.
+        /// </summary>
+        private const string PendingSuffix = ".new";
+
+        /// <summary>
+        /// Where a file goes when it cannot be deleted to make room, which on Windows is a
+        /// program that is running: this one, replacing itself. Renaming a running program is
+        /// allowed there where deleting it is not. Swept up on the next run.
+        /// </summary>
+        private const string SupersededSuffix = ".superseded";
+
+        /// <summary>The name this program shipped under before it could replace itself.</summary>
+        private const string LegacyUpdaterStem = "Updater";
+
         private static int Main(string[] args)
         {
             var safeArgs = args ?? Array.Empty<string>();
@@ -158,6 +177,8 @@ namespace TopSpeed.Updater
             if (!Directory.Exists(targetDir))
                 throw new DirectoryNotFoundException($"Target directory was not found: {targetDir}");
 
+            SweepSuperseded(targetDir, enableLog, logPath);
+
             using (var archive = ZipFile.OpenRead(zipPath))
             {
                 var bundlePayloadPrefix = ResolveBundlePayloadPrefix(options, archive, targetDir);
@@ -198,6 +219,106 @@ namespace TopSpeed.Updater
 
             File.Delete(zipPath);
             Log(enableLog, logPath, "Deleted update zip.");
+
+            RemoveLegacyUpdater(targetDir, enableLog, logPath);
+        }
+
+        /// <summary>
+        /// Deletes what a previous run had to rename aside because it was running at the time.
+        /// Best effort: anything still held is left for the run after.
+        /// </summary>
+        private static void SweepSuperseded(string targetDir, bool enableLog, string logPath)
+        {
+            string[] leftovers;
+            try
+            {
+                leftovers = Directory.GetFiles(targetDir, "*" + SupersededSuffix, SearchOption.AllDirectories);
+            }
+            catch (IOException)
+            {
+                return;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+
+            foreach (var leftover in leftovers)
+            {
+                try
+                {
+                    File.Delete(leftover);
+                    Log(enableLog, logPath, $"Removed superseded file: {leftover}");
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+
+        /// <summary>
+        /// Once this program runs under its current name, the copy under the old one has done
+        /// its last job: the old copy skipped itself when it unpacked updates, so the only way a
+        /// folder ever got this one was through that copy, and nothing starts it again after.
+        /// Only when this process is not itself the old copy, which is also what keeps this from
+        /// touching a game folder, where the updater still goes by the old name.
+        /// </summary>
+        private static void RemoveLegacyUpdater(string targetDir, bool enableLog, string logPath)
+        {
+            string? ownPath;
+            try
+            {
+                ownPath = Process.GetCurrentProcess().MainModule?.FileName;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(ownPath))
+                return;
+
+            var ownStem = Path.GetFileNameWithoutExtension(ownPath);
+            if (string.Equals(ownStem, LegacyUpdaterStem, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var legacyExecutable = Path.Combine(targetDir, ResolveExecutableFileName(LegacyUpdaterStem));
+            if (!File.Exists(legacyExecutable))
+                return;
+
+            foreach (var name in new[] { legacyExecutable, legacyExecutable + ".config", Path.Combine(targetDir, LegacyUpdaterStem + ".pdb") })
+            {
+                try
+                {
+                    if (File.Exists(name))
+                    {
+                        File.Delete(name);
+                        Log(enableLog, logPath, $"Removed legacy updater file: {name}");
+                    }
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+
+            var legacySymbols = Path.Combine(targetDir, LegacyUpdaterStem + ".dSYM");
+            try
+            {
+                if (Directory.Exists(legacySymbols))
+                    Directory.Delete(legacySymbols, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         private static string ResolveBundlePayloadPrefix(UpdaterOptions options, ZipArchive archive, string targetDir)
@@ -356,7 +477,9 @@ namespace TopSpeed.Updater
             {
                 try
                 {
-                    entry.ExtractToFile(destination, overwrite: true);
+                    var pending = destination + PendingSuffix;
+                    entry.ExtractToFile(pending, overwrite: true);
+                    MoveIntoPlace(pending, destination);
                     if (attempt > 1)
                         Log(enableLog, logPath, $"Extract retry succeeded for {destination} on attempt {attempt}.");
                     return;
@@ -378,6 +501,58 @@ namespace TopSpeed.Updater
             throw new IOException(
                 $"Failed to extract '{entry.FullName}' to '{destination}' after {ExtractRetryCount} attempts.",
                 lastError);
+        }
+
+        /// <summary>
+        /// Puts the freshly written file where the old one was, by renaming. The old file is
+        /// deleted or renamed aside rather than overwritten, so the folder only ever holds whole
+        /// files and a program still running from the old one keeps it until it exits.
+        /// </summary>
+        private static void MoveIntoPlace(string pending, string destination)
+        {
+#if NET472
+            if (File.Exists(destination))
+                MakeRoom(destination);
+
+            File.Move(pending, destination);
+#else
+            try
+            {
+                File.Move(pending, destination, overwrite: true);
+            }
+            catch (IOException) when (File.Exists(destination))
+            {
+                // Windows will not replace a program that is running, and the one program that
+                // may be running here is this one. It will move, though, where it will not go.
+                MakeRoom(destination);
+                File.Move(pending, destination);
+            }
+            catch (UnauthorizedAccessException) when (File.Exists(destination))
+            {
+                MakeRoom(destination);
+                File.Move(pending, destination);
+            }
+#endif
+        }
+
+        private static void MakeRoom(string destination)
+        {
+            try
+            {
+                File.Delete(destination);
+                return;
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            var aside = destination + SupersededSuffix;
+            if (File.Exists(aside))
+                File.Delete(aside);
+            File.Move(destination, aside);
         }
 
         private static string ResolveGamePath(string targetDir, string gameExeName)

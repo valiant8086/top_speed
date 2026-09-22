@@ -189,7 +189,8 @@ namespace TopSpeed.Server.Updates
             {
                 using var process = Process.GetProcessById(processId);
                 return !process.HasExited
-                    && process.ProcessName.StartsWith("Updater", StringComparison.OrdinalIgnoreCase);
+                    && (process.ProcessName.StartsWith(ServerUpdateConfig.Default.UpdaterEntryName, StringComparison.OrdinalIgnoreCase)
+                        || process.ProcessName.StartsWith(ServerUpdateConfig.LegacyUpdaterEntryName, StringComparison.OrdinalIgnoreCase));
             }
             catch (ArgumentException)
             {

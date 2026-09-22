@@ -114,7 +114,7 @@ namespace TopSpeed.Server.Updates
             string updaterPath,
             string zipPath,
             string serverEntryName,
-            string updaterEntryName,
+            string skipEntryName,
             string serverPath)
         {
             var script = new StringBuilder();
@@ -138,14 +138,16 @@ namespace TopSpeed.Server.Updates
             script.Append("wait \"$_finished\" 2>/dev/null\n");
 
             // Told not to start anything itself. Coming back is this script's job, and an updater
-            // that also started one would leave two servers racing for the same port.
+            // that also started one would leave two servers racing for the same port. Told to
+            // skip itself only when it is the old updater, which cannot replace itself.
             script.Append(Quote(updaterPath))
                 .Append(" --pid \"$_finished\"")
                 .Append(" --zip ").Append(Quote(zipPath))
                 .Append(" --dir ").Append(Quote(root))
-                .Append(" --game ").Append(Quote(serverEntryName))
-                .Append(" --skip ").Append(Quote(updaterEntryName))
-                .Append(" --no-restart\n");
+                .Append(" --game ").Append(Quote(serverEntryName));
+            if (!string.IsNullOrEmpty(skipEntryName))
+                script.Append(" --skip ").Append(Quote(skipEntryName));
+            script.Append(" --no-restart\n");
 
             // The updater removes the marker when it finishes. Bounded, because one that died
             // without removing it would otherwise mean a folder that never starts a server again.

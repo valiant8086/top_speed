@@ -16,15 +16,33 @@ namespace TopSpeed.Tests.Server
     [Trait("Category", "Behavior")]
     public class UpdateHandoffBehavior
     {
-        private static string Script(string root = "/home/me/ts server")
+        private static string Script(string root = "/home/me/ts server", string skip = "")
         {
             return UpdateHandoff.BuildScript(
                 root,
-                root + "/Updater",
+                root + "/TopSpeed.Updater",
                 root + "/update.zip",
                 "TopSpeed.Server",
-                "Updater",
+                skip,
                 root + "/TopSpeed.Server");
+        }
+
+        [Fact]
+        public void TheUpdaterIsToldToSkipNothingSoThatItReplacesItselfToo()
+        {
+            // The updater under its current name replaces every file by renaming a new one into
+            // place, its own included. Skipping it was what left every folder running whichever
+            // updater first arrived there, for as long as the folder existed.
+            Script().Should().NotContain("--skip");
+        }
+
+        [Fact]
+        public void TheOldUpdaterIsStillToldToSkipItself()
+        {
+            // A folder from before the rename still has the old updater, which rewrites files in
+            // place and cannot survive rewriting its own. It is asked to skip itself as it always
+            // was; the archive carries the new updater under the new name, which it unpacks.
+            Script(skip: "Updater").Should().Contain("--skip \"Updater\"");
         }
 
         [Fact]
@@ -81,7 +99,7 @@ namespace TopSpeed.Tests.Server
             var script = Script();
 
             script.Should().Contain("cd \"/home/me/ts server\"");
-            script.Should().Contain("\"/home/me/ts server/Updater\"");
+            script.Should().Contain("\"/home/me/ts server/TopSpeed.Updater\"");
             script.Should().Contain("\"/home/me/ts server/update.zip\"");
         }
 

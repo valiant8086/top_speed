@@ -58,7 +58,7 @@ namespace TopSpeed.Server.Updates
             $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest",
             "TopSpeed.Server-{runtime}-Release-v-{version}.zip",
             ResolveRuntimeAssetTag(configuredRuntimeAssetTag),
-            "TopSpeed.Updater",
+            "TopSpeedUpdater",
             "TopSpeed.Server");
         }
 

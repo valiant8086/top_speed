@@ -20,7 +20,7 @@ namespace TopSpeed.Tests.Server
         {
             return UpdateHandoff.BuildScript(
                 root,
-                root + "/TopSpeed.Updater",
+                root + "/TopSpeedUpdater",
                 root + "/update.zip",
                 "TopSpeed.Server",
                 skip,
@@ -99,7 +99,7 @@ namespace TopSpeed.Tests.Server
             var script = Script();
 
             script.Should().Contain("cd \"/home/me/ts server\"");
-            script.Should().Contain("\"/home/me/ts server/TopSpeed.Updater\"");
+            script.Should().Contain("\"/home/me/ts server/TopSpeedUpdater\"");
             script.Should().Contain("\"/home/me/ts server/update.zip\"");
         }
 

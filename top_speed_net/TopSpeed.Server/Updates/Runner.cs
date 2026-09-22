@@ -268,9 +268,9 @@ namespace TopSpeed.Server.Updates
             {
                 // No console to redraw on, so each report is a line of its own, and every line
                 // said here also reaches a window attached to this server. One per percent was a
-                // hundred lines for a screen reader to sit through; one per tenth is a download
-                // that can be seen to be moving.
-                if (percent == _lastProgressPercent || (percent % 10 != 0 && percent != 100))
+                // hundred lines for a screen reader to sit through; one per quarter is a download
+                // that can be seen to be moving, and no more than that needs saying.
+                if (percent == _lastProgressPercent || (percent % 25 != 0 && percent != 100))
                     return;
 
                 _lastProgressPercent = percent;

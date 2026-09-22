@@ -1,12 +1,13 @@
 {
   "version": "2026.9.21.1",
-  "serverVersion": "2026.9.21.1",
+  "serverVersion": "2026.9.22.1",
   "changes": [
     "When a new version is announced but its download has not finished publishing, the game now says so and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short while after every release and read like a fault in the game when nothing was wrong.",
     "Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.",
     "Fixed a long-standing bug where when another vehicle crosses the finish line, the player would only hear it's sound and the sound would get cut completely instead of slowing down."
   ],
   "serverChanges": [
+    "Fork test build carrying the renamed, self-replacing updater. Updating to it from an earlier fork build is the migration: the old Updater runs once more and brings TopSpeedUpdater in. The update after this one is the first done by TopSpeedUpdater, replacing files by rename.",
     "Running the server program again from a folder that already has a server running now opens a console onto the one that is running, instead of starting a second server that quietly claims the same ports. Everything the running server prints appears in the new window, commands typed there are answered by it, and typing exit leaves the server running. Only one window at a time may hold the console: any other copy is told so the moment it connects, and when the window holding it closes, however it closes, the next to arrive takes its place.",
     "The server can now be installed as a system service, so it starts with the machine and keeps running when nobody is logged in. Type service for a menu, or add the verb to skip it: service install, uninstall, start, stop, restart or status. The same actions are available as command line options, so nothing has to be typed into a running server. Each folder gets its own service, worked out from where the server lives, so two servers on one machine can both be installed without naming either.",
     "On Windows the service runs as NT AUTHORITY\\LocalService, never as you and never as an administrator, and is granted permission to write inside the server folder only, which is what lets it update itself. It starts with the machine rather than two minutes after it. Installing asks for administrator rights through the ordinary prompt; nothing here ever asks for a password.",

@@ -5,6 +5,10 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.22.1
+### Server Changes
+- Fork test build carrying the renamed, self-replacing updater. Updating to it from an earlier fork build is the migration: the old Updater runs once more and brings TopSpeedUpdater in. The update after this one is the first done by TopSpeedUpdater, replacing files by rename.
+
 ## 2026.9.21.1
 ### Game Changes
 - When a new version is announced but its download has not finished publishing, the game now says so and suggests trying again shortly, instead of reporting that an update package was not found. That message appeared for a short while after every release and read like a fault in the game when nothing was wrong.

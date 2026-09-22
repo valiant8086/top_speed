@@ -1,0 +1,3 @@
+# Shell launchers shipped with the server. A carriage return after #!/bin/sh is a script
+# that fails while looking correct, so these stay LF whatever the checkout platform does.
+top_speed_net/TopSpeed.Server/Launchers/* text eol=lf

@@ -1,48 +1,24 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using TopSpeed.Server.Config;
+using TopSpeed.Server.Control;
 using TopSpeed.Server.Logging;
+using TopSpeed.Server.Updates;
 
 using TopSpeed.Localization;
 namespace TopSpeed.Server
 {
     internal static partial class Program
     {
-        private static LogLevel ParseLogLevels(string[] args)
+        /// <summary>
+        /// Null when the command line names no levels, which is what leaves the setting to
+        /// decide rather than this quietly deciding for it.
+        /// </summary>
+        private static LogLevel? ParseLogLevels(string[] args)
         {
-            var value = GetFirstArgumentValue(args, "--log-level", "--log");
-            if (string.IsNullOrWhiteSpace(value))
-                return LogLevel.Error | LogLevel.Warning | LogLevel.Info;
-
-            var levels = LogLevel.None;
-            var parts = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var part in parts)
-            {
-                var token = part.Trim().ToLowerInvariant();
-                switch (token)
-                {
-                    case "error":
-                        levels |= LogLevel.Error;
-                        break;
-                    case "warning":
-                        levels |= LogLevel.Warning;
-                        break;
-                    case "info":
-                        levels |= LogLevel.Info;
-                        break;
-                    case "debug":
-                        levels |= LogLevel.Debug;
-                        break;
-                    case "all":
-                        levels = LogLevel.All;
-                        break;
-                }
-            }
-
-            return levels == LogLevel.None
-                ? LogLevel.Error | LogLevel.Warning | LogLevel.Info
-                : levels;
+            return LogLevels.Parse(GetFirstArgumentValue(args, "--log-level", "--log"));
         }
 
         private static bool IsHelpRequested(string[] args)
@@ -70,28 +46,74 @@ namespace TopSpeed.Server
             ConsoleSink.WriteLine(LocalizationService.Mark("  --log <levels>          Alias for --log-level."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  --log-file <path>       Output log file path (e.g. log.txt)."));
             ConsoleSink.WriteLine(LocalizationService.Mark("  -h, --help              Show this help."));
+            ConsoleSink.WriteLine(string.Empty);
+            ConsoleSink.WriteLine(LocalizationService.Mark("Running as a service:"));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --service-status        Say whether this folder is installed as a service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --install-service       Install this folder's server as a service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --uninstall-service     Remove it again. The folder is left alone."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --start-service         Start the installed service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --stop-service          Stop the installed service."));
+            ConsoleSink.WriteLine(LocalizationService.Mark("  --restart-service       Stop it and start it again."));
+
+            // Only where it is true, which is twice over.
+            //
+            // Not on Windows, where these ask for consent themselves and the server is not
+            // expected to be elevated, so the sentence would be advice to do something that
+            // platform neither needs nor offers.
+            //
+            // And not to a reader who is already root, which on a rented server or in a
+            // container is simply the account there is. Every option above works for them as it
+            // stands, so being told to reach for sudo is advice to solve a problem they do not
+            // have, and being warned off running as root is advice against the only thing they
+            // can do. A container often has no sudo installed to reach for either.
+            //
+            // Otherwise this is the one place both halves belong. Everywhere else each is said
+            // at the moment it applies; here somebody is reading about the options rather than
+            // having tripped over either, and the pair of them is the whole rule.
+            if (!OperatingSystem.IsWindows() && !Environment.IsPrivilegedProcess)
+            {
+                ConsoleSink.WriteLine(string.Empty);
+                ConsoleSink.WriteLine(Service.ServiceCommands.RootNeeded(
+                    AppContext.BaseDirectory,
+                    Service.ServiceAction.Install));
+                ConsoleSink.WriteLine(Service.ServiceCommands.DoNotRunAsRoot());
+            }
         }
 
-        private static string FormatLogLevels(LogLevel levels)
+        /// <summary>
+        /// Each folder has its own service, so these never need to be told which one they mean.
+        /// </summary>
+        private static bool TryGetServiceAction(string[] args, out Service.ServiceAction action)
         {
-            if (levels == LogLevel.None)
-                return LocalizationService.Translate(LocalizationService.Mark("none"));
-            if (levels == LogLevel.All)
-                return LocalizationService.Translate(LocalizationService.Mark("all"));
+            action = Service.ServiceAction.Status;
+            for (var i = 0; i < args.Length; i++)
+            {
+                switch (args[i].ToLowerInvariant())
+                {
+                    case "--service-status":
+                        action = Service.ServiceAction.Status;
+                        return true;
+                    case "--install-service":
+                        action = Service.ServiceAction.Install;
+                        return true;
+                    case "--uninstall-service":
+                        action = Service.ServiceAction.Uninstall;
+                        return true;
+                    case "--start-service":
+                        action = Service.ServiceAction.Start;
+                        return true;
+                    case "--stop-service":
+                        action = Service.ServiceAction.Stop;
+                        return true;
+                    case "--restart-service":
+                        action = Service.ServiceAction.Restart;
+                        return true;
+                }
+            }
 
-            var parts = new System.Collections.Generic.List<string>();
-            if ((levels & LogLevel.Error) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("error")));
-            if ((levels & LogLevel.Warning) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("warning")));
-            if ((levels & LogLevel.Info) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("info")));
-            if ((levels & LogLevel.Debug) != 0)
-                parts.Add(LocalizationService.Translate(LocalizationService.Mark("debug")));
-            return parts.Count == 0
-                ? LocalizationService.Translate(LocalizationService.Mark("none"))
-                : string.Join(",", parts);
+            return false;
         }
+
 
         private static string? GetArgumentValue(string[] args, string key)
         {
@@ -125,6 +147,85 @@ namespace TopSpeed.Server
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Attaching is the default when the executable is simply run and a server is already
+        /// here, since that is what double clicking it in a file manager should do. Anything
+        /// that configures a server is taken as meaning to start one.
+        /// </summary>
+        private static bool IsExplicitStart(string[] args)
+        {
+            if (args.Length == 0)
+                return false;
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (IsAttachArgument(args[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsAttachRequested(string[] args)
+        {
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (IsAttachArgument(args[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsAttachArgument(string arg)
+        {
+            return string.Equals(arg, "--attach", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// The installer writes this into the service registration, so its presence is exact.
+        /// Guessing from whether the process looks interactive is unreliable on .NET and would
+        /// misjudge a server started from a scheduled task or a wrapper.
+        /// </summary>
+        private static bool IsServiceMode(string[] args)
+        {
+            // The flag means "something else is managing me", which is as true of a systemd
+            // unit or a launchd job as of a Windows service, so it is read on every platform.
+            // It decides whether a console session is offered and whether the updater may start
+            // the program again once it has replaced it. Only the branch that runs the Windows
+            // service host is Windows only.
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], "--service", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The first thing an attaching client is shown, so it answers the question somebody
+        /// attaching to a server left running unattended actually has.
+        ///
+        /// Whether this is the service is part of that answer rather than a detail. It decides
+        /// what closing the window does, whether the server comes back with the machine, and
+        /// which of two servers on one machine has been reached, and the window on its own has
+        /// no way to tell.
+        /// </summary>
+        private static string DescribeServerStatus(ServerSettings settings)
+        {
+            var release = ServerUpdateConfig.CurrentVersion.ToMachineString();
+            var updates = StartupUpdateModes.Normalize(settings.StartupUpdateMode);
+
+            return Service.ServiceRuntime.IsRunningAsService
+                ? LocalizationService.Format(
+                    LocalizationService.Mark("Attached to service {0}, port {1}, update checking {2}."),
+                    release, settings.Port, updates)
+                : LocalizationService.Format(
+                    LocalizationService.Mark("Attached to TopSpeed Server {0}, port {1}, update checking {2}."),
+                    release, settings.Port, updates);
         }
 
         private static string BuildLogFilePath(string configuredPath)

@@ -326,8 +326,10 @@ refused one anyway, and deleting the file forgets the whole thing.
 The program that replaces the files is `TopSpeedUpdater`, beside the server. It writes each
 new file next to the old one and renames it into place, so the folder only ever holds whole
 files, and it replaces itself the same way, so a fix to it reaches every server through the
-ordinary update. A folder set up before it had that name still has the old `Updater`; that one
-runs the next update as it always did, brings `TopSpeedUpdater` in with it, and is then removed.
+ordinary update. A file that has not changed between releases is left alone. A folder set up
+before it had that name still has the old `Updater`; that one runs the next update as it always
+did and brings `TopSpeedUpdater` in with it, whose first run replaces every file in the folder and
+removes the old one.
 On Windows a file named `TopSpeedUpdater.exe.superseded` may sit in the folder between one
 update and the next: the old copy of a program that was running when it was replaced, cleared
 away by the run after.

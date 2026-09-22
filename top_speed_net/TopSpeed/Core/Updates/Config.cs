@@ -6,7 +6,7 @@ namespace TopSpeed.Core.Updates
 {
     internal sealed class UpdateConfig
     {
-        private const string RepoOwner = "diamondStar35";
+        private const string RepoOwner = "valiant8086";
         private const string RepoName = "top_speed";
 
         public UpdateConfig(

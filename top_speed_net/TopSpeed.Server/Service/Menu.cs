@@ -1,0 +1,443 @@
+using System;
+using System.Threading;
+using TopSpeed.Localization;
+using TopSpeed.Server.Commands;
+using TopSpeed.Server.Control;
+using TopSpeed.Server.Logging;
+
+namespace TopSpeed.Server.Service
+{
+    /// <summary>
+    /// Facts about how this process stands in relation to the service, which several parts of
+    /// the program need and none of them owns.
+    /// </summary>
+    internal static class ServiceRuntime
+    {
+        /// <summary>
+        /// Whether a service manager is running this process rather than a person.
+        ///
+        /// It decides whether a console session is offered, whether the updater may start the
+        /// program again once it has replaced it, and whether this process may ask for rights.
+        /// A managed process cannot: there is no desktop for a consent prompt to appear on.
+        /// </summary>
+        public static bool IsRunningAsService { get; set; }
+
+        /// <summary>
+        /// Whether this window is giving the folder up so the service can have it. The server it
+        /// was talking to, or running, stops first; once everything is released the service is
+        /// started and this window connects to it.
+        /// </summary>
+        public static bool HandingOverToService { get; set; }
+    }
+
+    /// <summary>
+    /// Everything that can be asked about this folder's service, from wherever it is asked.
+    ///
+    /// Three places ask: a server running in its own window, a window attached to a server
+    /// elsewhere, and a command line carrying a flag. They differ in one respect, which is
+    /// whether they can stop the server currently holding the folder, so that is the one thing
+    /// handed in. Deliberately free of any dependency on loaded configuration, since two of the
+    /// three have none.
+    /// </summary>
+    internal static class ServiceConsole
+    {
+        /// <summary>
+        /// How often a handover looks to see whether the folder has changed hands yet. Every one
+        /// of these is time players are not being served, and looking costs a directory listing,
+        /// so it is short.
+        /// </summary>
+        private const int PollInterval = 100;
+
+
+        /// <param name="countPlayers">
+        /// How many players would be disconnected by stopping the server, when that can be
+        /// known. A server running in this process can say; a window attached to one elsewhere
+        /// cannot, and passes nothing.
+        /// </param>
+        public static void Run(string arguments, string directory, Action? stopHostingServer, Func<int>? countPlayers = null)
+        {
+            // A word this does not know is treated as though none had been given, because the menu
+            // both says what the choices are and lets one be made. Naming the mistake and listing
+            // the verbs would be two sentences to reach the same place, and somebody who typed a
+            // verb meant to act rather than to read.
+            var verb = (arguments ?? string.Empty).Trim();
+            var named = TryParseVerb(verb, out var action);
+
+            // A server running as root can carry all of this out, so it gets the menu Windows
+            // gets. That is not the odd case it sounds like: root is the only account on plenty
+            // of rented machines, which is exactly where the server is allowed to run as it.
+            if (!OperatingSystem.IsWindows() && !Environment.IsPrivilegedProcess)
+            {
+                ConsoleSink.WriteLine(UnprivilegedAnswer(verb, directory));
+                return;
+            }
+
+            if (!named)
+            {
+                ShowMenu(directory, stopHostingServer, countPlayers);
+                return;
+            }
+
+            Perform(action, directory, stopHostingServer, countPlayers);
+        }
+
+        /// <summary>
+        /// What a server on Linux or macOS answers when asked to touch the service. Nothing there
+        /// can be carried out from inside a running server: install, uninstall, start, stop and
+        /// restart all need root, which this process cannot acquire while it is running, so a
+        /// menu whose every branch says the same sentence says it instead of offering the choice.
+        ///
+        /// Kept apart from the branch that reaches it so it can be checked on any platform. The
+        /// mistake it exists to prevent is naming the wrong action, which reads as perfectly
+        /// correct unless the verb is compared against the flag: one sentence serving five verbs
+        /// is only an improvement while it stays right about which one it is answering, and
+        /// telling somebody who asked to restart the service to install it is worse than silence.
+        /// </summary>
+        internal static string UnprivilegedAnswer(string verb, string directory)
+        {
+            var named = TryParseVerb((verb ?? string.Empty).Trim(), out var action);
+
+            // Said whatever was asked for, because it is the one thing here that can be answered
+            // without rights and it is very often what somebody wanted anyway. Somebody who typed
+            // stop wants to know whether it is running rather more than they want to be told no.
+            var status = ServiceCommands.Describe(ServiceManagers.ForCurrentPlatform().Query(directory), directory);
+
+            // And nothing more, when status is all that was asked for. Following it with a
+            // command to run would be answering a question nobody had, about rights this did not
+            // need.
+            if (named && action == ServiceAction.Status)
+                return status;
+
+            // No verb means the menu was asked for, and install is what somebody opening it
+            // almost always wants. An unknown word is treated the same, as it is everywhere else.
+            return status + "\n" + ServiceCommands.RootNeeded(directory, named ? action : ServiceAction.Install);
+        }
+
+        private static bool TryParseVerb(string verb, out ServiceAction action)
+        {
+            switch (verb.ToLowerInvariant())
+            {
+                case "install":
+                    action = ServiceAction.Install;
+                    return true;
+                case "uninstall":
+                    action = ServiceAction.Uninstall;
+                    return true;
+                case "start":
+                    action = ServiceAction.Start;
+                    return true;
+                case "stop":
+                    action = ServiceAction.Stop;
+                    return true;
+                case "restart":
+                    action = ServiceAction.Restart;
+                    return true;
+                case "status":
+                    action = ServiceAction.Status;
+                    return true;
+                default:
+                    action = ServiceAction.Status;
+                    return false;
+            }
+        }
+
+        private static void ShowMenu(string directory, Action? stopHostingServer, Func<int>? countPlayers)
+        {
+            var manager = ServiceManagers.ForCurrentPlatform();
+
+            while (true)
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark("Service:"));
+                ConsoleSink.WriteLine(ServiceCommands.Describe(manager.Query(directory), directory));
+
+                ConsoleSink.WriteLine(LocalizationService.Mark("1. Install"));
+                ConsoleSink.WriteLine(LocalizationService.Mark("2. Uninstall"));
+                ConsoleSink.WriteLine(LocalizationService.Mark("3. Start"));
+                ConsoleSink.WriteLine(LocalizationService.Mark("4. Stop"));
+                ConsoleSink.WriteLine(LocalizationService.Mark("5. Restart"));
+                ConsoleSink.WriteLine(LocalizationService.Mark("0. Back"));
+
+                if (!CommandInput.TryReadLine(LocalizationService.Translate(LocalizationService.Mark("Enter option number:")), out var raw))
+                    return;
+
+                var choice = raw.Trim();
+                if (choice.Length == 0)
+                    continue;
+
+                if (string.Equals(choice, "0", StringComparison.Ordinal))
+                    return;
+
+                ServiceAction action;
+                switch (choice)
+                {
+                    case "1":
+                        action = ServiceAction.Install;
+                        break;
+                    case "2":
+                        action = ServiceAction.Uninstall;
+                        break;
+                    case "3":
+                        action = ServiceAction.Start;
+                        break;
+                    case "4":
+                        action = ServiceAction.Stop;
+                        break;
+                    case "5":
+                        action = ServiceAction.Restart;
+                        break;
+                    default:
+                        ConsoleSink.WriteLine(LocalizationService.Mark("That is not one of the choices."));
+                        continue;
+                }
+
+                if (Perform(action, directory, stopHostingServer, countPlayers))
+                    return;
+            }
+        }
+
+        /// <summary>
+        /// Carries out one action. Returns true when the caller should stop asking for more,
+        /// which happens when the folder is being handed over and this window is on its way to
+        /// becoming a connection to the service.
+        /// </summary>
+        private static bool Perform(ServiceAction action, string directory, Action? stopHostingServer, Func<int>? countPlayers)
+        {
+            if (ServiceRuntime.IsRunningAsService)
+            {
+                // Reached only by something speaking to a service directly, since a window
+                // attached to one answers the service command itself rather than passing it on.
+                // A consent prompt would have nowhere to appear, so say who can be asked.
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "This server is the service, so it cannot install or control itself. Run the server program from its own folder and use its service menu, which can ask for the rights this needs."));
+                return false;
+            }
+
+            var startingUp = action == ServiceAction.Start || action == ServiceAction.Restart;
+            if (startingUp)
+            {
+                var status = ServiceManagers.ForCurrentPlatform().Query(directory);
+
+                // Asked before anything is offered, because stopping a server is only worth
+                // discussing when there is a service to hand the folder to and it is not already
+                // holding it. Both of these answer in one line and neither is worth a question.
+                //
+                // Unsupported belongs with them, and did not use to. It is what systemd and
+                // launchd report, since neither is asked, and a handover cannot be carried out
+                // against an answer of "I do not know": this would stop the running server, print
+                // a command nobody had run, wait a minute for a service that was never started,
+                // and report that nothing is running. Which was true, and its own doing.
+                var pointless = status.State == ServiceInstallState.NotInstalled
+                    || status.State == ServiceInstallState.Unsupported
+                    || (action == ServiceAction.Start && status.State == ServiceInstallState.Running);
+
+                if (!pointless && stopHostingServer != null && ControlTransport.EndpointExists(directory))
+                {
+                    // Only one server may hold a folder, so a service that is running is the
+                    // server this window is talking to. That is the difference between a restart
+                    // and a handover, and the two have different things worth saying.
+                    return HandOverToService(
+                        directory,
+                        stopHostingServer,
+                        countPlayers,
+                        theServiceIsTheServerHere: status.State == ServiceInstallState.Running);
+                }
+            }
+
+            ServiceCommands.Execute(action, directory, startAutomatically: true);
+            return false;
+        }
+
+        /// <summary>
+        /// Gives the folder to the service and stays to talk to it.
+        ///
+        /// Only one server may run from a folder, so starting the service means the server
+        /// holding it has to stop. This window does not: it stops being a server, or stops
+        /// talking to one, and once everything is released the service is started and this same
+        /// window connects to it. The actual handover happens once the caller has unwound and
+        /// the folder is genuinely free, which is why this only asks and marks.
+        ///
+        /// Asking at all is reserved for when somebody would notice, and when this window is in
+        /// a position to say so.
+        /// </summary>
+        /// <param name="theServiceIsTheServerHere">
+        /// Whether the server about to be stopped is the service itself, in which case this is a
+        /// restart rather than a handover and nothing is changing hands.
+        /// </param>
+        private static bool HandOverToService(
+            string directory,
+            Action stopHostingServer,
+            Func<int>? countPlayers,
+            bool theServiceIsTheServerHere)
+        {
+            if (!AgreedToDisconnectPlayers(countPlayers))
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark("Left running. The service was not started."));
+                return false;
+            }
+
+            ServiceRuntime.HandingOverToService = true;
+
+            // Said only when a server somebody started themselves is about to be stopped, which
+            // is the part nobody asked for and the only part worth explaining. Restarting the
+            // service explains itself: what follows is the server logging its own shutdown, the
+            // manager reporting it running again, and the greeting naming what this window is
+            // attached to, which between them leave nothing for a line here to add.
+            if (!theServiceIsTheServerHere)
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "Shutting down this interactive server."));
+            }
+
+            stopHostingServer();
+            return true;
+        }
+
+        /// <summary>
+        /// Whether to go ahead, asked only when there is somebody to be asked about.
+        ///
+        /// A window attached to a server elsewhere cannot count who is on it, and a question that
+        /// cannot name what it would interrupt is a guess dressed as care. Stopping the service
+        /// outright disconnects exactly the same players and asks nothing, so a guess here would
+        /// not even be the strict path, only the noisier one.
+        /// </summary>
+        private static bool AgreedToDisconnectPlayers(Func<int>? countPlayers)
+        {
+            var players = countPlayers?.Invoke() ?? 0;
+            if (players <= 0)
+                return true;
+
+            return Confirm(LocalizationService.Format(
+                LocalizationService.Mark("This will drop {0} connected players until the service comes online. Proceed? (y/n)"),
+                players));
+        }
+
+        /// <summary>
+        /// Starts the service now that the folder is free, and connects this window to it.
+        ///
+        /// Called once nothing is left holding the folder, which is the whole reason it is not
+        /// done where it was asked for: a server cannot release what it is using and watch what
+        /// happens next in the same breath. That is as true of the second handover as the first,
+        /// so this goes round again whenever the window it hands back is asked to do the same
+        /// thing, rather than leaving the asking answered by nobody.
+        /// </summary>
+        public static int CompleteHandover(string directory)
+        {
+            while (true)
+            {
+                // Cleared as this one starts, so that finding it set again below can only mean
+                // the session asked for another handover of its own.
+                ServiceRuntime.HandingOverToService = false;
+
+                // Being asked to stop and being stopped are not the same moment. A service
+                // refuses to start while the folder's endpoint is still held, and cannot be
+                // started at all while the manager is still stopping the last one, so both of
+                // those would be reported as a handover that failed when all that was wrong was
+                // the timing.
+                if (!WaitForFolderToBeFree(directory, TimeSpan.FromSeconds(30)))
+                {
+                    ConsoleSink.WriteLine(LocalizationService.Mark(
+                        "The server has not finished stopping, so the service was not started."));
+                    return 1;
+                }
+
+                // Through the same route as a start asked for directly, rather than straight at
+                // the manager. A service registered before this program granted interactive
+                // accounts the right to start it can still only be started with administrator
+                // rights, and that route is the one that knows how to ask for them.
+                if (ServiceCommands.Execute(ServiceAction.Start, directory, startAutomatically: true) != 0)
+                    return NothingRunningHere();
+
+                var result = Reattach(directory, TimeSpan.FromSeconds(60));
+                if (!ServiceRuntime.HandingOverToService)
+                    return result;
+            }
+        }
+
+        /// <summary>
+        /// Waits for the new server to be ready and attaches to it.
+        ///
+        /// A service reports itself running the moment its process is up, which is before that
+        /// process has read its settings and opened anything, so the first few attempts finding
+        /// nothing there is the normal course of events rather than a failure. Only the endpoint
+        /// answers the question being asked, so it is tried until it does or until long enough
+        /// has passed that something is genuinely wrong.
+        ///
+        /// Says nothing while it waits. The wait is a fraction of a second, and the greeting it
+        /// ends on already announces what happened, so anything here would be a line whose only
+        /// news is that the next line is coming.
+        /// </summary>
+        private static int Reattach(string directory, TimeSpan limit)
+        {
+            var deadline = DateTime.UtcNow + limit;
+            while (DateTime.UtcNow < deadline)
+            {
+                if (ControlTransport.EndpointExists(directory))
+                {
+                    // Anything other than nothing being there has been reported by the client
+                    // itself and will not come right by asking again.
+                    var outcome = ControlClient.Run(directory);
+                    if (outcome != ControlClientOutcome.NoServerRunning)
+                        return outcome == ControlClientOutcome.SessionEnded ? 0 : 1;
+                }
+
+                // Short, because the whole of this is time a server is not answering players and
+                // the cost of looking is a directory listing.
+                Thread.Sleep(PollInterval);
+            }
+
+            if (ServiceManagers.ForCurrentPlatform().Query(directory).State == ServiceInstallState.Running)
+            {
+                // Worth telling apart from nothing running: the players are fine and only this
+                // window missed out, so the remedy is to attach again rather than to start
+                // anything.
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "The service is running, but this instance could not attach to it. Run the server program from this folder again to retry."));
+                return 1;
+            }
+
+            return NothingRunningHere();
+        }
+
+        private static int NothingRunningHere()
+        {
+            // Said plainly because the folder was given up on the strength of this working. The
+            // remedy is the ordinary one, and saying so is better than leaving somebody to
+            // wonder whether anything is still serving players.
+            ConsoleSink.WriteLine(LocalizationService.Mark(
+                "The service failed to start and is unavailable to attach. No server is running now. Try running the server again."));
+            return 1;
+        }
+
+        /// <summary>
+        /// Waits for the old server to let the folder go. The endpoint is the plainest statement
+        /// of that: it is gone once the server holding it has finished stopping, whoever stopped
+        /// it and however it was asked.
+        /// </summary>
+        private static bool WaitForFolderToBeFree(string directory, TimeSpan limit)
+        {
+            var deadline = DateTime.UtcNow + limit;
+            while (DateTime.UtcNow < deadline)
+            {
+                if (!ControlTransport.EndpointExists(directory))
+                    return true;
+
+                Thread.Sleep(PollInterval);
+            }
+
+            return false;
+        }
+
+        private static bool Confirm(string question)
+        {
+            if (!CommandInput.TryReadLine(question, out var answer))
+                return false;
+
+            var text = answer.Trim();
+
+            // Anything that is not plainly yes is a no, because the cost of misreading it is a
+            // server stopped by somebody who did not ask for that.
+            return string.Equals(text, "y", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(text, "yes", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}

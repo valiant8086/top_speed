@@ -16,7 +16,7 @@ The game versioning follows a specific pattern by using year.month.day.revision,
 ## 2026.9.17.6
 ### Server Changes
 - Fixed the attached window on Linux and macOS dying with a bus error the moment its server left to update, right after saying it would attach again. It was waiting as itself, from files the updater was rewriting underneath it. It now becomes a shell for the wait, as the server does on its own way out, and becomes the updated program once the server is back.
-- A download watched from an attached window, or by a server with no console, now reports its progress every quarter rather than every percent, with the amount fetched so far on each line.
+- A download watched from an attached window, or by a server with no console, now reports its progress every tenth rather than every percent, with the amount fetched so far on each line.
 
 ## 2026.9.17.5
 ### Server Changes

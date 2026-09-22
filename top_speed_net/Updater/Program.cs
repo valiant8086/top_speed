@@ -179,6 +179,15 @@ namespace TopSpeed.Updater
 
             SweepSuperseded(targetDir, enableLog, logPath);
 
+            // The first run after the old updater rewrites every file, changed or not. The old
+            // one rewrote files in place, and macOS can refuse to run a program whose file was
+            // rewritten that way however correct its contents; the only cure is a new file, which
+            // this run gives every file. From then on nothing is ever rewritten in place, so a file
+            // that has not changed can safely be left alone.
+            var refreshEverything = File.Exists(Path.Combine(targetDir, ResolveExecutableFileName(LegacyUpdaterStem)));
+            if (refreshEverything)
+                Log(enableLog, logPath, "First run after the old updater: every file is replaced.");
+
             using (var archive = ZipFile.OpenRead(zipPath))
             {
                 var bundlePayloadPrefix = ResolveBundlePayloadPrefix(options, archive, targetDir);
@@ -211,7 +220,7 @@ namespace TopSpeed.Updater
                     if (!string.IsNullOrWhiteSpace(parent))
                         Directory.CreateDirectory(parent);
 
-                    if (IsAlreadyInPlace(entry, destination))
+                    if (!refreshEverything && IsAlreadyInPlace(entry, destination))
                     {
                         Log(enableLog, logPath, $"Unchanged, left alone: {entry.FullName}");
                         unchangedCount++;
@@ -517,17 +526,9 @@ namespace TopSpeed.Updater
         /// release are such files: the runtime, the libraries, the sounds. Leaving them alone
         /// means fewer writes, and it means a program still running from one of them, or still
         /// mapping it, is never disturbed for nothing.
-        ///
-        /// Not on macOS. There the kernel remembers a program's signature by the file it was
-        /// run from, and a file that was refused for that reason is cured only by becoming a
-        /// new file, which every update does for every file when nothing is skipped. On macOS
-        /// the write is the repair, and it is kept.
         /// </summary>
         private static bool IsAlreadyInPlace(ZipArchiveEntry entry, string destination)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return false;
-
             try
             {
                 var existing = new FileInfo(destination);

@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>TopSpeed.Updater</RootNamespace>
-    <AssemblyName>Updater</AssemblyName>
+    <AssemblyName>TopSpeedUpdater</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">

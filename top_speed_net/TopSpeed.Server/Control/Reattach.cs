@@ -59,6 +59,13 @@ namespace TopSpeed.Server.Control
             var script = new StringBuilder();
             script.Append("cd ").Append(UpdateHandoff.Quote(directory)).Append(" || exit 1\n");
 
+            // The moment this window lost its server, for judging the endpoint below. Taken
+            // first, before any waiting. Taken after the marker cleared it raced the server,
+            // which polls for the same marker on the same one-second clock and could bind first,
+            // leaving an endpoint older than the stamp that nothing would ever count and a window
+            // that sat out the whole bound before attaching.
+            script.Append("_since=$(mktemp) || exit 1\n");
+
             // The update first: the marker is cleared once the files are in place. Bounded, as
             // every wait on this file is.
             script.Append("i=0\n");
@@ -69,8 +76,7 @@ namespace TopSpeed.Server.Control
             // Then the server, which takes a moment to start and to bind its endpoint. The
             // endpoint file says it has, but only a fresh one: a server that was killed leaves
             // its file behind, and a new server replaces that file when it binds, so only a file
-            // newer than the moment the update finished counts.
-            script.Append("_since=$(mktemp) || exit 1\n");
+            // newer than the moment this window lost its server counts.
             script.Append("j=0\n");
             script.Append("while ! [ ").Append(UpdateHandoff.Quote(ControlEndpoint.SocketFileName))
                 .Append(" -nt \"$_since\" ] && [ $j -lt ").Append(ServerWaitSeconds.ToString(CultureInfo.InvariantCulture))

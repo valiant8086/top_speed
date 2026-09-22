@@ -32,18 +32,21 @@ namespace TopSpeed.Tests.Server
         }
 
         [Fact]
-        public void ItWaitsForAnEndpointNewerThanTheEndOfTheUpdate()
+        public void ItWaitsForAnEndpointNewerThanTheMomentItLostItsServer()
         {
             // A killed server leaves its endpoint file behind. Counting that one would attach to
-            // nothing and say the server is not running while a new one is still starting.
+            // nothing and say the server is not running while a new one is still starting. The
+            // stamp is taken before any waiting: taken once the marker had cleared, it raced the
+            // server, which could bind first and then never count, and the window sat out the
+            // whole bound before attaching.
             var script = Script();
-            var marker = script.IndexOf(UpdateMarker.FileName, System.StringComparison.Ordinal);
             var stamp = script.IndexOf("_since=$(mktemp)", System.StringComparison.Ordinal);
+            var marker = script.IndexOf(UpdateMarker.FileName, System.StringComparison.Ordinal);
             var endpoint = script.IndexOf("\"" + ControlEndpoint.SocketFileName + "\" -nt \"$_since\"", System.StringComparison.Ordinal);
 
-            marker.Should().BePositive();
-            stamp.Should().BeGreaterThan(marker, "the stamp is taken once the update is over");
-            endpoint.Should().BeGreaterThan(stamp, "and the endpoint is measured against it");
+            stamp.Should().BePositive();
+            marker.Should().BeGreaterThan(stamp, "the stamp comes before the wait for the update");
+            endpoint.Should().BeGreaterThan(marker, "and the endpoint is waited for once the update is over");
         }
 
         [Fact]

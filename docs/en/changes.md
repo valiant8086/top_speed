@@ -5,6 +5,13 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.22.1
+### Game Changes
+- Fork test build of the updater change. Updating to it from the starting-point build is the migration: the old Updater runs once more and brings TopSpeedUpdater in.
+
+### Server Changes
+- Fork test build of the updater change. Updating to it from the starting-point build is the migration: the old Updater runs once more and brings TopSpeedUpdater in.
+
 ##2026.8.29
 ###Game Changes
 - Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.

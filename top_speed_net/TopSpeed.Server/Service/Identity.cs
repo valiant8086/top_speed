@@ -29,12 +29,9 @@ namespace TopSpeed.Server.Service
         }
 
         /// <summary>
-        /// The account a service installed from here should run as.
-        ///
-        /// Normally whoever is running this, and under sudo emphatically not: there the process
-        /// is root, and a registration naming root would give the server more than it needs and
-        /// leave root owned files in a folder its owner has to be able to replace. Sudo says who
-        /// asked, which is the account that owns the folder and the one meant all along.
+        /// The account a service installed from here should run as: whoever owns the folder,
+        /// and never root on that owner's behalf. The three facts on offer, and the order they
+        /// are believed in, are set out on the method below that chooses between them.
         /// </summary>
         public static string OwningUserName(string directory)
         {

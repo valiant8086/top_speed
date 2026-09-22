@@ -147,11 +147,11 @@ sudo ./TopSpeed.Server --install-service
 ```
 
 That writes the systemd unit or launchd job where the system keeps them, loads it, and reports
-what it registered. It works out which account the service should run as from `SUDO_USER`, so
-the server runs as **you** and not as root. That matters: a server running as root leaves files
-in its own folder that your account cannot replace when it updates. For the same reason it
-refuses to install when it cannot tell who you are, such as when you are logged in as root
-rather than using `sudo`.
+what it registered. The service is registered to run as **the account that owns the server
+folder**, which is you and not root, however you became root to install it — `sudo` or `su`
+both work. That matters: a server running as root leaves files in its own folder that your
+account cannot replace when it updates. The sections below cover the details, including a
+machine with no `sudo` and one where root is the only account.
 
 `--uninstall-service`, `--start-service`, `--stop-service` and `--restart-service` work the same
 way. Run any of them without `sudo` and nothing happens except that you are told the command to

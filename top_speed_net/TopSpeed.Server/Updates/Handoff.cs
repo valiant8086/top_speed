@@ -56,9 +56,6 @@ namespace TopSpeed.Server.Updates
 
         private static string? _pending;
 
-        /// <summary>Whether an update wants this process replaced on its way out.</summary>
-        public static bool IsPending => _pending != null;
-
         /// <summary>
         /// Records what to become. Deliberately not acted on here: exec unwinds nothing, so it
         /// has to happen after the server has released its port, its control socket and its log,

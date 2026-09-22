@@ -416,13 +416,6 @@ namespace TopSpeed.Server.Updates
             PerformInstall(update, showProgress: true);
         }
 
-        public void ReleaseForcedInstall()
-        {
-            lock (_gate)
-            {
-                _installing = false;
-            }
-        }
 
         private void RunLoop()
         {

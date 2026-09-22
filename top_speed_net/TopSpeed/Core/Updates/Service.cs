@@ -55,9 +55,14 @@ namespace TopSpeed.Core.Updates
                 var expectedAsset = _config.BuildExpectedAssetName(info.Version ?? string.Empty);
                 var asset = FindAsset(release, expectedAsset);
                 if (asset == null || string.IsNullOrWhiteSpace(asset.DownloadUrl))
+                {
+                    // The version list is published as soon as a version is bumped, but the
+                    // download itself only appears once that build finishes. Naming the old
+                    // zip file here read like a fault in the game, so say what is happening.
                     return Fail(LocalizationService.Format(
-                        LocalizationService.Mark("Update package '{0}' was not found in the latest release."),
-                        expectedAsset));
+                        LocalizationService.Mark("Version {0} is available, but its download has not finished publishing yet. This usually clears within a few minutes. Please try again shortly."),
+                        info.Version ?? string.Empty));
+                }
 
                 return new UpdateCheckResult
                 {
@@ -186,6 +191,22 @@ namespace TopSpeed.Core.Updates
                         }
                     }
 
+                    // A connection that drops mid-transfer ends the read loop without an
+                    // exception, so a short file is the signature of a truncated download.
+                    if (totalBytes > 0 && downloaded != totalBytes)
+                    {
+                        TryDeleteIncompleteDownload(zipPath);
+                        return new DownloadResult
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = LocalizationService.Format(
+                                LocalizationService.Mark("The download is incomplete. Expected {0} bytes but received {1}."),
+                                totalBytes,
+                                downloaded),
+                            ZipPath = zipPath
+                        };
+                    }
+
                     onProgress?.Invoke(new DownloadProgress
                     {
                         DownloadedBytes = downloaded,
@@ -203,6 +224,7 @@ namespace TopSpeed.Core.Updates
             }
             catch (TaskCanceledException)
             {
+                TryDeleteIncompleteDownload(zipPath);
                 return new DownloadResult
                 {
                     IsSuccess = false,
@@ -212,6 +234,7 @@ namespace TopSpeed.Core.Updates
             }
             catch (Exception ex)
             {
+                TryDeleteIncompleteDownload(zipPath);
                 return new DownloadResult
                 {
                     IsSuccess = false,
@@ -220,6 +243,19 @@ namespace TopSpeed.Core.Updates
                         ex.Message),
                     ZipPath = zipPath
                 };
+            }
+        }
+
+        private static void TryDeleteIncompleteDownload(string zipPath)
+        {
+            try
+            {
+                if (File.Exists(zipPath))
+                    File.Delete(zipPath);
+            }
+            catch
+            {
+                // Leaving a stray zip behind is harmless; the next attempt overwrites it.
             }
         }
 

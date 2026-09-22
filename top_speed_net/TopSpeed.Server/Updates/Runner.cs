@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using TopSpeed.Server.Commands;
 using TopSpeed.Server.Logging;
 
 using TopSpeed.Localization;
@@ -25,33 +26,25 @@ namespace TopSpeed.Server.Updates
             _service = new ServerUpdateService(_config);
         }
 
-        public bool RunInteractiveCheck()
+        /// <summary>
+        /// Performs the check and reports what it found without printing anything. The caller
+        /// decides what to say, because the same check runs both from the command prompt with
+        /// somebody watching and from the scheduler with nobody watching.
+        /// </summary>
+        public ServerUpdateCheckResult Check()
         {
-            ConsoleSink.WriteLine(LocalizationService.Mark("Checking for update..."));
-            var result = _service
+            return _service
                 .CheckAsync(ServerUpdateConfig.CurrentVersion, CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
+        }
 
-            if (!result.IsSuccess)
-            {
-                var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
-                    ? LocalizationService.Mark("Update check failed.")
-                    : result.ErrorMessage;
-                _logger.Warning(LocalizationService.Format(
-                    LocalizationService.Mark("Server update check failed: {0}"),
-                    message));
-                ConsoleSink.WriteLine(message);
-                return false;
-            }
+        /// <summary>Prints the version banner and the list of changes for an available update.</summary>
+        public void WriteChangelog(ServerUpdateInfo update)
+        {
+            if (update == null)
+                return;
 
-            if (result.Update == null)
-            {
-                ConsoleSink.WriteLine(LocalizationService.Mark("Server is up-to-date."));
-                return false;
-            }
-
-            var update = result.Update;
             var currentVersion = ServerUpdateConfig.CurrentVersion.ToMachineString();
             ConsoleSink.WriteLineFormat(LocalizationService.Mark("A new update is available for the server. Your current server version is {0}. Available version: {1}."),
                 currentVersion,
@@ -60,36 +53,45 @@ namespace TopSpeed.Server.Updates
             if (update.Changes.Count == 0)
             {
                 ConsoleSink.WriteLine(LocalizationService.Mark("No changes were listed for this update."));
+                return;
             }
-            else
+
+            for (var i = 0; i < update.Changes.Count; i++)
             {
-                for (var i = 0; i < update.Changes.Count; i++)
-                {
-                    var change = update.Changes[i];
-                    if (string.IsNullOrWhiteSpace(change))
-                        continue;
-                    ConsoleSink.WriteLine(change.Trim());
-                }
+                var change = update.Changes[i];
+                if (string.IsNullOrWhiteSpace(change))
+                    continue;
+                ConsoleSink.WriteLine(change.Trim());
             }
+        }
 
-            if (!TryPromptYesNo(LocalizationService.Mark("Would you like to download the update? (y/n)"), out var shouldDownload))
+        /// <summary>
+        /// Downloads the update and hands off to the updater, which waits for this process to
+        /// exit before swapping any files. Progress is only drawn when somebody asked for the
+        /// update by hand; an unattended install stays quiet.
+        /// </summary>
+        public bool Install(ServerUpdateInfo update, bool showProgress)
+        {
+            if (update == null)
+                return false;
+
+            if (showProgress)
             {
-                var message = LocalizationService.Mark("Standard input is not available. Update download was skipped.");
-                _logger.Warning(message);
-                ConsoleSink.WriteLine(message);
-                return false;
+                ConsoleSink.WriteLine(LocalizationService.Mark("Downloading..."));
+                ResetProgress();
             }
 
-            if (!shouldDownload)
-                return false;
-
-            ConsoleSink.WriteLine(LocalizationService.Mark("Downloading..."));
-            ResetProgress();
             var download = _service
-                .DownloadAsync(update, AppContext.BaseDirectory, RenderProgress, CancellationToken.None)
+                .DownloadAsync(
+                    update,
+                    AppContext.BaseDirectory,
+                    showProgress ? RenderProgress : null,
+                    CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
-            CompleteProgressLine();
+
+            if (showProgress)
+                CompleteProgressLine();
 
             if (!download.IsSuccess)
             {
@@ -103,10 +105,7 @@ namespace TopSpeed.Server.Updates
                 return false;
             }
 
-            if (!StartUpdater(download.ZipPath))
-                return false;
-
-            return true;
+            return StartUpdater(download.ZipPath);
         }
 
         private bool StartUpdater(string zipPath)
@@ -120,6 +119,13 @@ namespace TopSpeed.Server.Updates
                     RuntimeAssetResolver.ResolveExecutableFileName(_config.UpdaterEntryName));
                 return false;
             }
+
+            // A server somebody started in a terminal on Linux or macOS leaves by becoming the
+            // update rather than by launching it and exiting, so that the terminal never changes
+            // hands and the server that comes back can be typed at. A service does not: it has no
+            // terminal to keep, and its manager is what starts it again.
+            if (!OperatingSystem.IsWindows() && !Service.ServiceRuntime.IsRunningAsService)
+                return PrepareHandoff(root, updaterPath, zipPath);
 
             try
             {
@@ -141,17 +147,96 @@ namespace TopSpeed.Server.Updates
                 startInfo.ArgumentList.Add(_config.ServerEntryName);
                 startInfo.ArgumentList.Add("--skip");
                 startInfo.ArgumentList.Add(_config.UpdaterEntryName);
-                Process.Start(startInfo);
+
+                if (Service.ServiceRuntime.IsRunningAsService)
+                {
+                    // A service is started by the service manager and by nothing else. Letting
+                    // the updater launch the executable would leave a server running that the
+                    // manager has no idea about, sitting on the folder its own service needs,
+                    // while the service itself still reads as stopped.
+                    startInfo.ArgumentList.Add("--no-restart");
+
+                    // Which leaves who asks the manager, and the platforms answer differently.
+                    // systemd and launchd both start a unit again on their own when its process
+                    // ends, so there the wait is all that is needed and all that is wanted.
+                    // Windows does not: it only restarts a service it believes crashed, so
+                    // without this the comeback is a stop dressed up as a failure and the two
+                    // minute pause before the manager acts on it. The updater has the account
+                    // and the folder to ask directly, and asking takes seconds.
+                    if (OperatingSystem.IsWindows())
+                        startInfo.ArgumentList.Add("--start-service");
+                }
+
+                var updater = Process.Start(startInfo);
+
+                // Raised for anything that looks in the folder from here on: the units on Linux
+                // and macOS wait for it before starting the server again, and a person who runs
+                // the program during an update reads it and leaves rather than locking the very
+                // files being replaced. Written after starting, because the id is the point and
+                // it is not known before; the server has its whole shutdown still to do, so this
+                // is long since on disk by the time anything can act on the server being gone.
+                // A server somebody started themselves is opened again by the updater when it
+                // finishes; a service comes back with no window at all. Recorded here because
+                // this is the only place that knows which of the two just happened.
+                if (updater != null)
+                    UpdateMarker.Raise(root, updater.Id, !Service.ServiceRuntime.IsRunningAsService);
+
                 return true;
             }
             catch (Exception ex)
             {
+                // Nothing is going to replace anything, so a wait for it to finish would be five
+                // minutes spent waiting for an update that never started.
+                UpdateMarker.Clear(root);
+
                 _logger.Warning(LocalizationService.Format(
                     LocalizationService.Mark("Could not launch updater: {0}"),
                     ex.Message));
                 ConsoleSink.WriteLineFormat(LocalizationService.Mark("Could not launch updater: {0}"), ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Arranges for this process to become the update on its way out, rather than starting
+        /// anything now. Nothing is launched here: exec unwinds nothing, so it has to wait until
+        /// the port, the control socket and the log have been let go of.
+        ///
+        /// The marker is raised against this process id, which is the one that stays alive for
+        /// the whole update — first as the script, then as the server it becomes.
+        /// </summary>
+        private bool PrepareHandoff(string root, string updaterPath, string zipPath)
+        {
+            var serverPath = ResolveExecutablePath(root, _config.ServerEntryName);
+            if (!File.Exists(serverPath))
+            {
+                ConsoleSink.WriteLineFormat(
+                    LocalizationService.Mark("Updater not found: {0}"),
+                    RuntimeAssetResolver.ResolveExecutableFileName(_config.ServerEntryName));
+                return false;
+            }
+
+            UpdateHandoff.Prepare(UpdateHandoff.BuildScript(
+                root,
+                updaterPath,
+                zipPath,
+                _config.ServerEntryName,
+                _config.UpdaterEntryName,
+                serverPath));
+
+            UpdateMarker.RaiseForHandoff(root, Environment.ProcessId);
+
+            // Only when the window is this server's own. Said to an attached window it was a
+            // promise about a window the server does not have: that window belongs to the
+            // client, which is disconnected when this process leaves and says so itself, and
+            // on Linux and macOS attaches again by itself once the update is done.
+            if (!Commands.CommandSessions.HasAttachedSession)
+            {
+                ConsoleSink.WriteLine(LocalizationService.Mark(
+                    "Installing the update. This window comes back with the new server when it is done."));
+            }
+
+            return true;
         }
 
         private static string ResolveExecutablePath(string root, string executableStem)
@@ -171,60 +256,25 @@ namespace TopSpeed.Server.Updates
             return matches[0];
         }
 
-        private static bool TryPromptYesNo(string prompt, out bool value)
-        {
-            value = false;
-            while (true)
-            {
-                if (!ConsoleSink.WriteLine(prompt))
-                    return false;
-
-                string? line;
-                try
-                {
-                    line = Console.ReadLine();
-                }
-                catch (InvalidOperationException)
-                {
-                    return false;
-                }
-                catch (IOException)
-                {
-                    return false;
-                }
-
-                if (line == null)
-                    return false;
-
-                var text = line.Trim();
-                if (text.Equals("y", StringComparison.OrdinalIgnoreCase) ||
-                    text.Equals("yes", StringComparison.OrdinalIgnoreCase))
-                {
-                    value = true;
-                    return true;
-                }
-
-                if (text.Equals("n", StringComparison.OrdinalIgnoreCase) ||
-                    text.Equals("no", StringComparison.OrdinalIgnoreCase))
-                {
-                    value = false;
-                    return true;
-                }
-
-                ConsoleSink.WriteLine(LocalizationService.Mark("Invalid input. Enter y or n."));
-            }
-        }
-
         private void RenderProgress(ServerDownloadProgress progress)
         {
             var percent = Math.Clamp(progress.Percent, 0, 100);
+            var downloadedText = FormatBytes(progress.DownloadedBytes);
+            var totalText = progress.TotalBytes > 0
+                ? FormatBytes(progress.TotalBytes)
+                : "?";
+
             if (Console.IsOutputRedirected)
             {
-                if (percent == _lastProgressPercent)
+                // No console to redraw on, so each report is a line of its own, and every line
+                // said here also reaches a window attached to this server. One per percent was a
+                // hundred lines for a screen reader to sit through; one per quarter is a download
+                // that can be seen to be moving, and no more than that needs saying.
+                if (percent == _lastProgressPercent || (percent % 25 != 0 && percent != 100))
                     return;
 
                 _lastProgressPercent = percent;
-                ConsoleSink.WriteLine(percent.ToString(CultureInfo.InvariantCulture) + "%");
+                ConsoleSink.WriteLine($"{percent}% {downloadedText}/{totalText}");
                 return;
             }
 
@@ -232,10 +282,6 @@ namespace TopSpeed.Server.Updates
             var filled = (percent * barWidth) / 100;
             var remaining = barWidth - filled;
             var bar = $"[{new string('#', filled)}{new string('-', remaining)}]";
-            var downloadedText = FormatBytes(progress.DownloadedBytes);
-            var totalText = progress.TotalBytes > 0
-                ? FormatBytes(progress.TotalBytes)
-                : "?";
             var line = $"{bar} {percent,3}% {downloadedText}/{totalText}";
 
             try

@@ -24,11 +24,27 @@ namespace TopSpeed.Updater
                 var options = ParseArgs(safeArgs);
                 enableLog = options.EnableLog;
                 logPath = enableLog ? Path.Combine(Path.GetFullPath(options.TargetDir), "updater.log") : string.Empty;
-                Log(enableLog, logPath, $"Parsed args. pid={options.ProcessId}, zip={options.ZipPath}, dir={options.TargetDir}, game={options.GameExeName}, skip={options.SkipFileName}");
+                Log(enableLog, logPath, $"Parsed args. pid={options.ProcessId}, zip={options.ZipPath}, dir={options.TargetDir}, game={options.GameExeName}, skip={options.SkipFileName}, noRestart={options.NoRestart}, startService={options.StartService}");
                 WaitForProcessExit(options.ProcessId);
                 Log(enableLog, logPath, "Waited for game process exit.");
                 InstallZip(options, enableLog, logPath);
                 Log(enableLog, logPath, "Zip install complete.");
+                ClearUpdateMarker(options.TargetDir, enableLog, logPath);
+
+                // Checked before --no-restart, which is also passed, so that an older copy of
+                // this program still does the safe thing with a flag it does not know.
+                if (options.StartService)
+                {
+                    StartService(options, enableLog, logPath);
+                    return 0;
+                }
+
+                if (options.NoRestart)
+                {
+                    Log(enableLog, logPath, "Restart left to the service manager.");
+                    return 0;
+                }
+
                 StartGame(options, enableLog, logPath);
                 Log(enableLog, logPath, "Game restart requested successfully.");
                 return 0;
@@ -50,6 +66,27 @@ namespace TopSpeed.Updater
                 if (string.Equals(key, "--log", StringComparison.OrdinalIgnoreCase))
                 {
                     options.EnableLog = true;
+                    continue;
+                }
+
+                // Files are replaced and that is all. Used when something else owns starting the
+                // program again, which is the case for a server running as a system service:
+                // launching the executable directly would produce a running program that the
+                // service manager knows nothing about, holding the folder its own service needs.
+                if (string.Equals(key, "--no-restart", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.NoRestart = true;
+                    continue;
+                }
+
+                // Passed alongside --no-restart rather than instead of it. This program is never
+                // replaced by an update, since it is the one holding the files open, so the copy
+                // that runs during an update is whichever one was first installed. An older copy
+                // ignores a flag it has never heard of and falls back to --no-restart, which
+                // leaves the service manager to notice, exactly as it did before.
+                if (string.Equals(key, "--start-service", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.StartService = true;
                     continue;
                 }
 
@@ -209,6 +246,83 @@ namespace TopSpeed.Updater
         private static string NormalizeZipStylePath(string path)
         {
             return (path ?? string.Empty).Replace('\\', '/');
+        }
+
+        /// <summary>
+        /// Puts the service back now that the files are in place.
+        ///
+        /// Done by running the server with the flag that starts this folder's service, rather
+        /// than by talking to the service manager here. That flag already knows how to find the
+        /// service belonging to a folder and how to report what happened, and the alternative is
+        /// a second copy of all of it in a program whose whole job is unpacking a zip.
+        ///
+        /// The program started is the one just written, which is the point: it is the new
+        /// version that registers as running.
+        /// </summary>
+        /// <summary>
+        /// Removes the file the server raised before it exited, which is what the systemd and
+        /// launchd units wait on before starting the new server. The folder is whole by the time
+        /// this runs, so the wait has nothing left to wait for.
+        ///
+        /// Failing to remove it is not worth failing an install over: the units give up on it
+        /// after a minute regardless, and the server clears it at startup as well.
+        /// </summary>
+        private static void ClearUpdateMarker(string targetDir, bool enableLog, string logPath)
+        {
+            try
+            {
+                var marker = Path.Combine(Path.GetFullPath(targetDir), ".updating");
+                if (File.Exists(marker))
+                {
+                    File.Delete(marker);
+                    Log(enableLog, logPath, "Cleared update marker.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(enableLog, logPath, "Could not clear update marker: " + ex.Message);
+            }
+        }
+
+        private static void StartService(UpdaterOptions options, bool enableLog, string logPath)
+        {
+            var serverPath = ResolveGamePath(options.TargetDir, options.GameExeName);
+            Log(enableLog, logPath, $"Resolved server path for service start: {serverPath}");
+            if (string.IsNullOrWhiteSpace(serverPath) || !File.Exists(serverPath))
+            {
+                throw new FileNotFoundException(
+                    "Updated server executable was not found.",
+                    Path.Combine(options.TargetDir, ResolveExecutableFileName(options.GameExeName)));
+            }
+
+            var workingDirectory = Path.GetDirectoryName(serverPath);
+            if (string.IsNullOrWhiteSpace(workingDirectory))
+                workingDirectory = options.TargetDir;
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = serverPath,
+                WorkingDirectory = workingDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                // One argument with nothing in it needing quotes. The list form this would
+                // otherwise use does not exist on the older framework this program also builds
+                // for, and a single flag needs none of what it offers.
+                Arguments = "--start-service"
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process == null)
+            {
+                Log(enableLog, logPath, "Process.Start returned null for the service start.");
+                return;
+            }
+
+            // Waited for so the outcome can be recorded. Nothing depends on it succeeding: a
+            // start that fails leaves the service stopped, which is what the manager's own
+            // restart is still there to catch.
+            process.WaitForExit();
+            Log(enableLog, logPath, $"Service start finished with exit code {process.ExitCode}.");
         }
 
         private static void StartGame(UpdaterOptions options, bool enableLog, string logPath)
@@ -404,6 +518,8 @@ namespace TopSpeed.Updater
             public string GameExeName { get; set; } = string.Empty;
             public string SkipFileName { get; set; } = string.Empty;
             public bool EnableLog { get; set; }
+            public bool NoRestart { get; set; }
+            public bool StartService { get; set; }
         }
     }
 }

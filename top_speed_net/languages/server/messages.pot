@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 00:35-0400\n"
+"POT-Creation-Date: 2026-09-18 16:06-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,10 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --install-service       Install this folder's server as a service."
+msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "  --log <levels>          Alias for --log-level."
@@ -44,6 +48,27 @@ msgid "  --port <number>         Server port (1-65535)."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --restart-service       Stop it and start it again."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid ""
+"  --service-status        Say whether this folder is installed as a service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --start-service         Start the installed service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --stop-service          Stop the installed service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "  --uninstall-service     Remove it again. The folder is left alone."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "  -h, --help              Show this help."
 msgstr ""
 
@@ -53,6 +78,34 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "(empty)"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "(off)"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "0. Back"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "1. Install"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "2. Uninstall"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "3. Start"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "4. Stop"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "5. Restart"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
@@ -75,6 +128,28 @@ msgstr ""
 msgid "A race is already in progress."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid ""
+"A server is already running from this folder under a different account, and "
+"this one is not allowed to control it. Use the account that started it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"A server is already running from this folder, so the service cannot start as "
+"well. Stop that server first, and then start the service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"A service for this folder is still being removed. Close the Services window "
+"if it is open, then try again."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "A service is already installed for this folder."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
 #, csharp-format
 msgid "All loadouts ready: room={0} \"{1}\", starting race."
@@ -86,6 +161,47 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Allow duplicate call signs"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "An update check is already running. Try again in a moment."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid ""
+"An update did not finish, so this folder may hold parts of two versions. "
+"Installing the update again will put it right."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid ""
+"An update is being installed. Run the server again in a moment to attach to "
+"it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid ""
+"An update is being installed. The server will open again by itself when it "
+"is done."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "Another instance is already attached to this service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid "Another server is already running from this folder."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+#, csharp-format
+msgid "Attached to TopSpeed Server {0}, port {1}, update checking {2}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+#, csharp-format
+msgid "Attached to service {0}, port {1}, update checking {2}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -154,6 +270,10 @@ msgstr ""
 msgid "Bots can only be removed in race-with-bots rooms."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "Cancelled. Nothing was changed."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Bots.cs
 msgid "Cannot add bots while race setup or race is active."
 msgstr ""
@@ -187,10 +307,14 @@ msgid "Changes:"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Check for updates on startup"
+msgid "Check for server updates. Add --force to stop waiting and act now."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Checking for the update download now."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Checking for update..."
 msgstr ""
 
@@ -200,6 +324,16 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Choose server language:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Choose when the server checks for updates:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Choose which levels are logged. Error, warning and info is the default; "
+"debug adds detail meant for diagnosing problems."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -274,9 +408,32 @@ msgid ""
 "reason={3}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+#, csharp-format
+msgid "Control connection failed: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "Control session attached to server."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
 #, csharp-format
 msgid "Could not launch updater: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Runtime.cs
+#, csharp-format
+msgid "Could not listen for {0}: {1}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+#, csharp-format
+msgid "Could not open the log file {0}: {1}. The server will run without one."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "Could not reach the server running from this folder."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Packages/CatalogState.cs
@@ -438,6 +595,10 @@ msgid "English (Original)"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Enter a log file name or path, or leave blank to turn logging off:"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Enter discovery port (1-65535):"
 msgstr ""
 
@@ -456,6 +617,7 @@ msgid "Enter message of the day (max {0} chars, empty clears value):"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
 msgid "Enter option number:"
 msgstr ""
 
@@ -560,6 +722,51 @@ msgstr ""
 msgid "Ignoring unknown packet command {0} from {1}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Install or control this server as a system service. Add install, uninstall, "
+"start, stop, restart or status to skip the menu."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid "Installed as \"{0}\" and running. Starts with the machine: {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid "Installed as \"{0}\" and stopped. Starts with the machine: {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid "Installed as service \"{0}\", running as {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid "Installed the service {0}, running as {1}. It starts with the machine."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "Installing and controlling services needs administrator rights."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Installing server update {0}. The server is shutting down to apply it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Installing the update now. Connected players will be disconnected."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+msgid ""
+"Installing the update. This window comes back with the new server when it is "
+"done."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
 msgid "Invalid --max-players value. Using configured max players."
 msgstr ""
@@ -586,10 +793,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
 msgid "Invalid input. Enter a valid number."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
-msgid "Invalid input. Enter y or n."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Policy/PolicyValidation.cs
@@ -804,6 +1007,10 @@ msgstr ""
 msgid "Laps must be between 1 and 500."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Left running. The service was not started."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Types.cs
 #, csharp-format
 msgid "Line {0}: {1}"
@@ -847,6 +1054,14 @@ msgstr ""
 msgid "LiteNetLib transport stopped."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Log file"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Log level"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Program.cs
 #, csharp-format
 msgid "Logging enabled. Levels: {0}. File: {1}."
@@ -854,10 +1069,6 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
 msgid "Malformed line. Expected '[section]' or 'key = value'."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Manually check for server updates."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -942,12 +1153,37 @@ msgid "No changes were listed for this update."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"No console is attached. Server commands are available by attaching to this "
+"server."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "No languages are available."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid "No server is running from this folder."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "No service is installed for this folder."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Host/GameStart.cs
 #, csharp-format
 msgid "Not enough players. {0} required to start."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "Not installed as a service."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"Note that if this runs as a service on Windows it cannot log outside the "
+"server folder. A name or relative path goes next to the server program; an "
+"absolute path is used as written."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Host/Rules.cs
@@ -1146,6 +1382,16 @@ msgstr ""
 msgid "Race stopped: room={0} \"{1}\", results={2}."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Network/Services/Room/Tracks/RandomSelection.cs
+#, csharp-format
+msgid "Random room track selected: room={0} \"{1}\", track={2}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Runtime.cs
+#, csharp-format
+msgid "Received {0}. Shutting down."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 msgid ""
 "Reconnect denied because the remote IP does not match the original session."
@@ -1167,6 +1413,20 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Bots.cs
 #, csharp-format
 msgid "Removed bot {0}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid "Removed service \"{0}\"."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#, csharp-format
+msgid "Removed the service {0}. The server folder was left alone."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Restart required for this change."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
@@ -1234,6 +1494,10 @@ msgstr ""
 msgid ""
 "Room track change denied: room={0}, player={1}, raceStarted={2}, "
 "preparing={3}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.Args.cs
+msgid "Running as a service:"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Data/Tracks/Parser/Validate.cs
@@ -1337,7 +1601,7 @@ msgid ""
 "moderation.allowDuplicateNames={9}."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Server is up-to-date."
 msgstr ""
 
@@ -1382,7 +1646,7 @@ msgstr ""
 msgid "Server stopped."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
 msgid "Server update check failed: {0}"
 msgstr ""
@@ -1397,12 +1661,20 @@ msgstr ""
 msgid "Server version: {0}"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Service:"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Show available server commands."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Shutdown the server."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "Shutting down this interactive server."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Packages/LocalPackages.cs
@@ -1459,12 +1731,10 @@ msgstr ""
 msgid "Standard input is no longer available. Server commands are disabled."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Commands/Host.cs
-msgid "Standard input is not available. Server commands are disabled."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
-msgid "Standard input is not available. Update download was skipped."
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"Starting and stopping it will need administrator rights, because this "
+"account could not grant them here."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Lifecycle.cs
@@ -1480,12 +1750,37 @@ msgstr ""
 msgid "Text chat is disabled on this server."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "That did not finish."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "That is not one of the choices."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "The control session detached."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "The current game is already paused."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "The current game is not paused."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Service.cs
+#, csharp-format
+msgid "The download is incomplete. Expected {0} bytes but received {1}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+msgid "The pending update is no longer offered and has been dropped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "The program answering on this folder is not a TopSpeed server."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Protocol/TrackPackages/Build/Errors.cs
@@ -1496,10 +1791,107 @@ msgstr ""
 msgid "The server closed the connection."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Control/Reattach.cs
+msgid "The server did not come back. Run the program again to check on it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid "The server has not finished stopping, so the service was not started."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid ""
+"The server has stopped, so this instance is no longer attached to anything."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+msgid "The server is shutting down to install an update."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+msgid "The server is updating. Run the program again once it is back."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Reattach.cs
+msgid ""
+"The server is updating. This window will attach to it again when it is back."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid "The server program was not found at {0}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid "The server refused to attach this instance."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid ""
+"The server shouldn't be run with sudo. As root, it would leave files in this "
+"folder that your own account cannot replace when the server updates."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Admin.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 msgid "The server will be shut down immediately by the host."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"The service did not finish starting. Check the server log in its folder."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service did not stop in time."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"The service failed to start and is unavailable to attach. No server is "
+"running now. Try running the server again."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "The service has been removed."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is already running."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is already stopped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"The service is running, but this instance could not attach to it. Run the "
+"server program from this folder again to retry."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is running."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid "The service is stopped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+msgid ""
+"The service was installed, but this account could not give it write access "
+"to the server folder. The service will not be able to save settings or "
+"updates until that is granted."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Handoff.cs
+msgid ""
+"The update could not be started, so nothing was changed. Try again with "
+"update."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Service.cs
@@ -1537,10 +1929,66 @@ msgstr ""
 msgid "This game room is unavailable because it is full."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+msgid ""
+"This has to know which account the service will run as, and it cannot be "
+"root: a server running as root leaves files behind that its own owner cannot "
+"replace when it updates. Run it with sudo from the account that owns the "
+"server folder rather than logged in as root."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "This needs administrator rights."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+#, csharp-format
+msgid ""
+"This needs root. Run:\n"
+"{0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Listener.cs
+msgid ""
+"This server already has a running instance in another interactive console "
+"window. Use that window to control it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/UnixManager.cs
+#: top_speed_net/TopSpeed.Server/Service/WindowsManager.cs
+#, csharp-format
+msgid ""
+"This server cannot be installed as a service from {0}. The server updates "
+"itself in place, so it must run from a folder it can write to, and giving a "
+"service write access inside a protected location would let anything that can "
+"write there run as that service later. Move the server folder somewhere "
+"else, such as a folder you created yourself, and install it from there."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Messages.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Packets/Core.cs
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Recovery.cs
 msgid "This server is full."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+msgid ""
+"This server is the service, so it cannot install or control itself. Run the "
+"server program from its own folder and use its service menu, which can ask "
+"for the rights this needs."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Menu.cs
+#, csharp-format
+msgid ""
+"This will drop {0} connected players until the service comes online. "
+"Proceed? (y/n)"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"To update once no players are connected, type update. To update immediately, "
+"type update --force."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Load/Sections.cs
@@ -1550,6 +1998,11 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Lifecycle.cs
 msgid "TopSpeed Server"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Identity.cs
+#, csharp-format
+msgid "TopSpeed Server ({0})"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
@@ -1562,6 +2015,11 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.cs
 msgid "TopSpeed Server stopped."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Service/Identity.cs
+#, csharp-format
+msgid "TopSpeed multiplayer race server located at {0}."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Program.Args.cs
@@ -1682,6 +2140,11 @@ msgstr ""
 msgid "Unknown key '{0}' in section [{1}]."
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid "Unknown option \"{0}\". The only option is --force."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Room/Control.cs
 msgid "Unknown race control request."
 msgstr ""
@@ -1743,7 +2206,7 @@ msgid ""
 "Unsupported transmission type '{0}'. Valid values: atc, cvt, dct, manual."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
 msgid "Update check failed."
 msgstr ""
 
@@ -1752,13 +2215,37 @@ msgstr ""
 msgid "Update check failed: {0}"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Update check finished: {0}. Version: {1}."
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Updates/Service.cs
 msgid "Update check timed out."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Service.cs
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "Update checking"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 #, csharp-format
-msgid "Update package '{0}' was not found in the latest release."
+msgid ""
+"Update failed. The download for version {0} is still not available after {1} "
+"attempts. This can happen if that build did not finish. Type update to try "
+"again."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Update scheduler failed: {0}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid ""
+"Update {0} is scheduled and will install once the {1} connected players "
+"disconnect. Type \"update --force\" to install it now."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
@@ -1791,6 +2278,59 @@ msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Core/Load/File.cs
 msgid "Vehicle file path is empty."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} could not be installed because it is no longer offered. Version "
+"{1} is available instead. Type update to install it."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} is announced, but its download has not been published yet. This "
+"is normal for a short time after a release. Trying again in {1} minutes. "
+"Attempt {2} of {3}."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} is available and will be installed once no players are connected."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Version {0} is available. Type update to see what has changed."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid "Version {0} is no longer offered. Installing version {1} instead."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+#, csharp-format
+msgid ""
+"Version {0} is waiting for its download to be published. The next check is "
+"in about {1} minutes. Type \"update --force\" to check now."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} was installed here moments ago, so the next update check waits "
+"for the daily one."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
+#, csharp-format
+msgid ""
+"Version {0} was installed here, but this server is still version {1}. To "
+"prevent infinite download looping, it will not be installed again. Type "
+"\"update --force\" to try it anyway."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs
@@ -1832,8 +2372,11 @@ msgstr ""
 msgid "Weather transition seconds must be finite and non-negative."
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Updates/Runner.cs
-msgid "Would you like to download the update? (y/n)"
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid ""
+"Whether this folder is installed as a service is answered by the system "
+"rather than by the server: run systemctl status on Linux, or launchctl print "
+"on macOS, with the name the install reported."
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Catalog/Data.cs
@@ -1934,10 +2477,6 @@ msgstr ""
 msgid "[room]: {0} says: {1}"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "all"
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Runtime/Admin.cs
 #, csharp-format
 msgid ""
@@ -1947,6 +2486,12 @@ msgid ""
 "start_blocked_track_not_ready={8}, transport_network_errors={9}, "
 "transport_latency_last_ms={10}, transport_latency_avg_ms={11}, "
 "transport_latency_max_ms={12}, transport_peer_address_changes={13}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid ""
+"auto: install updates silently without confirmation as soon as no players "
+"are connected"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Policy/PolicyValidation.cs
@@ -1969,10 +2514,6 @@ msgstr ""
 msgid "custom vehicles"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "debug"
-msgstr ""
-
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Bots/Setup.cs
 msgid "easy"
 msgstr ""
@@ -1984,10 +2525,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Parse/Powertrain.cs
 #, csharp-format
 msgid "engine_displacement_l must be between {0} and {1} liters."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "error"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Parse/Powertrain.cs
@@ -2016,10 +2553,6 @@ msgstr ""
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Validation/Core.cs
 msgid ""
 "high_speed_steer_full_kph must be greater than high_speed_steer_start_kph."
-msgstr ""
-
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "info"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Shared/Vehicles/Parsing/Build/Transmission/Modes.cs
@@ -2062,9 +2595,13 @@ msgstr ""
 msgid "multiple"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "no"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Network/Services/Session/Lifecycle.cs
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
 #: top_speed_net/TopSpeed.Server/Program.cs
+#: top_speed_net/TopSpeed.Server/Updates/Scheduler.cs
 msgid "none"
 msgstr ""
 
@@ -2072,8 +2609,16 @@ msgstr ""
 msgid "normal"
 msgstr ""
 
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "notify: write a message to console when an update is available"
+msgstr ""
+
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
 msgid "off"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Commands/Host.cs
+msgid "off: never check"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Input.cs
@@ -2156,8 +2701,8 @@ msgstr ""
 msgid "unknown"
 msgstr ""
 
-#: top_speed_net/TopSpeed.Server/Program.Args.cs
-msgid "warning"
+#: top_speed_net/TopSpeed.Server/Service/Commands.cs
+msgid "yes"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Updates/Runner.cs
@@ -2278,6 +2823,16 @@ msgstr ""
 #: top_speed_net/TopSpeed.Server/Network/Services/Race/Control.cs
 #, csharp-format
 msgid "{0} stopped the current game."
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Program.cs
+#, csharp-format
+msgid "{0}, port {1}"
+msgstr ""
+
+#: top_speed_net/TopSpeed.Server/Control/Client.cs
+#, csharp-format
+msgid "{0}, port {1}, attached"
 msgstr ""
 
 #: top_speed_net/TopSpeed.Server/Commands/Host.cs

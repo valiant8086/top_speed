@@ -5,6 +5,13 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.22.2
+### Game Changes
+- Nothing of its own. It gives a 2026.9.22.1 game or server an update to take, which is the first done by TopSpeedUpdater.
+
+### Server Changes
+- Nothing of its own. It gives a 2026.9.22.1 game or server an update to take, which is the first done by TopSpeedUpdater.
+
 ## 2026.9.22.1
 ### Game Changes
 - Fork test build of the updater change. Updating to it from the starting-point build is the migration: the old Updater runs once more and brings TopSpeedUpdater in.

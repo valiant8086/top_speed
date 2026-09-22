@@ -322,3 +322,12 @@ installing that version by itself rather than fetching the same build every day.
 
 That is not an off switch. A newer version installs as usual, `update --force` installs the
 refused one anyway, and deleting the file forgets the whole thing.
+
+The program that replaces the files is `TopSpeed.Updater`, beside the server. It writes each
+new file next to the old one and renames it into place, so the folder only ever holds whole
+files, and it replaces itself the same way, so a fix to it reaches every server through the
+ordinary update. A folder set up before it had that name still has the old `Updater`; that one
+runs the next update as it always did, brings `TopSpeed.Updater` in with it, and is then removed.
+On Windows a file named `TopSpeed.Updater.exe.superseded` may sit in the folder between one
+update and the next: the old copy of a program that was running when it was replaced, cleared
+away by the run after.

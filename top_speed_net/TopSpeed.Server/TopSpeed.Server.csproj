@@ -169,8 +169,8 @@
       <_ServerUpdaterUseTrimmed Condition="'$(_ServerUpdaterUseTrimmed)' == ''">$(UseTrimmedUpdater)</_ServerUpdaterUseTrimmed>
     </PropertyGroup>
     <RemoveDir Directories="$(_ServerUpdaterBuildStagingPath)" Condition="Exists('$(_ServerUpdaterBuildStagingPath)')" />
-    <Exec Command="dotnet build &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework net472 -p:OutDir=&quot;$(_ServerUpdaterBuildStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterBuildIntermediatePath) -p:AssemblyName=TopSpeedUpdater" Condition="'$(_ServerUpdaterTargetFramework)' == 'net472'" />
-    <Exec Command="dotnet publish &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework $(_ServerUpdaterTargetFramework) --runtime $(RuntimeIdentifier) -p:SelfContained=true -p:PublishDir=&quot;$(_ServerUpdaterBuildStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterBuildIntermediatePath) -p:AssemblyName=TopSpeedUpdater -p:UseNativeAotUpdater=$(_ServerUpdaterUseNativeAot) -p:UseTrimmedUpdater=$(_ServerUpdaterUseTrimmed)" Condition="'$(_ServerUpdaterTargetFramework)' != 'net472'" />
+    <Exec Command="dotnet build &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework net472 -p:OutDir=&quot;$(_ServerUpdaterBuildStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterBuildIntermediatePath)" Condition="'$(_ServerUpdaterTargetFramework)' == 'net472'" />
+    <Exec Command="dotnet publish &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework $(_ServerUpdaterTargetFramework) --runtime $(RuntimeIdentifier) -p:SelfContained=true -p:PublishDir=&quot;$(_ServerUpdaterBuildStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterBuildIntermediatePath) -p:UseNativeAotUpdater=$(_ServerUpdaterUseNativeAot) -p:UseTrimmedUpdater=$(_ServerUpdaterUseTrimmed)" Condition="'$(_ServerUpdaterTargetFramework)' != 'net472'" />
     <ItemGroup>
       <_ServerUpdaterPublishedFiles Include="$(_ServerUpdaterBuildStagingPath)\**\*" />
     </ItemGroup>
@@ -191,8 +191,8 @@
       <_ServerUpdaterUseTrimmed Condition="'$(_ServerUpdaterUseTrimmed)' == ''">$(UseTrimmedUpdater)</_ServerUpdaterUseTrimmed>
     </PropertyGroup>
     <RemoveDir Directories="$(_ServerUpdaterPublishStagingPath)" Condition="Exists('$(_ServerUpdaterPublishStagingPath)')" />
-    <Exec Command="dotnet build &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework net472 -p:OutDir=&quot;$(_ServerUpdaterPublishStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterPublishIntermediatePath) -p:AssemblyName=TopSpeedUpdater" Condition="'$(_ServerUpdaterTargetFramework)' == 'net472'" />
-    <Exec Command="dotnet publish &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework $(_ServerUpdaterTargetFramework) --runtime $(RuntimeIdentifier) -p:SelfContained=true -p:PublishDir=&quot;$(_ServerUpdaterPublishStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterPublishIntermediatePath) -p:AssemblyName=TopSpeedUpdater -p:UseNativeAotUpdater=$(_ServerUpdaterUseNativeAot) -p:UseTrimmedUpdater=$(_ServerUpdaterUseTrimmed)" Condition="'$(_ServerUpdaterTargetFramework)' != 'net472'" />
+    <Exec Command="dotnet build &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework net472 -p:OutDir=&quot;$(_ServerUpdaterPublishStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterPublishIntermediatePath)" Condition="'$(_ServerUpdaterTargetFramework)' == 'net472'" />
+    <Exec Command="dotnet publish &quot;$(_ServerUpdaterProjectPath)&quot; --configuration $(Configuration) --framework $(_ServerUpdaterTargetFramework) --runtime $(RuntimeIdentifier) -p:SelfContained=true -p:PublishDir=&quot;$(_ServerUpdaterPublishStagingPath)&quot; -p:BaseIntermediateOutputPath=$(_ServerUpdaterPublishIntermediatePath) -p:UseNativeAotUpdater=$(_ServerUpdaterUseNativeAot) -p:UseTrimmedUpdater=$(_ServerUpdaterUseTrimmed)" Condition="'$(_ServerUpdaterTargetFramework)' != 'net472'" />
     <ItemGroup>
       <_ServerUpdaterPublishedFiles Include="$(_ServerUpdaterPublishStagingPath)\**\*" />
     </ItemGroup>

@@ -184,6 +184,7 @@ namespace TopSpeed.Updater
                 var bundlePayloadPrefix = ResolveBundlePayloadPrefix(options, archive, targetDir);
                 Log(enableLog, logPath, $"Archive opened. entries={archive.Entries.Count}, bundlePrefix={bundlePayloadPrefix}");
                 var extractedCount = 0;
+                var unchangedCount = 0;
                 for (var i = 0; i < archive.Entries.Count; i++)
                 {
                     var entry = archive.Entries[i];
@@ -210,11 +211,18 @@ namespace TopSpeed.Updater
                     if (!string.IsNullOrWhiteSpace(parent))
                         Directory.CreateDirectory(parent);
 
+                    if (IsAlreadyInPlace(entry, destination))
+                    {
+                        Log(enableLog, logPath, $"Unchanged, left alone: {entry.FullName}");
+                        unchangedCount++;
+                        continue;
+                    }
+
                     ExtractEntryWithRetry(entry, destination, enableLog, logPath);
                     extractedCount++;
                 }
 
-                Log(enableLog, logPath, $"Archive extraction finished. extracted={extractedCount}");
+                Log(enableLog, logPath, $"Archive extraction finished. extracted={extractedCount}, unchanged={unchangedCount}");
             }
 
             File.Delete(zipPath);
@@ -501,6 +509,75 @@ namespace TopSpeed.Updater
             throw new IOException(
                 $"Failed to extract '{entry.FullName}' to '{destination}' after {ExtractRetryCount} attempts.",
                 lastError);
+        }
+
+        /// <summary>
+        /// Whether the file already on disk is the one in the archive, byte for byte, so that a
+        /// file that has not changed between releases is not written again. Most files in a
+        /// release are such files: the runtime, the libraries, the sounds. Leaving them alone
+        /// means fewer writes, and it means a program still running from one of them, or still
+        /// mapping it, is never disturbed for nothing.
+        ///
+        /// Not on macOS. There the kernel remembers a program's signature by the file it was
+        /// run from, and a file that was refused for that reason is cured only by becoming a
+        /// new file, which every update does for every file when nothing is skipped. On macOS
+        /// the write is the repair, and it is kept.
+        /// </summary>
+        private static bool IsAlreadyInPlace(ZipArchiveEntry entry, string destination)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return false;
+
+            try
+            {
+                var existing = new FileInfo(destination);
+                if (!existing.Exists || existing.Length != entry.Length)
+                    return false;
+
+                using (var fromArchive = entry.Open())
+                using (var onDisk = existing.OpenRead())
+                {
+                    var a = new byte[81920];
+                    var b = new byte[81920];
+                    while (true)
+                    {
+                        var readA = ReadFully(fromArchive, a);
+                        var readB = ReadFully(onDisk, b);
+                        if (readA != readB)
+                            return false;
+                        if (readA == 0)
+                            return true;
+                        for (var i = 0; i < readA; i++)
+                        {
+                            if (a[i] != b[i])
+                                return false;
+                        }
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Fills the buffer as far as the stream allows; a short read is only the end.</summary>
+        private static int ReadFully(Stream stream, byte[] buffer)
+        {
+            var total = 0;
+            while (total < buffer.Length)
+            {
+                var read = stream.Read(buffer, total, buffer.Length - total);
+                if (read <= 0)
+                    break;
+                total += read;
+            }
+
+            return total;
         }
 
         /// <summary>

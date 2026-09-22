@@ -4,9 +4,18 @@ namespace TopSpeed.Server.Commands
 {
     internal sealed class CommandDefinition
     {
-        private readonly Action _execute;
+        private readonly Action<string> _execute;
 
         public CommandDefinition(string name, string description, Action execute)
+            : this(name, description, WithoutArguments(execute))
+        {
+        }
+
+        /// <summary>
+        /// For commands that take options. Everything after the command name is passed through
+        /// untouched; most commands do not care and use the parameterless form.
+        /// </summary>
+        public CommandDefinition(string name, string description, Action<string> execute)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Command name is required.", nameof(name));
@@ -21,9 +30,17 @@ namespace TopSpeed.Server.Commands
         public string Name { get; }
         public string Description { get; }
 
-        public void Execute()
+        public void Execute(string arguments = "")
         {
-            _execute();
+            _execute(arguments ?? string.Empty);
+        }
+
+        private static Action<string> WithoutArguments(Action execute)
+        {
+            if (execute == null)
+                throw new ArgumentNullException(nameof(execute));
+
+            return _ => execute();
         }
     }
 }

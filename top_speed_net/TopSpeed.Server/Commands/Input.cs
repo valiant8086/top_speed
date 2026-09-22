@@ -14,23 +14,9 @@ namespace TopSpeed.Server.Commands
             if (!string.IsNullOrWhiteSpace(prompt))
                 ConsoleSink.WriteLine(prompt);
 
-            try
-            {
-                var line = Console.ReadLine();
-                if (line == null)
-                    return false;
-
-                value = line;
-                return true;
-            }
-            catch (InvalidOperationException)
-            {
-                return false;
-            }
-            catch (System.IO.IOException)
-            {
-                return false;
-            }
+            // Reads from whichever session is active rather than from the console directly,
+            // so every command and menu below works unchanged over a control connection.
+            return CommandSessions.TryReadLine(out value);
         }
 
         public static bool TryPromptMenuChoice(

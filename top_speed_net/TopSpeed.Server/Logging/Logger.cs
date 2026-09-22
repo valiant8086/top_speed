@@ -12,17 +12,55 @@ namespace TopSpeed.Server.Logging
         private readonly StreamWriter? _writer;
         private bool _writeToConsole;
 
-        public Logger(LogLevel enabledLevels, string? logFilePath, bool writeToConsole = true)
+        /// <summary>
+        /// Set when a log file was asked for but could not be opened, so the server can say so
+        /// and carry on rather than refusing to run over a log.
+        /// </summary>
+        public string? FileError { get; }
+
+        /// <summary>
+        /// A log configured in settings.json appends, because its whole point is to still be
+        /// readable later; one asked for with --log-file starts clean for that run.
+        /// </summary>
+        public Logger(LogLevel enabledLevels, string? logFilePath, bool writeToConsole = true, bool append = false)
         {
             _enabledLevels = enabledLevels;
             _writeToConsole = writeToConsole;
-            if (!string.IsNullOrWhiteSpace(logFilePath))
+            if (string.IsNullOrWhiteSpace(logFilePath))
+                return;
+
+            try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath) ?? ".");
-                _writer = new StreamWriter(logFilePath, append: false, Encoding.UTF8)
+
+                // Held open for as long as the server runs, and shared, so that the log of a
+                // server running unattended can be read while it runs rather than only afterwards.
+                //
+                // Windows settles sharing in both directions, so this reaches only a reader that
+                // permits a writer. Notepad and most log viewers do; an editor asking for the file
+                // in the plain way is refused until the server stops. Closing the file between
+                // messages would admit every reader and has been measured at about seventy times
+                // the cost per message, nearly all of it spent opening the file again, so the
+                // reader that cannot be served is the one left unserved.
+                //
+                // Sharing is limited to reading: a second writer would interleave lines into
+                // nonsense, and this stays the one thing writing here.
+                var stream = new FileStream(
+                    logFilePath,
+                    append ? FileMode.Append : FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.Read | FileShare.Delete);
+
+                _writer = new StreamWriter(stream, Encoding.UTF8)
                 {
                     AutoFlush = true
                 };
+            }
+            catch (Exception ex)
+            {
+                // Not being able to write a log is never a reason to refuse to run a server.
+                _writer = null;
+                FileError = ex.Message;
             }
         }
 

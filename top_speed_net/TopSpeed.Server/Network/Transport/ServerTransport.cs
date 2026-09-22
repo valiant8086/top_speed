@@ -142,6 +142,13 @@ namespace TopSpeed.Server.Network
         {
             var server = _server;
             _server = null;
+
+            // An orderly shutdown stops the transport and then disposes it, so this is reached
+            // twice every time. Only the first has anything to do, and only the first is worth
+            // reporting: a second "transport stopped" in the log reads as a second transport.
+            if (server == null)
+                return;
+
             try
             {
                 server?.Stop(sendDisconnectMessages: false);

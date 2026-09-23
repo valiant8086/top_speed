@@ -1,7 +1,8 @@
 {
-  "version": "2026.9.22.3",
+  "version": "2026.9.22.4",
   "serverVersion": "2026.9.22.2",
   "changes": [
+    "Nothing of its own. It gives a 2026.9.22.3 macOS game something to update to, which is the first update a Mac has ever been able to install.",
     "The macOS game now ships an updater at all, and the Linux one is trimmed as it was meant to be. Fork test build of the packaging fix.",
     "Nothing of its own. It gives a 2026.9.22.1 game or server an update to take, which is the first done by TopSpeedUpdater.",
     "Fork test build of the updater change. Updating to it from the starting-point build is the migration: the old Updater runs once more and brings TopSpeedUpdater in.",

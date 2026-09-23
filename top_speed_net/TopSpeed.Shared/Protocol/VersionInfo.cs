@@ -7,7 +7,7 @@ namespace TopSpeed.Protocol
         public const ushort ClientYear = 2026;
         public const byte ClientMonth = 9;
         public const byte ClientDay = 22;
-        public const byte ClientRevision = 3;
+        public const byte ClientRevision = 4;
 
         // Server release version used by updater checks and packaging.
         public const ushort ServerYear = 2026;

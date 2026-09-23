@@ -1115,6 +1115,10 @@ Exit game from root menu:
 Desktop: Activate Exit Game item, or Escape from root when no deeper stack exists.
 Mobile: Activate Exit Game item, or back out from root menu.
 
+Quit the game from anywhere:
+Desktop: Command+Q on macOS. Alt+F4 on Windows and Linux.
+Mobile: No direct equivalent gesture.
+
 ### 24.3 Driving Core Intents
 A few things to note for mobile:
 

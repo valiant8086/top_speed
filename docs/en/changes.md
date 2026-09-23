@@ -5,6 +5,10 @@ This file tracks new changes to the game for both client and server to make it e
 The game versioning follows a specific pattern by using year.month.day.revision, where revision is an incremental number if there is more than one release in a single day.
 
 
+## 2026.9.22.3
+### Game Changes
+- The macOS game now ships an updater at all, and the Linux one is trimmed as it was meant to be. Fork test build of the packaging fix.
+
 ## 2026.9.22.2
 ### Game Changes
 - Nothing of its own. It gives a 2026.9.22.1 game or server an update to take, which is the first done by TopSpeedUpdater.

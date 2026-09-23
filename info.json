@@ -1,7 +1,8 @@
 {
-  "version": "2026.9.22.2",
+  "version": "2026.9.22.3",
   "serverVersion": "2026.9.22.2",
   "changes": [
+    "The macOS game now ships an updater at all, and the Linux one is trimmed as it was meant to be. Fork test build of the packaging fix.",
     "Nothing of its own. It gives a 2026.9.22.1 game or server an update to take, which is the first done by TopSpeedUpdater.",
     "Fork test build of the updater change. Updating to it from the starting-point build is the migration: the old Updater runs once more and brings TopSpeedUpdater in.",
     "Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.",

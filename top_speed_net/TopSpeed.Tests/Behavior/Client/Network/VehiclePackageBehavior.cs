@@ -131,4 +131,20 @@ public sealed class VehiclePackageBehaviorTests
         Assert.Equal(3, restored.PlayerNumber);
         Assert.Equal("deadbeef", restored.Hash);
     }
+
+    // The handler for this packet decides "no custom vehicle" from the normalized hash being
+    // empty, rather than asking whether it is blank. Those are only the same question because
+    // NormalizeHash trims: were it to stop, a hash of nothing but spaces would start reading as
+    // a real selection, and the player would be sent looking for a package that does not exist.
+    [Fact]
+    public void NormalizeHash_ShouldTrim_SoEmptyAndBlankAgree()
+    {
+        var raws = new[] { "", "   ", "\t", "\n", " ", "　", " ABCDEF ", "abcdef", "a b" };
+
+        foreach (var raw in raws)
+        {
+            var normalized = VehiclePackageRef.NormalizeHash(raw);
+            Assert.Equal(string.IsNullOrWhiteSpace(normalized), normalized.Length == 0);
+        }
+    }
 }

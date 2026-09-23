@@ -17,7 +17,10 @@ namespace TopSpeed.Game
 
             var hash = VehiclePackageRef.NormalizeHash(packet.Hash);
             _multiplayerPlayerVehicleHashes.TryGetValue(packet.PlayerNumber, out var previous);
-            if (string.IsNullOrWhiteSpace(hash))
+            // Emptiness rather than IsNullOrWhiteSpace: NormalizeHash has already trimmed, so the
+            // two ask the same question here, and asking this one does not leave the compiler
+            // believing the hash could be null for the rest of the method.
+            if (hash.Length == 0)
                 _multiplayerPlayerVehicleHashes.Remove(packet.PlayerNumber);
             else
                 _multiplayerPlayerVehicleHashes[packet.PlayerNumber] = hash;
@@ -26,7 +29,7 @@ namespace TopSpeed.Game
             // a snapshot already built this player's remote car from a stale mapping. If the vehicle
             // for this number changed, drop the remote car so the next snapshot rebuilds it with the
             // correct vehicle. markDisconnected:false so it is allowed to be recreated.
-            if (!string.Equals(previous ?? string.Empty, hash ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(previous ?? string.Empty, hash, StringComparison.OrdinalIgnoreCase))
                 _multiplayerRaceRuntime.Mode?.RemoveRemotePlayer(packet.PlayerNumber, markDisconnected: false);
 
             // Knowing which vehicle to expect is what drives fetching it. Packages are never sent
@@ -258,10 +261,11 @@ namespace TopSpeed.Game
         private void AnnounceCustomVehicleUnavailable(string hash, string vehicleName)
         {
             var owner = ResolveCustomVehicleOwnerName(hash);
-            var hasOwner = !string.IsNullOrWhiteSpace(owner);
             var hasVehicle = !string.IsNullOrWhiteSpace(vehicleName);
 
-            if (hasOwner && hasVehicle)
+            // Asked of the name itself rather than through a bool holding the answer, so that the
+            // compiler knows the owner is really there when it is named in the message below.
+            if (!string.IsNullOrWhiteSpace(owner) && hasVehicle)
             {
                 _speech.Speak(LocalizationService.Format(
                     LocalizationService.Mark("Your game could not load {0}'s vehicle \"{1}\", so you will hear the default car for them instead."),

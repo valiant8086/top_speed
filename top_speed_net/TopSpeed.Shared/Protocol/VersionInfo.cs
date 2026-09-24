@@ -7,13 +7,13 @@ namespace TopSpeed.Protocol
         public const ushort ClientYear = 2026;
         public const byte ClientMonth = 9;
         public const byte ClientDay = 24;
-        public const byte ClientRevision = 7;
+        public const byte ClientRevision = 8;
 
         // Server release version used by updater checks and packaging.
         public const ushort ServerYear = 2026;
         public const byte ServerMonth = 9;
         public const byte ServerDay = 24;
-        public const byte ServerRevision = 7;
+        public const byte ServerRevision = 8;
     }
 
     // Edit protocol compatibility values here (network handshake only).

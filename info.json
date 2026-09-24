@@ -1,7 +1,8 @@
 {
-  "version": "2026.9.24.4",
-  "serverVersion": "2026.9.24.4",
+  "version": "2026.9.24.5",
+  "serverVersion": "2026.9.24.5",
   "changes": [
+    "Fork test build B5. The updater is built without the commit id for the first time, so it differs from B4 and replaces itself once.",
     "Fork test build B4. Nothing of its own, and the updater is unchanged from B3 on purpose, so this update should skip almost every file and clean up leftovers.",
     "Fork test build B3. The updater itself is different in this one, so the installed updater has to replace itself to take it.",
     "Fork test build B2. Nothing of its own. The new updater does this one, and should delete the old Updater and replace every file once.",
@@ -10,6 +11,7 @@
     "Fixed a long-standing bug where when another vehicle crosses the finish line, the player would only hear it's sound and the sound would get cut completely instead of slowing down."
   ],
   "serverChanges": [
+    "Fork test build B5. The updater is built without the commit id for the first time, so it differs from B4 and replaces itself once.",
     "Fork test build B4. Nothing of its own, and the updater is unchanged from B3 on purpose, so this update should skip almost every file and clean up leftovers.",
     "Fork test build B3. The updater itself is different in this one, so the installed updater has to replace itself to take it.",
     "Fork test build B2. Nothing of its own. The new updater does this one, and should delete the old Updater and replace every file once.",

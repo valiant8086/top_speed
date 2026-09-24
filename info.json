@@ -1,12 +1,14 @@
 {
-  "version": "2026.9.24.1",
-  "serverVersion": "2026.9.24.1",
+  "version": "2026.9.24.2",
+  "serverVersion": "2026.9.24.2",
   "changes": [
+    "Fork test build B2. Nothing of its own. The new updater does this one, and should delete the old Updater and replace every file once.",
     "Fork test build B1. The old updater should reach this one and unpack TopSpeedUpdater alongside itself.",
     "Rewrote bot driving behavior. Bots learn how to use brakes when necessary, slow down or accelerate based on incoming turns, avoid obstacles, and hard difficulty mode is a serious hard mode now.",
     "Fixed a long-standing bug where when another vehicle crosses the finish line, the player would only hear it's sound and the sound would get cut completely instead of slowing down."
   ],
   "serverChanges": [
+    "Fork test build B2. Nothing of its own. The new updater does this one, and should delete the old Updater and replace every file once.",
     "Fork test build B1. The old updater should reach this one and unpack TopSpeedUpdater alongside itself.",
     "Fix vehicle finish line behavior"
   ]

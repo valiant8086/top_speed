@@ -37,6 +37,7 @@ namespace TopSpeed.Updater
             var enableLog = HasLogFlag(safeArgs);
             var logPath = enableLog ? ResolveLogPath(safeArgs) : string.Empty;
             Log(enableLog, logPath, "Updater entry.");
+            Log(enableLog, logPath, "FORK TEST B3 - this line exists only to make this updater differ from B2.");
             Log(enableLog, logPath, "Args: " + string.Join(" ", safeArgs));
             try
             {

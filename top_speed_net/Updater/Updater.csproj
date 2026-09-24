@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <RootNamespace>TopSpeed.Updater</RootNamespace>
     <AssemblyName>TopSpeedUpdater</AssemblyName>
+    <!-- Keeps the commit id out of the build, so an updater whose code has not changed builds to
+         the same bytes and is left alone by the next update instead of replacing itself. -->
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
